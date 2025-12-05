@@ -100,7 +100,7 @@ export function Header() {
                       </>
                     )}
                     <DropdownMenuItem asChild>
-                      <Link to="/dashboard">Мои заказы</Link>
+                      <Link to="/my-bookings">Мои заказы</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/profile">Профиль</Link>
@@ -178,7 +178,7 @@ export function Header() {
                   </Link>
                 )}
                 <Link 
-                  to="/dashboard" 
+                  to="/my-bookings" 
                   className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
