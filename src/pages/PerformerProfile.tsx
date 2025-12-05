@@ -1,0 +1,383 @@
+import { useState, useMemo } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { mockPerformers, mockReviews, districts, generateMockSlots } from '@/data/mockData';
+import { 
+  Star, MapPin, Clock, Users, Video, CheckCircle, 
+  ChevronLeft, ChevronRight, Calendar, Play, MessageCircle
+} from 'lucide-react';
+import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isBefore, parseISO } from 'date-fns';
+import { ru } from 'date-fns/locale';
+
+const performerTypeLabels: Record<string, string> = {
+  ded_moroz: 'Дед Мороз',
+  snegurochka: 'Снегурочка',
+  santa: 'Санта-Клаус',
+  duo: 'Дуэт',
+};
+
+const formatLabels: Record<string, string> = {
+  home: 'На дом',
+  kindergarten: 'Детский сад',
+  school: 'Школа',
+  office: 'Офис',
+  corporate: 'Корпоратив',
+  outdoor: 'На улице',
+};
+
+const PerformerProfile = () => {
+  const { id } = useParams<{ id: string }>();
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+
+  const performer = mockPerformers.find((p) => p.id === id);
+  const reviews = mockReviews.filter((r) => r.performerId === id);
+  const slots = useMemo(() => (performer ? generateMockSlots(performer.id) : []), [performer]);
+
+  if (!performer) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Исполнитель не найден</h1>
+            <Button asChild>
+              <Link to="/catalog">Вернуться в каталог</Link>
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  const getDistrictNames = (slugs: string[]) => {
+    return slugs
+      .map((slug) => districts.find((d) => d.slug === slug)?.name)
+      .filter(Boolean)
+      .join(', ');
+  };
+
+  // Calendar logic
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+  const getSlotsForDate = (dateStr: string) => {
+    return slots.filter((s) => s.date === dateStr && s.status === 'free');
+  };
+
+  const hasAvailableSlots = (dateStr: string) => {
+    return getSlotsForDate(dateStr).length > 0;
+  };
+
+  const availableSlotsForSelectedDate = selectedDate ? getSlotsForDate(selectedDate) : [];
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <Header />
+      <main className="flex-1">
+        {/* Breadcrumb */}
+        <div className="bg-secondary/50 border-b border-border">
+          <div className="container py-4">
+            <nav className="flex items-center gap-2 text-sm">
+              <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
+                Главная
+              </Link>
+              <span className="text-muted-foreground">/</span>
+              <Link to="/catalog" className="text-muted-foreground hover:text-foreground transition-colors">
+                Каталог
+              </Link>
+              <span className="text-muted-foreground">/</span>
+              <span className="text-foreground font-medium">{performer.displayName}</span>
+            </nav>
+          </div>
+        </div>
+
+        <div className="container py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Header */}
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Photo */}
+                <div className="relative w-full md:w-64 aspect-square rounded-2xl overflow-hidden flex-shrink-0">
+                  <img
+                    src={performer.photoUrls[0]}
+                    alt={performer.displayName}
+                    className="w-full h-full object-cover"
+                  />
+                  {performer.verificationStatus === 'verified' && (
+                    <div className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+                      <CheckCircle className="h-6 w-6 text-white" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1">
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {performer.type.map((type) => (
+                      <Badge key={type} variant="gold">
+                        {performerTypeLabels[type]}
+                      </Badge>
+                    ))}
+                    {performer.verificationStatus === 'verified' && (
+                      <Badge variant="success">Проверен</Badge>
+                    )}
+                  </div>
+
+                  <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-2">
+                    {performer.displayName}
+                  </h1>
+
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="flex items-center gap-1">
+                      <Star className="h-5 w-5 fill-accent text-accent" />
+                      <span className="font-bold text-lg">{performer.ratingAverage}</span>
+                      <span className="text-muted-foreground">({performer.ratingCount} отзывов)</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-4 w-4" />
+                      {getDistrictNames(performer.districts)}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      Опыт: {performer.experienceYears} лет
+                    </div>
+                    {performer.age && (
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        {performer.age} лет
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="bg-card rounded-2xl p-6 border border-border">
+                <h2 className="font-display text-xl font-semibold mb-4">О себе</h2>
+                <p className="text-muted-foreground whitespace-pre-line">{performer.description}</p>
+              </div>
+
+              {/* Formats */}
+              <div className="bg-card rounded-2xl p-6 border border-border">
+                <h2 className="font-display text-xl font-semibold mb-4">Форматы мероприятий</h2>
+                <div className="flex flex-wrap gap-2">
+                  {performer.formats.map((f) => (
+                    <Badge key={f} variant="secondary" className="text-sm py-1.5 px-3">
+                      {formatLabels[f]}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Video */}
+              {performer.videoGreetingUrl && (
+                <div className="bg-card rounded-2xl p-6 border border-border">
+                  <h2 className="font-display text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Video className="h-5 w-5 text-accent" />
+                    Видео-приветствие
+                  </h2>
+                  <div className="aspect-video rounded-xl bg-secondary flex items-center justify-center">
+                    <Button variant="gold" size="lg" className="gap-2">
+                      <Play className="h-5 w-5" />
+                      Смотреть видео
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Reviews */}
+              <div className="bg-card rounded-2xl p-6 border border-border">
+                <h2 className="font-display text-xl font-semibold mb-6">
+                  Отзывы ({reviews.length})
+                </h2>
+                {reviews.length > 0 ? (
+                  <div className="space-y-6">
+                    {reviews.map((review) => (
+                      <div key={review.id} className="border-b border-border last:border-0 pb-6 last:pb-0">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <p className="font-semibold text-foreground">{review.customerName}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {format(parseISO(review.createdAt), 'd MMMM yyyy', { locale: ru })}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-4 w-4 ${
+                                  i < review.rating
+                                    ? 'fill-accent text-accent'
+                                    : 'text-muted'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-muted-foreground">{review.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">
+                    Пока нет отзывов
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Sidebar - Booking */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-24 space-y-6">
+                {/* Price Card */}
+                <div className="bg-card rounded-2xl p-6 border border-border shadow-lg">
+                  <div className="text-center mb-6">
+                    <span className="text-sm text-muted-foreground">Стоимость от</span>
+                    <div className="font-display text-4xl font-bold text-accent">
+                      {performer.basePrice.toLocaleString()} 
+                      <span className="text-xl font-normal text-muted-foreground"> сом</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">за визит 20-30 минут</span>
+                  </div>
+
+                  {/* Calendar */}
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <button
+                        onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}
+                        className="p-2 hover:bg-secondary rounded-lg transition-colors"
+                        disabled={isBefore(addMonths(currentMonth, -1), startOfMonth(new Date()))}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <span className="font-semibold">
+                        {format(currentMonth, 'LLLL yyyy', { locale: ru })}
+                      </span>
+                      <button
+                        onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                        className="p-2 hover:bg-secondary rounded-lg transition-colors"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+                      {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day) => (
+                        <div key={day} className="py-1 text-muted-foreground font-medium">
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1">
+                      {/* Empty cells for days before month start */}
+                      {[...Array((monthStart.getDay() + 6) % 7)].map((_, i) => (
+                        <div key={`empty-${i}`} className="aspect-square" />
+                      ))}
+                      
+                      {days.map((day) => {
+                        const dateStr = format(day, 'yyyy-MM-dd');
+                        const isAvailable = hasAvailableSlots(dateStr);
+                        const isPast = isBefore(day, new Date()) && !isToday(day);
+                        const isSelected = selectedDate === dateStr;
+
+                        return (
+                          <button
+                            key={dateStr}
+                            onClick={() => {
+                              if (isAvailable && !isPast) {
+                                setSelectedDate(dateStr);
+                                setSelectedSlot(null);
+                              }
+                            }}
+                            disabled={!isAvailable || isPast}
+                            className={`
+                              aspect-square rounded-lg text-sm font-medium transition-all
+                              ${isSelected ? 'bg-accent text-white' : ''}
+                              ${isAvailable && !isPast && !isSelected ? 'bg-green-100 text-green-700 hover:bg-green-200' : ''}
+                              ${isPast ? 'text-muted-foreground/50 cursor-not-allowed' : ''}
+                              ${!isAvailable && !isPast ? 'text-muted-foreground cursor-not-allowed' : ''}
+                              ${isToday(day) && !isSelected ? 'ring-2 ring-accent' : ''}
+                            `}
+                          >
+                            {format(day, 'd')}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Time Slots */}
+                  {selectedDate && (
+                    <div className="mb-6">
+                      <h3 className="font-semibold mb-3">
+                        Доступное время на {format(parseISO(selectedDate), 'd MMMM', { locale: ru })}
+                      </h3>
+                      <div className="grid grid-cols-2 gap-2">
+                        {availableSlotsForSelectedDate.map((slot) => (
+                          <button
+                            key={slot.id}
+                            onClick={() => setSelectedSlot(slot.id)}
+                            className={`
+                              py-2 px-3 rounded-lg text-sm font-medium transition-colors
+                              ${selectedSlot === slot.id 
+                                ? 'bg-accent text-white' 
+                                : 'bg-secondary hover:bg-secondary/80'
+                              }
+                            `}
+                          >
+                            {slot.startTime} - {slot.endTime}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Book Button */}
+                  <Button 
+                    variant="hero" 
+                    size="xl" 
+                    className="w-full"
+                    disabled={!selectedSlot}
+                    asChild={!!selectedSlot}
+                  >
+                    {selectedSlot ? (
+                      <Link to={`/booking/${performer.id}?slot=${selectedSlot}`}>
+                        <Calendar className="h-5 w-5 mr-2" />
+                        Забронировать
+                      </Link>
+                    ) : (
+                      <>
+                        <Calendar className="h-5 w-5 mr-2" />
+                        Выберите дату и время
+                      </>
+                    )}
+                  </Button>
+
+                  <Button variant="outline" className="w-full mt-3" disabled>
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Написать сообщение
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+export default PerformerProfile;
