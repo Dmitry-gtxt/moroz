@@ -5,10 +5,12 @@ import { HowItWorks } from '@/components/home/HowItWorks';
 import { FeaturesSection } from '@/components/home/FeaturesSection';
 import { TopPerformers } from '@/components/home/TopPerformers';
 import { CTASection } from '@/components/home/CTASection';
+import { SEOHead } from '@/components/seo/SEOHead';
 
 const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOHead />
       <Header />
       <main className="flex-1">
         <HeroSection />

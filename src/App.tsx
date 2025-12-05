@@ -20,6 +20,11 @@ import PerformerProfilePage from "./pages/performer/PerformerProfile";
 import PerformerCalendar from "./pages/performer/PerformerCalendar";
 import PerformerBookings from "./pages/performer/PerformerBookings";
 import CustomerBookings from "./pages/customer/CustomerBookings";
+import HowItWorks from "./pages/HowItWorks";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+
+import AdminReviews from "./pages/admin/AdminReviews";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +44,10 @@ const App = () => (
             <Route path="/login" element={<Auth />} />
             <Route path="/register" element={<Auth />} />
             <Route path="/become-performer" element={<PerformerRegistration />} />
+            {/* Info pages */}
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             {/* Customer routes */}
             <Route path="/my-bookings" element={<CustomerBookings />} />
             {/* Performer dashboard routes */}
@@ -50,6 +59,7 @@ const App = () => (
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/performers" element={<AdminPerformers />} />
             <Route path="/admin/moderation" element={<AdminModeration />} />
+            <Route path="/admin/reviews" element={<AdminReviews />} />
             <Route path="/admin/orders" element={<AdminOrders />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

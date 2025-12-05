@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -7,12 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Snowflake, Mail, Lock, User, Phone } from 'lucide-react';
+import { Snowflake, Mail, Lock, User, Phone, ArrowLeft } from 'lucide-react';
 
-type AuthMode = 'login' | 'register';
+type AuthMode = 'login' | 'register' | 'forgot-password';
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/';
+  
   const [mode, setMode] = useState<AuthMode>('login');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -23,24 +26,22 @@ const Auth = () => {
   });
 
   useEffect(() => {
-    // Check if user is already logged in
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/');
+        navigate(redirectTo);
       }
     };
     checkSession();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate('/');
+        navigate(redirectTo);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, redirectTo]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -59,12 +60,12 @@ const Auth = () => {
         });
         if (error) throw error;
         toast.success('Добро пожаловать!');
-      } else {
+      } else if (mode === 'register') {
         const { error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${window.location.origin}${redirectTo}`,
             data: {
               full_name: formData.fullName,
               phone: formData.phone,
@@ -73,6 +74,13 @@ const Auth = () => {
         });
         if (error) throw error;
         toast.success('Регистрация успешна! Добро пожаловать!');
+      } else if (mode === 'forgot-password') {
+        const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+          redirectTo: `${window.location.origin}/auth?mode=reset`,
+        });
+        if (error) throw error;
+        toast.success('Письмо для сброса пароля отправлено на вашу почту');
+        setMode('login');
       }
     } catch (error: any) {
       let message = 'Произошла ошибка';
@@ -82,6 +90,8 @@ const Auth = () => {
         message = 'Пользователь с таким email уже зарегистрирован';
       } else if (error.message.includes('Password')) {
         message = 'Пароль должен быть не менее 6 символов';
+      } else if (error.message.includes('Email not confirmed')) {
+        message = 'Подтвердите email перед входом';
       }
       toast.error(message);
     } finally {
@@ -101,12 +111,14 @@ const Auth = () => {
                 <Snowflake className="h-8 w-8 text-accent" />
               </div>
               <h1 className="font-display text-2xl font-bold text-foreground">
-                {mode === 'login' ? 'Вход в аккаунт' : 'Регистрация'}
+                {mode === 'login' && 'Вход в аккаунт'}
+                {mode === 'register' && 'Регистрация'}
+                {mode === 'forgot-password' && 'Восстановление пароля'}
               </h1>
               <p className="text-muted-foreground mt-2">
-                {mode === 'login'
-                  ? 'Войдите, чтобы забронировать Деда Мороза'
-                  : 'Создайте аккаунт для бронирования'}
+                {mode === 'login' && 'Войдите, чтобы забронировать Деда Мороза'}
+                {mode === 'register' && 'Создайте аккаунт для бронирования'}
+                {mode === 'forgot-password' && 'Введите email для сброса пароля'}
               </p>
             </div>
 
@@ -164,23 +176,37 @@ const Auth = () => {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="password">Пароль</Label>
-                <div className="relative mt-1">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="••••••••"
-                    className="pl-10"
-                    required
-                    minLength={6}
-                  />
+              {mode !== 'forgot-password' && (
+                <div>
+                  <Label htmlFor="password">Пароль</Label>
+                  <div className="relative mt-1">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      placeholder="••••••••"
+                      className="pl-10"
+                      required
+                      minLength={6}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {mode === 'login' && (
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => setMode('forgot-password')}
+                    className="text-sm text-accent hover:underline"
+                  >
+                    Забыли пароль?
+                  </button>
+                </div>
+              )}
 
               <Button
                 type="submit"
@@ -189,22 +215,39 @@ const Auth = () => {
                 className="w-full"
                 disabled={loading}
               >
-                {loading ? 'Загрузка...' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
+                {loading ? 'Загрузка...' : (
+                  mode === 'login' ? 'Войти' : 
+                  mode === 'register' ? 'Зарегистрироваться' : 
+                  'Отправить ссылку'
+                )}
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                {mode === 'login' ? 'Ещё нет аккаунта?' : 'Уже есть аккаунт?'}
+            {mode === 'forgot-password' ? (
+              <div className="mt-6 text-center">
                 <button
                   type="button"
-                  onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-                  className="ml-1 text-accent hover:underline font-medium"
+                  onClick={() => setMode('login')}
+                  className="text-sm text-muted-foreground hover:text-foreground flex items-center justify-center gap-1 mx-auto"
                 >
-                  {mode === 'login' ? 'Зарегистрироваться' : 'Войти'}
+                  <ArrowLeft className="h-4 w-4" />
+                  Вернуться к входу
                 </button>
-              </p>
-            </div>
+              </div>
+            ) : (
+              <div className="mt-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  {mode === 'login' ? 'Ещё нет аккаунта?' : 'Уже есть аккаунт?'}
+                  <button
+                    type="button"
+                    onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                    className="ml-1 text-accent hover:underline font-medium"
+                  >
+                    {mode === 'login' ? 'Зарегистрироваться' : 'Войти'}
+                  </button>
+                </p>
+              </div>
+            )}
 
             <div className="mt-6 pt-6 border-t border-border text-center">
               <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
