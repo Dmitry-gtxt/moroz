@@ -10,6 +10,10 @@ import PerformerProfile from "./pages/PerformerProfile";
 import Booking from "./pages/Booking";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminPerformers from "./pages/admin/AdminPerformers";
+import AdminModeration from "./pages/admin/AdminModeration";
+import AdminOrders from "./pages/admin/AdminOrders";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +32,11 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/register" element={<Auth />} />
+            {/* Admin routes */}
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/performers" element={<AdminPerformers />} />
+            <Route path="/admin/moderation" element={<AdminModeration />} />
+            <Route path="/admin/orders" element={<AdminOrders />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
