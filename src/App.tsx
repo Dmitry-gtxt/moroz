@@ -15,6 +15,10 @@ import AdminPerformers from "./pages/admin/AdminPerformers";
 import AdminModeration from "./pages/admin/AdminModeration";
 import AdminOrders from "./pages/admin/AdminOrders";
 import PerformerRegistration from "./pages/PerformerRegistration";
+import PerformerDashboard from "./pages/performer/PerformerDashboard";
+import PerformerProfilePage from "./pages/performer/PerformerProfile";
+import PerformerCalendar from "./pages/performer/PerformerCalendar";
+import PerformerBookings from "./pages/performer/PerformerBookings";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +38,11 @@ const App = () => (
             <Route path="/login" element={<Auth />} />
             <Route path="/register" element={<Auth />} />
             <Route path="/become-performer" element={<PerformerRegistration />} />
+            {/* Performer dashboard routes */}
+            <Route path="/performer" element={<PerformerDashboard />} />
+            <Route path="/performer/profile" element={<PerformerProfilePage />} />
+            <Route path="/performer/calendar" element={<PerformerCalendar />} />
+            <Route path="/performer/bookings" element={<PerformerBookings />} />
             {/* Admin routes */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/performers" element={<AdminPerformers />} />

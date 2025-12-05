@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Snowflake, User, LogIn, LogOut } from 'lucide-react';
+import { Menu, X, Snowflake, User, LogIn, LogOut, Briefcase } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,23 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
+  const [isPerformer, setIsPerformer] = useState(false);
+
+  useEffect(() => {
+    async function checkPerformerRole() {
+      if (!user) {
+        setIsPerformer(false);
+        return;
+      }
+      const { data } = await supabase
+        .from('performer_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setIsPerformer(!!data);
+    }
+    checkPerformerRole();
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -50,7 +68,7 @@ export function Header() {
             Как это работает
           </Link>
           <Link 
-            to="/for-performers" 
+            to="/become-performer" 
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             Исполнителям
@@ -70,6 +88,17 @@ export function Header() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
+                    {isPerformer && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link to="/performer">
+                            <Briefcase className="h-4 w-4 mr-2" />
+                            Кабинет исполнителя
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link to="/dashboard">Мои заказы</Link>
                     </DropdownMenuItem>
@@ -130,7 +159,7 @@ export function Header() {
               Как это работает
             </Link>
             <Link 
-              to="/for-performers" 
+              to="/become-performer" 
               className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
@@ -139,6 +168,15 @@ export function Header() {
             <div className="border-t border-border my-2" />
             {user ? (
               <>
+                {isPerformer && (
+                  <Link 
+                    to="/performer" 
+                    className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors font-medium text-primary"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Кабинет исполнителя
+                  </Link>
+                )}
                 <Link 
                   to="/dashboard" 
                   className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
