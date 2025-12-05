@@ -81,7 +81,7 @@ export default function PerformerRegistration() {
 
   // Redirect to auth if not logged in (after all hooks)
   if (!authLoading && !user) {
-    return <Navigate to="/auth?redirect=/become-performer" replace />;
+    return <Navigate to={{ pathname: '/auth', search: 'redirect=/become-performer' }} replace />;
   }
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

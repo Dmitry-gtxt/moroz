@@ -34,7 +34,7 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
   }
 
   if (!user) {
-    return <Navigate to="/auth?redirect=/cabinet" replace />;
+    return <Navigate to={{ pathname: '/auth', search: 'redirect=/cabinet' }} replace />;
   }
 
   return (

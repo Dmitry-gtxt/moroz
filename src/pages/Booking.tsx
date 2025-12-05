@@ -224,7 +224,7 @@ const Booking = () => {
             </p>
             <div className="space-y-3">
               <Button variant="gold" size="lg" className="w-full" asChild>
-                <Link to={`/auth?redirect=${encodeURIComponent(`/booking/${performerId}?slot=${slotId}`)}`}>
+                <Link to={{ pathname: '/auth', search: `redirect=${encodeURIComponent(`/booking/${performerId}?slot=${slotId}`)}` }}>
                   Войти или зарегистрироваться
                 </Link>
               </Button>
