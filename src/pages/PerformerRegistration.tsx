@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/hooks/useAuth';
@@ -72,18 +72,17 @@ export default function PerformerRegistration() {
   const [documents, setDocuments] = useState<{ type: DocumentType; file: File }[]>([]);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth?redirect=/become-performer');
-    }
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
     async function fetchDistricts() {
       const { data } = await supabase.from('districts').select('*').order('name');
       if (data) setDistricts(data);
     }
     fetchDistricts();
   }, []);
+
+  // Redirect to auth if not logged in (after all hooks)
+  if (!authLoading && !user) {
+    return <Navigate to="/auth?redirect=/become-performer" replace />;
+  }
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
