@@ -1,86 +1,123 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { PerformerCard } from '@/components/performers/PerformerCard';
-import { CatalogFilters } from '@/components/catalog/CatalogFilters';
-import { mockPerformers, districts } from '@/data/mockData';
-import { PerformerFilters, PerformerType, EventFormat } from '@/types';
-import { SlidersHorizontal, X } from 'lucide-react';
+import { CatalogFilters, Filters } from '@/components/catalog/CatalogFilters';
+import { supabase } from '@/integrations/supabase/client';
+import { SlidersHorizontal, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import type { Database } from '@/integrations/supabase/types';
+
+type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
+type District = Database['public']['Tables']['districts']['Row'];
+type PerformerType = Database['public']['Enums']['performer_type'];
+type EventFormat = Database['public']['Enums']['event_format'];
 
 const Catalog = () => {
   const [searchParams] = useSearchParams();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [performers, setPerformers] = useState<PerformerProfile[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  const initialFilters: PerformerFilters = {
+  const initialFilters: Filters = {
     district: searchParams.get('district') || undefined,
     date: searchParams.get('date') || undefined,
     timeSlot: (searchParams.get('time') as 'morning' | 'afternoon' | 'evening') || undefined,
     sortBy: 'rating',
   };
 
-  const [filters, setFilters] = useState<PerformerFilters>(initialFilters);
+  const [filters, setFilters] = useState<Filters>(initialFilters);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      
+      const [performersRes, districtsRes] = await Promise.all([
+        supabase
+          .from('performer_profiles')
+          .select('*')
+          .eq('is_active', true)
+          .order('rating_average', { ascending: false }),
+        supabase
+          .from('districts')
+          .select('*')
+          .order('name'),
+      ]);
+
+      if (performersRes.data) {
+        setPerformers(performersRes.data);
+      }
+      if (districtsRes.data) {
+        setDistricts(districtsRes.data);
+      }
+      
+      setLoading(false);
+    }
+
+    fetchData();
+  }, []);
 
   const filteredPerformers = useMemo(() => {
-    let result = [...mockPerformers];
+    let result = [...performers];
 
     // Filter by district
     if (filters.district) {
-      result = result.filter((p) => p.districts.includes(filters.district!));
+      result = result.filter((p) => p.district_slugs.includes(filters.district!));
     }
 
     // Filter by performer type
     if (filters.performerType && filters.performerType.length > 0) {
       result = result.filter((p) =>
-        p.type.some((t) => filters.performerType!.includes(t))
+        (p.performer_types as PerformerType[]).some((t) => filters.performerType!.includes(t))
       );
     }
 
     // Filter by event format
     if (filters.eventFormat && filters.eventFormat.length > 0) {
       result = result.filter((p) =>
-        p.formats.some((f) => filters.eventFormat!.includes(f))
+        (p.formats as EventFormat[]).some((f) => filters.eventFormat!.includes(f))
       );
     }
 
     // Filter by price range
     if (filters.priceFrom) {
-      result = result.filter((p) => p.basePrice >= filters.priceFrom!);
+      result = result.filter((p) => (p.price_from ?? p.base_price) >= filters.priceFrom!);
     }
     if (filters.priceTo) {
-      result = result.filter((p) => p.basePrice <= filters.priceTo!);
+      result = result.filter((p) => (p.price_from ?? p.base_price) <= filters.priceTo!);
     }
 
     // Filter by minimum rating
     if (filters.minRating) {
-      result = result.filter((p) => p.ratingAverage >= filters.minRating!);
+      result = result.filter((p) => Number(p.rating_average) >= filters.minRating!);
     }
 
     // Filter by video presence
     if (filters.hasVideo) {
-      result = result.filter((p) => p.videoGreetingUrl);
+      result = result.filter((p) => p.video_greeting_url);
     }
 
     // Sort
     switch (filters.sortBy) {
       case 'rating':
-        result.sort((a, b) => b.ratingAverage - a.ratingAverage);
+        result.sort((a, b) => Number(b.rating_average) - Number(a.rating_average));
         break;
       case 'price_asc':
-        result.sort((a, b) => a.basePrice - b.basePrice);
+        result.sort((a, b) => (a.price_from ?? a.base_price) - (b.price_from ?? b.base_price));
         break;
       case 'price_desc':
-        result.sort((a, b) => b.basePrice - a.basePrice);
+        result.sort((a, b) => (b.price_from ?? b.base_price) - (a.price_from ?? a.base_price));
         break;
       case 'reviews':
-        result.sort((a, b) => b.ratingCount - a.ratingCount);
+        result.sort((a, b) => (b.rating_count ?? 0) - (a.rating_count ?? 0));
         break;
     }
 
     return result;
-  }, [filters]);
+  }, [performers, filters]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -110,7 +147,7 @@ const Catalog = () => {
               Каталог исполнителей
             </h1>
             <p className="text-white/70">
-              {filteredPerformers.length} исполнителей в Бишкеке
+              {loading ? 'Загрузка...' : `${filteredPerformers.length} исполнителей`}
             </p>
           </div>
         </div>
@@ -122,6 +159,7 @@ const Catalog = () => {
               <div className="sticky top-24">
                 <CatalogFilters
                   filters={filters}
+                  districts={districts}
                   onFiltersChange={setFilters}
                   onClear={clearFilters}
                 />
@@ -149,6 +187,7 @@ const Catalog = () => {
                   <div className="mt-6">
                     <CatalogFilters
                       filters={filters}
+                      districts={districts}
                       onFiltersChange={(newFilters) => {
                         setFilters(newFilters);
                       }}
@@ -164,7 +203,7 @@ const Catalog = () => {
               {/* Sort Select */}
               <select
                 value={filters.sortBy}
-                onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as any })}
+                onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as Filters['sortBy'] })}
                 className="flex-1 h-10 px-4 rounded-lg border border-input bg-background text-sm"
               >
                 <option value="rating">По рейтингу</option>
@@ -206,8 +245,12 @@ const Catalog = () => {
                 </div>
               )}
 
-              {/* Grid */}
-              {filteredPerformers.length > 0 ? (
+              {/* Loading */}
+              {loading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : filteredPerformers.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredPerformers.map((performer, index) => (
                     <div
@@ -215,18 +258,23 @@ const Catalog = () => {
                       className="animate-fade-in"
                       style={{ animationDelay: `${index * 0.05}s` }}
                     >
-                      <PerformerCard performer={performer} />
+                      <PerformerCard performer={performer} districts={districts} />
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-16">
                   <p className="text-lg text-muted-foreground mb-4">
-                    По вашим критериям исполнители не найдены
+                    {performers.length === 0 
+                      ? 'Пока нет зарегистрированных исполнителей'
+                      : 'По вашим критериям исполнители не найдены'
+                    }
                   </p>
-                  <Button variant="outline" onClick={clearFilters}>
-                    Сбросить фильтры
-                  </Button>
+                  {performers.length > 0 && (
+                    <Button variant="outline" onClick={clearFilters}>
+                      Сбросить фильтры
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
