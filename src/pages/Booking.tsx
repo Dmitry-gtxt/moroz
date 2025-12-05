@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { mockPerformers, districts } from '@/data/mockData';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { 
   Calendar, Clock, MapPin, Users, CreditCard, 
-  CheckCircle, ArrowLeft, ShieldCheck 
+  CheckCircle, ArrowLeft, ShieldCheck, LogIn
 } from 'lucide-react';
 
 const eventTypeLabels: Record<string, string> = {
@@ -25,6 +26,7 @@ const Booking = () => {
   const { performerId } = useParams<{ performerId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const slotId = searchParams.get('slot');
 
   const performer = mockPerformers.find((p) => p.id === performerId);
@@ -41,6 +43,18 @@ const Booking = () => {
     customerPhone: '',
     customerEmail: '',
   });
+
+  // Pre-fill form with user data when logged in
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        customerName: user.user_metadata?.full_name || '',
+        customerPhone: user.user_metadata?.phone || '',
+        customerEmail: user.email || '',
+      }));
+    }
+  }, [user]);
 
   if (!performer) {
     return (
@@ -93,6 +107,40 @@ const Booking = () => {
       setStep(4);
     }
   };
+
+  // Show login prompt if not authenticated
+  if (!authLoading && !user) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 flex items-center justify-center py-12 px-4">
+          <div className="max-w-md w-full bg-card rounded-2xl p-8 border border-border text-center animate-fade-in">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-secondary flex items-center justify-center">
+              <LogIn className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h2 className="font-display text-2xl font-bold mb-2">Войдите в аккаунт</h2>
+            <p className="text-muted-foreground mb-6">
+              Для бронирования необходимо войти в аккаунт или зарегистрироваться
+            </p>
+            <div className="space-y-3">
+              <Button variant="gold" size="lg" className="w-full" asChild>
+                <Link to={`/auth?redirect=/booking/${performerId}?slot=${slotId}`}>
+                  Войти или зарегистрироваться
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full" asChild>
+                <Link to={`/performer/${performerId}`}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Вернуться к исполнителю
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
