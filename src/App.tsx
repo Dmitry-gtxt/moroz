@@ -22,6 +22,7 @@ import PerformerBookings from "./pages/performer/PerformerBookings";
 import CustomerDashboard from "./pages/customer/CustomerDashboard";
 import CustomerBookings from "./pages/customer/CustomerBookings";
 import CustomerProfile from "./pages/customer/CustomerProfile";
+import CustomerCatalog from "./pages/customer/CustomerCatalog";
 import HowItWorks from "./pages/HowItWorks";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             {/* Customer cabinet routes */}
             <Route path="/cabinet" element={<CustomerDashboard />} />
+            <Route path="/cabinet/catalog" element={<CustomerCatalog />} />
             <Route path="/cabinet/bookings" element={<CustomerBookings />} />
             <Route path="/cabinet/profile" element={<CustomerProfile />} />
             <Route path="/my-bookings" element={<CustomerBookings />} />
