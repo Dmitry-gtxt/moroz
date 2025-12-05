@@ -16,6 +16,8 @@ import {
   CheckCircle, ArrowLeft, ShieldCheck, LogIn, Loader2
 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
+import { bookingStep1Schema, bookingStep2Schema } from '@/lib/validations/booking';
+import { ZodError } from 'zod';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
 type District = Database['public']['Tables']['districts']['Row'];
@@ -54,6 +56,7 @@ const Booking = () => {
     customerPhone: '',
     customerEmail: '',
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function fetchData() {
@@ -137,18 +140,53 @@ const Booking = () => {
   };
 
   const handleSubmit = async () => {
+    setFieldErrors({});
+    
     if (step === 1) {
-      if (!formData.address || !formData.district || !formData.childrenCount) {
-        toast.error('Пожалуйста, заполните все обязательные поля');
-        return;
+      try {
+        bookingStep1Schema.parse({
+          address: formData.address,
+          district: formData.district,
+          eventType: formData.eventType,
+          childrenCount: formData.childrenCount,
+          childrenAges: formData.childrenAges || undefined,
+          comment: formData.comment || undefined,
+        });
+        setStep(2);
+      } catch (error) {
+        if (error instanceof ZodError) {
+          const errors: Record<string, string> = {};
+          error.errors.forEach((err) => {
+            if (err.path[0]) {
+              errors[err.path[0] as string] = err.message;
+            }
+          });
+          setFieldErrors(errors);
+          toast.error('Пожалуйста, исправьте ошибки в форме');
+        }
       }
-      setStep(2);
+      return;
     } else if (step === 2) {
-      if (!formData.customerName || !formData.customerPhone) {
-        toast.error('Пожалуйста, заполните контактные данные');
-        return;
+      try {
+        bookingStep2Schema.parse({
+          customerName: formData.customerName,
+          customerPhone: formData.customerPhone,
+          customerEmail: formData.customerEmail || undefined,
+        });
+        setStep(3);
+      } catch (error) {
+        if (error instanceof ZodError) {
+          const errors: Record<string, string> = {};
+          error.errors.forEach((err) => {
+            if (err.path[0]) {
+              errors[err.path[0] as string] = err.message;
+            }
+          });
+          setFieldErrors(errors);
+          toast.error('Пожалуйста, исправьте ошибки в форме');
+        }
       }
-      setStep(3);
+      return;
     } else if (step === 3) {
       if (!user) {
         toast.error('Необходимо войти в аккаунт');
@@ -311,13 +349,14 @@ const Booking = () => {
                           name="district"
                           value={formData.district}
                           onChange={handleInputChange}
-                          className="w-full h-10 px-3 mt-1 rounded-lg border border-input bg-background text-sm"
+                          className={`w-full h-10 px-3 mt-1 rounded-lg border bg-background text-sm ${fieldErrors.district ? 'border-destructive' : 'border-input'}`}
                         >
                           <option value="">Выберите район</option>
                           {districts.map((d) => (
                             <option key={d.id} value={d.slug}>{d.name}</option>
                           ))}
                         </select>
+                        {fieldErrors.district && <p className="text-destructive text-sm mt-1">{fieldErrors.district}</p>}
                       </div>
 
                       <div>
@@ -328,8 +367,9 @@ const Booking = () => {
                           value={formData.address}
                           onChange={handleInputChange}
                           placeholder="ул. Чуй, 123, кв. 45"
-                          className="mt-1"
+                          className={`mt-1 ${fieldErrors.address ? 'border-destructive' : ''}`}
                         />
+                        {fieldErrors.address && <p className="text-destructive text-sm mt-1">{fieldErrors.address}</p>}
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -343,8 +383,9 @@ const Booking = () => {
                             value={formData.childrenCount}
                             onChange={handleInputChange}
                             placeholder="2"
-                            className="mt-1"
+                            className={`mt-1 ${fieldErrors.childrenCount ? 'border-destructive' : ''}`}
                           />
+                          {fieldErrors.childrenCount && <p className="text-destructive text-sm mt-1">{fieldErrors.childrenCount}</p>}
                         </div>
                         <div>
                           <Label htmlFor="childrenAges">Возраст детей</Label>
@@ -354,8 +395,9 @@ const Booking = () => {
                             value={formData.childrenAges}
                             onChange={handleInputChange}
                             placeholder="5 и 8 лет"
-                            className="mt-1"
+                            className={`mt-1 ${fieldErrors.childrenAges ? 'border-destructive' : ''}`}
                           />
+                          {fieldErrors.childrenAges && <p className="text-destructive text-sm mt-1">{fieldErrors.childrenAges}</p>}
                         </div>
                       </div>
 
@@ -367,9 +409,10 @@ const Booking = () => {
                           value={formData.comment}
                           onChange={handleInputChange}
                           placeholder="Любые пожелания: имена детей, любимые персонажи, песни..."
-                          className="mt-1"
+                          className={`mt-1 ${fieldErrors.comment ? 'border-destructive' : ''}`}
                           rows={3}
                         />
+                        {fieldErrors.comment && <p className="text-destructive text-sm mt-1">{fieldErrors.comment}</p>}
                       </div>
                     </div>
 
@@ -400,8 +443,9 @@ const Booking = () => {
                           value={formData.customerName}
                           onChange={handleInputChange}
                           placeholder="Айгуль"
-                          className="mt-1"
+                          className={`mt-1 ${fieldErrors.customerName ? 'border-destructive' : ''}`}
                         />
+                        {fieldErrors.customerName && <p className="text-destructive text-sm mt-1">{fieldErrors.customerName}</p>}
                       </div>
 
                       <div>
@@ -413,8 +457,9 @@ const Booking = () => {
                           value={formData.customerPhone}
                           onChange={handleInputChange}
                           placeholder="+996 555 123 456"
-                          className="mt-1"
+                          className={`mt-1 ${fieldErrors.customerPhone ? 'border-destructive' : ''}`}
                         />
+                        {fieldErrors.customerPhone && <p className="text-destructive text-sm mt-1">{fieldErrors.customerPhone}</p>}
                       </div>
 
                       <div>
@@ -426,8 +471,9 @@ const Booking = () => {
                           value={formData.customerEmail}
                           onChange={handleInputChange}
                           placeholder="example@mail.com"
-                          className="mt-1"
+                          className={`mt-1 ${fieldErrors.customerEmail ? 'border-destructive' : ''}`}
                         />
+                        {fieldErrors.customerEmail && <p className="text-destructive text-sm mt-1">{fieldErrors.customerEmail}</p>}
                       </div>
                     </div>
 
