@@ -14,6 +14,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPerformers from "./pages/admin/AdminPerformers";
 import AdminModeration from "./pages/admin/AdminModeration";
 import AdminOrders from "./pages/admin/AdminOrders";
+import PerformerRegistration from "./pages/PerformerRegistration";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/register" element={<Auth />} />
+            <Route path="/become-performer" element={<PerformerRegistration />} />
             {/* Admin routes */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/performers" element={<AdminPerformers />} />
