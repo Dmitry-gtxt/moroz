@@ -118,13 +118,13 @@ export function Header() {
               ) : (
                 <>
                   <Button variant="ghost" size="sm" asChild>
-                    <Link to={{ pathname: '/auth', search: 'mode=login' }}>
+                    <Link to="/auth?mode=login">
                       <LogIn className="h-4 w-4 mr-1" />
                       Войти
                     </Link>
                   </Button>
                   <Button variant="gold" size="sm" asChild>
-                    <Link to={{ pathname: '/auth', search: 'mode=register' }}>
+                    <Link to="/auth?mode=register">
                       Регистрация
                     </Link>
                   </Button>
@@ -207,10 +207,10 @@ export function Header() {
             ) : (
               <div className="flex gap-2 px-4">
                 <Button variant="outline" size="sm" className="flex-1" asChild>
-                  <Link to={{ pathname: '/auth', search: 'mode=login' }} onClick={() => setIsMenuOpen(false)}>Войти</Link>
+                  <Link to="/auth?mode=login" onClick={() => setIsMenuOpen(false)}>Войти</Link>
                 </Button>
                 <Button variant="gold" size="sm" className="flex-1" asChild>
-                  <Link to={{ pathname: '/auth', search: 'mode=register' }} onClick={() => setIsMenuOpen(false)}>Регистрация</Link>
+                  <Link to="/auth?mode=register" onClick={() => setIsMenuOpen(false)}>Регистрация</Link>
                 </Button>
               </div>
             )}
