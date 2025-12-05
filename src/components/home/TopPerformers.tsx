@@ -1,14 +1,58 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PerformerCard } from '@/components/performers/PerformerCard';
-import { mockPerformers } from '@/data/mockData';
-import { ArrowRight } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { ArrowRight, Loader2 } from 'lucide-react';
+import type { Database } from '@/integrations/supabase/types';
+
+type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
+type District = Database['public']['Tables']['districts']['Row'];
 
 export function TopPerformers() {
-  // Get top 6 performers by rating
-  const topPerformers = [...mockPerformers]
-    .sort((a, b) => b.ratingAverage - a.ratingAverage)
-    .slice(0, 6);
+  const [performers, setPerformers] = useState<PerformerProfile[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      const [performersRes, districtsRes] = await Promise.all([
+        supabase
+          .from('performer_profiles')
+          .select('*')
+          .eq('is_active', true)
+          .order('rating_average', { ascending: false })
+          .limit(6),
+        supabase
+          .from('districts')
+          .select('*'),
+      ]);
+
+      if (performersRes.data) {
+        setPerformers(performersRes.data);
+      }
+      if (districtsRes.data) {
+        setDistricts(districtsRes.data);
+      }
+      setLoading(false);
+    }
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="py-20 bg-secondary/30">
+        <div className="container flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </section>
+    );
+  }
+
+  if (performers.length === 0) {
+    return null; // Don't show section if no performers
+  }
 
   return (
     <section className="py-20 bg-secondary/30">
@@ -31,13 +75,13 @@ export function TopPerformers() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {topPerformers.map((performer, index) => (
+          {performers.map((performer, index) => (
             <div 
               key={performer.id}
               className="animate-fade-in-up"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <PerformerCard performer={performer} />
+              <PerformerCard performer={performer} districts={districts} />
             </div>
           ))}
         </div>

@@ -1,14 +1,30 @@
-import { PerformerFilters, PerformerType, EventFormat } from '@/types';
-import { districts } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Slider } from '@/components/ui/slider';
 import { Calendar, MapPin, Star, Video, Trash2 } from 'lucide-react';
+import type { Database } from '@/integrations/supabase/types';
+
+type PerformerType = Database['public']['Enums']['performer_type'];
+type EventFormat = Database['public']['Enums']['event_format'];
+type District = Database['public']['Tables']['districts']['Row'];
+
+export interface Filters {
+  district?: string;
+  date?: string;
+  timeSlot?: 'morning' | 'afternoon' | 'evening';
+  priceFrom?: number;
+  priceTo?: number;
+  performerType?: PerformerType[];
+  eventFormat?: EventFormat[];
+  hasVideo?: boolean;
+  minRating?: number;
+  sortBy: 'rating' | 'price_asc' | 'price_desc' | 'reviews';
+}
 
 interface CatalogFiltersProps {
-  filters: PerformerFilters;
-  onFiltersChange: (filters: PerformerFilters) => void;
+  filters: Filters;
+  districts: District[];
+  onFiltersChange: (filters: Filters) => void;
   onClear: () => void;
 }
 
@@ -28,7 +44,7 @@ const eventFormats: { value: EventFormat; label: string }[] = [
   { value: 'outdoor', label: 'На улице' },
 ];
 
-export function CatalogFilters({ filters, onFiltersChange, onClear }: CatalogFiltersProps) {
+export function CatalogFilters({ filters, districts, onFiltersChange, onClear }: CatalogFiltersProps) {
   const handleTypeChange = (type: PerformerType, checked: boolean) => {
     const currentTypes = filters.performerType || [];
     const newTypes = checked
@@ -149,7 +165,7 @@ export function CatalogFilters({ filters, onFiltersChange, onClear }: CatalogFil
       {/* Price Range */}
       <div className="space-y-3">
         <Label className="text-sm font-semibold">
-          Цена: {filters.priceFrom || 0} - {filters.priceTo || 10000} сом
+          Цена: {filters.priceFrom || 0} - {filters.priceTo || 15000} сом
         </Label>
         <div className="flex gap-2">
           <input
@@ -228,7 +244,7 @@ export function CatalogFilters({ filters, onFiltersChange, onClear }: CatalogFil
         <Label className="text-sm font-semibold">Сортировка</Label>
         <select
           value={filters.sortBy || 'rating'}
-          onChange={(e) => onFiltersChange({ ...filters, sortBy: e.target.value as any })}
+          onChange={(e) => onFiltersChange({ ...filters, sortBy: e.target.value as Filters['sortBy'] })}
           className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
         >
           <option value="rating">По рейтингу</option>

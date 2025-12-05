@@ -1,16 +1,22 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { mockPerformers, mockReviews, districts, generateMockSlots } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Star, MapPin, Clock, Users, Video, CheckCircle, 
-  ChevronLeft, ChevronRight, Calendar, Play, MessageCircle
+  ChevronLeft, ChevronRight, Calendar, Play, MessageCircle, Loader2
 } from 'lucide-react';
-import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isBefore, parseISO } from 'date-fns';
+import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isBefore, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import type { Database } from '@/integrations/supabase/types';
+
+type PerformerProfileType = Database['public']['Tables']['performer_profiles']['Row'];
+type District = Database['public']['Tables']['districts']['Row'];
+type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'];
+type Review = Database['public']['Tables']['reviews']['Row'];
 
 const performerTypeLabels: Record<string, string> = {
   ded_moroz: 'Дед Мороз',
@@ -33,10 +39,46 @@ const PerformerProfile = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  
+  const [performer, setPerformer] = useState<PerformerProfileType | null>(null);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const performer = mockPerformers.find((p) => p.id === id);
-  const reviews = mockReviews.filter((r) => r.performerId === id);
-  const slots = useMemo(() => (performer ? generateMockSlots(performer.id) : []), [performer]);
+  useEffect(() => {
+    async function fetchData() {
+      if (!id) return;
+
+      const [performerRes, districtsRes, slotsRes, reviewsRes] = await Promise.all([
+        supabase.from('performer_profiles').select('*').eq('id', id).maybeSingle(),
+        supabase.from('districts').select('*'),
+        supabase.from('availability_slots').select('*').eq('performer_id', id).eq('status', 'free').gte('date', format(new Date(), 'yyyy-MM-dd')),
+        supabase.from('reviews').select('*').eq('performer_id', id).eq('is_visible', true).order('created_at', { ascending: false }),
+      ]);
+
+      if (performerRes.data) setPerformer(performerRes.data);
+      if (districtsRes.data) setDistricts(districtsRes.data);
+      if (slotsRes.data) setSlots(slotsRes.data);
+      if (reviewsRes.data) setReviews(reviewsRes.data);
+      
+      setLoading(false);
+    }
+
+    fetchData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!performer) {
     return (
@@ -68,7 +110,7 @@ const PerformerProfile = () => {
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   const getSlotsForDate = (dateStr: string) => {
-    return slots.filter((s) => s.date === dateStr && s.status === 'free');
+    return slots.filter((s) => s.date === dateStr);
   };
 
   const hasAvailableSlots = (dateStr: string) => {
@@ -76,6 +118,7 @@ const PerformerProfile = () => {
   };
 
   const availableSlotsForSelectedDate = selectedDate ? getSlotsForDate(selectedDate) : [];
+  const photoUrl = performer.photo_urls?.[0] || 'https://images.unsplash.com/photo-1576919228236-a097c32a5cd4?w=400&h=400&fit=crop';
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -93,7 +136,7 @@ const PerformerProfile = () => {
                 Каталог
               </Link>
               <span className="text-muted-foreground">/</span>
-              <span className="text-foreground font-medium">{performer.displayName}</span>
+              <span className="text-foreground font-medium">{performer.display_name}</span>
             </nav>
           </div>
         </div>
@@ -107,11 +150,11 @@ const PerformerProfile = () => {
                 {/* Photo */}
                 <div className="relative w-full md:w-64 aspect-square rounded-2xl overflow-hidden flex-shrink-0">
                   <img
-                    src={performer.photoUrls[0]}
-                    alt={performer.displayName}
+                    src={photoUrl}
+                    alt={performer.display_name}
                     className="w-full h-full object-cover"
                   />
-                  {performer.verificationStatus === 'verified' && (
+                  {performer.verification_status === 'verified' && (
                     <div className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
                       <CheckCircle className="h-6 w-6 text-white" />
                     </div>
@@ -121,37 +164,41 @@ const PerformerProfile = () => {
                 {/* Info */}
                 <div className="flex-1">
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {performer.type.map((type) => (
-                      <Badge key={type} variant="gold">
-                        {performerTypeLabels[type]}
+                    {(performer.performer_types as string[])?.map((type) => (
+                      <Badge key={type} variant="secondary" className="bg-accent/10 text-accent">
+                        {performerTypeLabels[type] || type}
                       </Badge>
                     ))}
-                    {performer.verificationStatus === 'verified' && (
-                      <Badge variant="success">Проверен</Badge>
+                    {performer.verification_status === 'verified' && (
+                      <Badge className="bg-green-100 text-green-700">Проверен</Badge>
                     )}
                   </div>
 
                   <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-2">
-                    {performer.displayName}
+                    {performer.display_name}
                   </h1>
 
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex items-center gap-1">
                       <Star className="h-5 w-5 fill-accent text-accent" />
-                      <span className="font-bold text-lg">{performer.ratingAverage}</span>
-                      <span className="text-muted-foreground">({performer.ratingCount} отзывов)</span>
+                      <span className="font-bold text-lg">{Number(performer.rating_average).toFixed(1)}</span>
+                      <span className="text-muted-foreground">({performer.rating_count ?? 0} отзывов)</span>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {getDistrictNames(performer.districts)}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      Опыт: {performer.experienceYears} лет
-                    </div>
+                    {performer.district_slugs.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-4 w-4" />
+                        {getDistrictNames(performer.district_slugs)}
+                      </div>
+                    )}
+                    {performer.experience_years && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        Опыт: {performer.experience_years} лет
+                      </div>
+                    )}
                     {performer.age && (
                       <div className="flex items-center gap-1">
                         <Users className="h-4 w-4" />
@@ -163,25 +210,29 @@ const PerformerProfile = () => {
               </div>
 
               {/* Description */}
-              <div className="bg-card rounded-2xl p-6 border border-border">
-                <h2 className="font-display text-xl font-semibold mb-4">О себе</h2>
-                <p className="text-muted-foreground whitespace-pre-line">{performer.description}</p>
-              </div>
+              {performer.description && (
+                <div className="bg-card rounded-2xl p-6 border border-border">
+                  <h2 className="font-display text-xl font-semibold mb-4">О себе</h2>
+                  <p className="text-muted-foreground whitespace-pre-line">{performer.description}</p>
+                </div>
+              )}
 
               {/* Formats */}
-              <div className="bg-card rounded-2xl p-6 border border-border">
-                <h2 className="font-display text-xl font-semibold mb-4">Форматы мероприятий</h2>
-                <div className="flex flex-wrap gap-2">
-                  {performer.formats.map((f) => (
-                    <Badge key={f} variant="secondary" className="text-sm py-1.5 px-3">
-                      {formatLabels[f]}
-                    </Badge>
-                  ))}
+              {(performer.formats as string[])?.length > 0 && (
+                <div className="bg-card rounded-2xl p-6 border border-border">
+                  <h2 className="font-display text-xl font-semibold mb-4">Форматы мероприятий</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {(performer.formats as string[]).map((f) => (
+                      <Badge key={f} variant="secondary" className="text-sm py-1.5 px-3">
+                        {formatLabels[f] || f}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Video */}
-              {performer.videoGreetingUrl && (
+              {performer.video_greeting_url && (
                 <div className="bg-card rounded-2xl p-6 border border-border">
                   <h2 className="font-display text-xl font-semibold mb-4 flex items-center gap-2">
                     <Video className="h-5 w-5 text-accent" />
@@ -207,9 +258,9 @@ const PerformerProfile = () => {
                       <div key={review.id} className="border-b border-border last:border-0 pb-6 last:pb-0">
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <p className="font-semibold text-foreground">{review.customerName}</p>
+                            <p className="font-semibold text-foreground">Клиент</p>
                             <p className="text-sm text-muted-foreground">
-                              {format(parseISO(review.createdAt), 'd MMMM yyyy', { locale: ru })}
+                              {format(parseISO(review.created_at), 'd MMMM yyyy', { locale: ru })}
                             </p>
                           </div>
                           <div className="flex items-center gap-1">
@@ -225,7 +276,7 @@ const PerformerProfile = () => {
                             ))}
                           </div>
                         </div>
-                        <p className="text-muted-foreground">{review.text}</p>
+                        {review.text && <p className="text-muted-foreground">{review.text}</p>}
                       </div>
                     ))}
                   </div>
@@ -245,7 +296,7 @@ const PerformerProfile = () => {
                   <div className="text-center mb-6">
                     <span className="text-sm text-muted-foreground">Стоимость от</span>
                     <div className="font-display text-4xl font-bold text-accent">
-                      {performer.basePrice.toLocaleString()} 
+                      {(performer.price_from ?? performer.base_price).toLocaleString()} 
                       <span className="text-xl font-normal text-muted-foreground"> сом</span>
                     </div>
                     <span className="text-sm text-muted-foreground">за визит 20-30 минут</span>
@@ -324,30 +375,34 @@ const PerformerProfile = () => {
                       <h3 className="font-semibold mb-3">
                         Доступное время на {format(parseISO(selectedDate), 'd MMMM', { locale: ru })}
                       </h3>
-                      <div className="grid grid-cols-2 gap-2">
-                        {availableSlotsForSelectedDate.map((slot) => (
-                          <button
-                            key={slot.id}
-                            onClick={() => setSelectedSlot(slot.id)}
-                            className={`
-                              py-2 px-3 rounded-lg text-sm font-medium transition-colors
-                              ${selectedSlot === slot.id 
-                                ? 'bg-accent text-white' 
-                                : 'bg-secondary hover:bg-secondary/80'
-                              }
-                            `}
-                          >
-                            {slot.startTime} - {slot.endTime}
-                          </button>
-                        ))}
-                      </div>
+                      {availableSlotsForSelectedDate.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {availableSlotsForSelectedDate.map((slot) => (
+                            <button
+                              key={slot.id}
+                              onClick={() => setSelectedSlot(slot.id)}
+                              className={`
+                                py-2 px-3 rounded-lg text-sm font-medium transition-colors
+                                ${selectedSlot === slot.id 
+                                  ? 'bg-accent text-white' 
+                                  : 'bg-secondary hover:bg-secondary/80'
+                                }
+                              `}
+                            >
+                              {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Нет свободных слотов</p>
+                      )}
                     </div>
                   )}
 
                   {/* Book Button */}
                   <Button 
-                    variant="hero" 
-                    size="xl" 
+                    variant="gold" 
+                    size="lg" 
                     className="w-full"
                     disabled={!selectedSlot}
                     asChild={!!selectedSlot}
