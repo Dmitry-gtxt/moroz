@@ -78,6 +78,8 @@ export default function PerformerBookings() {
   }, [user, authLoading]);
 
   const updateBookingStatus = async (bookingId: string, newStatus: BookingStatus) => {
+    const booking = bookings.find(b => b.id === bookingId);
+    
     const { error } = await supabase
       .from('bookings')
       .update({ status: newStatus })
@@ -88,6 +90,28 @@ export default function PerformerBookings() {
     } else {
       toast.success('Статус обновлён');
       setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: newStatus } : b));
+
+      // Send customer notification when booking is confirmed
+      if (newStatus === 'confirmed' && booking?.customer_email) {
+        const { data: performer } = await supabase
+          .from('performer_profiles')
+          .select('display_name')
+          .eq('id', performerId)
+          .maybeSingle();
+
+        supabase.functions.invoke('send-notification-email', {
+          body: {
+            type: 'booking_confirmed',
+            customerEmail: booking.customer_email,
+            customerName: booking.customer_name,
+            performerName: performer?.display_name || 'Исполнитель',
+            bookingDate: format(new Date(booking.booking_date), 'd MMMM yyyy', { locale: ru }),
+            bookingTime: booking.booking_time,
+            address: booking.address,
+            priceTotal: booking.price_total,
+          },
+        });
+      }
     }
   };
 
