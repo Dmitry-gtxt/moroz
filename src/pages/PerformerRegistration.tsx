@@ -54,6 +54,7 @@ export default function PerformerRegistration() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [districts, setDistricts] = useState<District[]>([]);
+  const [districtsLoading, setDistrictsLoading] = useState(true);
   
   // Form data
   const [displayName, setDisplayName] = useState('');
@@ -73,8 +74,20 @@ export default function PerformerRegistration() {
 
   useEffect(() => {
     async function fetchDistricts() {
-      const { data } = await supabase.from('districts').select('*').order('name');
-      if (data) setDistricts(data);
+      setDistrictsLoading(true);
+      try {
+        const { data, error } = await supabase.from('districts').select('*').order('name');
+        if (error) {
+          console.error('Error fetching districts:', error);
+        }
+        if (data) {
+          setDistricts(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch districts:', err);
+      } finally {
+        setDistrictsLoading(false);
+      }
     }
     fetchDistricts();
   }, []);
@@ -411,24 +424,40 @@ export default function PerformerRegistration() {
 
                 <div className="space-y-3">
                   <Label>Районы работы *</Label>
-                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg">
-                    {districts.map((district) => (
-                      <div
-                        key={district.id}
-                        className={`p-2 rounded cursor-pointer transition-colors ${
-                          selectedDistricts.includes(district.slug)
-                            ? 'bg-primary/10 text-primary'
-                            : 'hover:bg-muted'
-                        }`}
-                        onClick={() => toggleDistrict(district.slug)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Checkbox checked={selectedDistricts.includes(district.slug)} />
-                          <span className="text-sm">{district.name}</span>
+                  {districtsLoading ? (
+                    <div className="flex items-center justify-center p-4 border rounded-lg">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      <span className="ml-2 text-sm text-muted-foreground">Загрузка районов...</span>
+                    </div>
+                  ) : districts.length === 0 ? (
+                    <div className="p-4 border rounded-lg text-center text-muted-foreground">
+                      Районы не найдены
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 p-2 border rounded-lg">
+                      {districts.map((district) => (
+                        <div
+                          key={district.id}
+                          className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                            selectedDistricts.includes(district.slug)
+                              ? 'bg-primary/10 text-primary border border-primary'
+                              : 'hover:bg-muted border border-transparent'
+                          }`}
+                          onClick={() => toggleDistrict(district.slug)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Checkbox checked={selectedDistricts.includes(district.slug)} />
+                            <span className="text-sm font-medium">{district.name}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
+                  {selectedDistricts.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Выбрано: {selectedDistricts.length} район(ов)
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
