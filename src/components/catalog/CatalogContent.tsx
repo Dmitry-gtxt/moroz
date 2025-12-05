@@ -144,12 +144,27 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
       result = result.filter((p) => p.video_greeting_url);
     }
 
-    if (filters.date && filters.timeSlots && filters.timeSlots.length > 0) {
+    // Filter by date - show only performers with availability on that date
+    if (filters.date) {
+      const hasTimeFilter = filters.timeSlots && filters.timeSlots.length > 0;
+      
       result = result.filter((p) => {
         const performerSlots = availability[p.id] || [];
-        return filters.timeSlots!.some(selectedTime => 
-          performerSlots.some(slot => slot.start_time.startsWith(selectedTime.slice(0, 5)))
-        );
+        
+        // If no slots for this performer on selected date, exclude them
+        if (performerSlots.length === 0) {
+          return false;
+        }
+        
+        // If time slots are also selected, filter by those specific times
+        if (hasTimeFilter) {
+          return filters.timeSlots!.some(selectedTime => 
+            performerSlots.some(slot => slot.start_time.startsWith(selectedTime.slice(0, 5)))
+          );
+        }
+        
+        // Date only - performer has at least one slot on this date
+        return true;
       });
     }
 
