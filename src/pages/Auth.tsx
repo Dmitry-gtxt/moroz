@@ -13,11 +13,11 @@ type AuthMode = 'login' | 'register' | 'forgot-password';
 
 const Auth = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/';
-  const initialMode = (searchParams.get('mode') as AuthMode) || 'login';
+  const modeFromUrl = (searchParams.get('mode') as AuthMode) || 'login';
   
-  const [mode, setMode] = useState<AuthMode>(initialMode);
+  const [mode, setModeState] = useState<AuthMode>(modeFromUrl);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -25,6 +25,16 @@ const Auth = () => {
     fullName: '',
     phone: '',
   });
+
+  // Sync mode with URL changes
+  useEffect(() => {
+    setModeState(modeFromUrl);
+  }, [modeFromUrl]);
+
+  // Update URL when mode changes internally
+  const setMode = (newMode: AuthMode) => {
+    setSearchParams({ mode: newMode }, { replace: true });
+  };
 
   useEffect(() => {
     const checkSession = async () => {
