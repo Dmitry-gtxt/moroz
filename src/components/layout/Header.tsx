@@ -1,10 +1,25 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Snowflake, User, LogIn } from 'lucide-react';
+import { Menu, X, Snowflake, User, LogIn, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, signOut, loading } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -44,17 +59,47 @@ export function Header() {
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/login">
-              <LogIn className="h-4 w-4 mr-1" />
-              Войти
-            </Link>
-          </Button>
-          <Button variant="gold" size="sm" asChild>
-            <Link to="/register">
-              Регистрация
-            </Link>
-          </Button>
+          {!loading && (
+            <>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <User className="h-4 w-4" />
+                      {user.user_metadata?.full_name || 'Аккаунт'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard">Мои заказы</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile">Профиль</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Выйти
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link to="/auth">
+                      <LogIn className="h-4 w-4 mr-1" />
+                      Войти
+                    </Link>
+                  </Button>
+                  <Button variant="gold" size="sm" asChild>
+                    <Link to="/auth">
+                      Регистрация
+                    </Link>
+                  </Button>
+                </>
+              )}
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -92,14 +137,35 @@ export function Header() {
               Исполнителям
             </Link>
             <div className="border-t border-border my-2" />
-            <div className="flex gap-2 px-4">
-              <Button variant="outline" size="sm" className="flex-1" asChild>
-                <Link to="/login">Войти</Link>
-              </Button>
-              <Button variant="gold" size="sm" className="flex-1" asChild>
-                <Link to="/register">Регистрация</Link>
-              </Button>
-            </div>
+            {user ? (
+              <>
+                <Link 
+                  to="/dashboard" 
+                  className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Мои заказы
+                </Link>
+                <button
+                  onClick={() => {
+                    handleSignOut();
+                    setIsMenuOpen(false);
+                  }}
+                  className="px-4 py-2 rounded-lg hover:bg-destructive/10 text-destructive text-left transition-colors"
+                >
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <div className="flex gap-2 px-4">
+                <Button variant="outline" size="sm" className="flex-1" asChild>
+                  <Link to="/auth" onClick={() => setIsMenuOpen(false)}>Войти</Link>
+                </Button>
+                <Button variant="gold" size="sm" className="flex-1" asChild>
+                  <Link to="/auth" onClick={() => setIsMenuOpen(false)}>Регистрация</Link>
+                </Button>
+              </div>
+            )}
           </nav>
         </div>
       )}
