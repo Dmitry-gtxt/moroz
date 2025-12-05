@@ -23,10 +23,10 @@ const Catalog = () => {
   const [districts, setDistricts] = useState<District[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const initialFilters: Filters = {
+const initialFilters: Filters = {
     district: searchParams.get('district') || undefined,
     date: searchParams.get('date') || undefined,
-    timeSlot: (searchParams.get('time') as 'morning' | 'afternoon' | 'evening') || undefined,
+    timeSlot: searchParams.get('time') || undefined,
     sortBy: 'rating',
   };
 
