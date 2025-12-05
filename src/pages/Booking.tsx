@@ -6,13 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { mockPerformers, districts } from '@/data/mockData';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { sendBookingNotification } from '@/lib/notifications';
 import { toast } from 'sonner';
 import { 
   Calendar, Clock, MapPin, Users, CreditCard, 
-  CheckCircle, ArrowLeft, ShieldCheck, LogIn
+  CheckCircle, ArrowLeft, ShieldCheck, LogIn, Loader2
 } from 'lucide-react';
+import type { Database } from '@/integrations/supabase/types';
+
+type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
+type District = Database['public']['Tables']['districts']['Row'];
+type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'];
 
 const eventTypeLabels: Record<string, string> = {
   home: 'На дом',
@@ -29,7 +35,11 @@ const Booking = () => {
   const { user, loading: authLoading } = useAuth();
   const slotId = searchParams.get('slot');
 
-  const performer = mockPerformers.find((p) => p.id === performerId);
+  const [performer, setPerformer] = useState<PerformerProfile | null>(null);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [slot, setSlot] = useState<AvailabilitySlot | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -44,6 +54,34 @@ const Booking = () => {
     customerEmail: '',
   });
 
+  useEffect(() => {
+    async function fetchData() {
+      if (!performerId) return;
+
+      const [performerRes, districtsRes] = await Promise.all([
+        supabase.from('performer_profiles').select('*').eq('id', performerId).maybeSingle(),
+        supabase.from('districts').select('*'),
+      ]);
+
+      if (performerRes.data) setPerformer(performerRes.data);
+      if (districtsRes.data) setDistricts(districtsRes.data);
+
+      // Fetch slot if provided
+      if (slotId) {
+        const { data: slotData } = await supabase
+          .from('availability_slots')
+          .select('*')
+          .eq('id', slotId)
+          .maybeSingle();
+        if (slotData) setSlot(slotData);
+      }
+
+      setLoading(false);
+    }
+
+    fetchData();
+  }, [performerId, slotId]);
+
   // Pre-fill form with user data when logged in
   useEffect(() => {
     if (user) {
@@ -55,6 +93,18 @@ const Booking = () => {
       }));
     }
   }, [user]);
+
+  if (loading || authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!performer) {
     return (
@@ -73,38 +123,91 @@ const Booking = () => {
     );
   }
 
-  // Parse slot info (mock data)
-  const slotDate = slotId?.split('-').slice(1, 4).join('-') || '2024-12-25';
-  const slotTime = slotId?.includes('morning') ? '10:00-12:00' : 
-                   slotId?.includes('afternoon') ? '14:00-16:00' : '18:00-20:00';
+  const slotDate = slot?.date || new Date().toISOString().split('T')[0];
+  const slotTime = slot ? `${slot.start_time.slice(0, 5)}-${slot.end_time.slice(0, 5)}` : '10:00-12:00';
 
-  const prepaymentAmount = Math.round(performer.basePrice * 0.3);
-  const totalAmount = performer.basePrice;
+  const prepaymentAmount = Math.round((performer.price_from ?? performer.base_price) * 0.3);
+  const totalAmount = performer.price_from ?? performer.base_price;
+  const photoUrl = performer.photo_urls?.[0] || '/placeholder.svg';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (step === 1) {
-      // Validate step 1
       if (!formData.address || !formData.district || !formData.childrenCount) {
         toast.error('Пожалуйста, заполните все обязательные поля');
         return;
       }
       setStep(2);
     } else if (step === 2) {
-      // Validate step 2
       if (!formData.customerName || !formData.customerPhone) {
         toast.error('Пожалуйста, заполните контактные данные');
         return;
       }
       setStep(3);
     } else if (step === 3) {
-      // Mock payment
-      toast.success('Бронирование успешно создано!');
-      setStep(4);
+      if (!user) {
+        toast.error('Необходимо войти в аккаунт');
+        return;
+      }
+
+      setSubmitting(true);
+      try {
+        // Create booking
+        const { data: booking, error } = await supabase.from('bookings').insert({
+          customer_id: user.id,
+          performer_id: performer.id,
+          slot_id: slot?.id || null,
+          booking_date: slotDate,
+          booking_time: slotTime,
+          event_type: formData.eventType as Database['public']['Enums']['event_format'],
+          address: formData.address,
+          district_slug: formData.district,
+          children_info: `${formData.childrenCount} детей${formData.childrenAges ? `, возраст: ${formData.childrenAges}` : ''}`,
+          comment: formData.comment || null,
+          customer_name: formData.customerName,
+          customer_phone: formData.customerPhone,
+          customer_email: formData.customerEmail || null,
+          price_total: totalAmount,
+          prepayment_amount: prepaymentAmount,
+          status: 'pending',
+          payment_status: 'prepayment_paid',
+        }).select().single();
+
+        if (error) throw error;
+
+        // Update slot status if slot was selected
+        if (slot?.id) {
+          await supabase
+            .from('availability_slots')
+            .update({ status: 'booked' })
+            .eq('id', slot.id);
+        }
+
+        // Send email notification (non-blocking)
+        sendBookingNotification({
+          bookingId: booking.id,
+          performerId: performer.id,
+          customerName: formData.customerName,
+          customerPhone: formData.customerPhone,
+          bookingDate: slotDate,
+          bookingTime: slotTime,
+          address: formData.address,
+          eventType: formData.eventType,
+          priceTotal: totalAmount,
+        });
+
+        toast.success('Бронирование успешно создано!');
+        setStep(4);
+      } catch (error: any) {
+        console.error('Booking error:', error);
+        toast.error(error.message || 'Ошибка при создании бронирования');
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -381,13 +484,17 @@ const Booking = () => {
                     </div>
 
                     <div className="flex gap-4">
-                      <Button variant="outline" onClick={() => setStep(2)}>
+                      <Button variant="outline" onClick={() => setStep(2)} disabled={submitting}>
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Назад
                       </Button>
-                      <Button variant="hero" className="flex-1" onClick={handleSubmit}>
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Оплатить {prepaymentAmount.toLocaleString()} сом
+                      <Button variant="hero" className="flex-1" onClick={handleSubmit} disabled={submitting}>
+                        {submitting ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <CreditCard className="h-4 w-4 mr-2" />
+                        )}
+                        {submitting ? 'Обработка...' : `Оплатить ${prepaymentAmount.toLocaleString()} сом`}
                       </Button>
                     </div>
                   </div>
@@ -409,7 +516,7 @@ const Booking = () => {
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Исполнитель:</span>
-                          <span>{performer.displayName}</span>
+                          <span>{performer.display_name}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Дата:</span>
@@ -437,8 +544,8 @@ const Booking = () => {
                         </Link>
                       </Button>
                       <Button variant="gold" className="flex-1" asChild>
-                        <Link to="/">
-                          На главную
+                        <Link to="/my-bookings">
+                          Мои заказы
                         </Link>
                       </Button>
                     </div>
@@ -453,14 +560,14 @@ const Booking = () => {
                   
                   <div className="flex gap-4 mb-4 pb-4 border-b border-border">
                     <img
-                      src={performer.photoUrls[0]}
-                      alt={performer.displayName}
+                      src={photoUrl}
+                      alt={performer.display_name}
                       className="w-16 h-16 rounded-xl object-cover"
                     />
                     <div>
-                      <p className="font-semibold text-sm">{performer.displayName}</p>
+                      <p className="font-semibold text-sm">{performer.display_name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {performer.type.map(t => t === 'ded_moroz' ? 'Дед Мороз' : t === 'snegurochka' ? 'Снегурочка' : t === 'santa' ? 'Санта' : 'Дуэт').join(', ')}
+                        {(performer.performer_types as string[]).map(t => t === 'ded_moroz' ? 'Дед Мороз' : t === 'snegurochka' ? 'Снегурочка' : t === 'santa' ? 'Санта' : 'Дуэт').join(', ')}
                       </p>
                     </div>
                   </div>
