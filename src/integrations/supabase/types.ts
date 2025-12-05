@@ -50,6 +50,13 @@ export type Database = {
             referencedRelation: "performer_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "availability_slots_performer_id_fkey"
+            columns: ["performer_id"]
+            isOneToOne: false
+            referencedRelation: "public_performers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       bookings: {
@@ -131,6 +138,13 @@ export type Database = {
             columns: ["performer_id"]
             isOneToOne: false
             referencedRelation: "performer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_performer_id_fkey"
+            columns: ["performer_id"]
+            isOneToOne: false
+            referencedRelation: "public_performers"
             referencedColumns: ["id"]
           },
           {
@@ -352,6 +366,13 @@ export type Database = {
             referencedRelation: "performer_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reviews_performer_id_fkey"
+            columns: ["performer_id"]
+            isOneToOne: false
+            referencedRelation: "public_performers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_roles: {
@@ -414,11 +435,150 @@ export type Database = {
             referencedRelation: "performer_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "verification_documents_performer_id_fkey"
+            columns: ["performer_id"]
+            isOneToOne: false
+            referencedRelation: "public_performers"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      public_performers: {
+        Row: {
+          age: number | null
+          base_price: number | null
+          costume_style: string | null
+          created_at: string | null
+          description: string | null
+          display_name: string | null
+          district_slugs: string[] | null
+          experience_years: number | null
+          formats: Database["public"]["Enums"]["event_format"][] | null
+          id: string | null
+          is_active: boolean | null
+          performer_types:
+            | Database["public"]["Enums"]["performer_type"][]
+            | null
+          photo_urls: string[] | null
+          price_from: number | null
+          price_to: number | null
+          rating_average: number | null
+          rating_count: number | null
+          updated_at: string | null
+          user_id: string | null
+          verification_status:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+          video_greeting_url: string | null
+        }
+        Insert: {
+          age?: number | null
+          base_price?: number | null
+          costume_style?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name?: string | null
+          district_slugs?: string[] | null
+          experience_years?: number | null
+          formats?: Database["public"]["Enums"]["event_format"][] | null
+          id?: string | null
+          is_active?: boolean | null
+          performer_types?:
+            | Database["public"]["Enums"]["performer_type"][]
+            | null
+          photo_urls?: string[] | null
+          price_from?: number | null
+          price_to?: number | null
+          rating_average?: number | null
+          rating_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          verification_status?:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+          video_greeting_url?: string | null
+        }
+        Update: {
+          age?: number | null
+          base_price?: number | null
+          costume_style?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name?: string | null
+          district_slugs?: string[] | null
+          experience_years?: number | null
+          formats?: Database["public"]["Enums"]["event_format"][] | null
+          id?: string | null
+          is_active?: boolean | null
+          performer_types?:
+            | Database["public"]["Enums"]["performer_type"][]
+            | null
+          photo_urls?: string[] | null
+          price_from?: number | null
+          price_to?: number | null
+          rating_average?: number | null
+          rating_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          verification_status?:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+          video_greeting_url?: string | null
+        }
+        Relationships: []
+      }
+      public_reviews: {
+        Row: {
+          booking_id: string | null
+          created_at: string | null
+          id: string | null
+          performer_id: string | null
+          rating: number | null
+          text: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          performer_id?: string | null
+          rating?: number | null
+          text?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          performer_id?: string | null
+          rating?: number | null
+          text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_performer_id_fkey"
+            columns: ["performer_id"]
+            isOneToOne: false
+            referencedRelation: "performer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_performer_id_fkey"
+            columns: ["performer_id"]
+            isOneToOne: false
+            referencedRelation: "public_performers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
