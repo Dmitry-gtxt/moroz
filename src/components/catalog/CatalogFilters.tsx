@@ -113,7 +113,7 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
           className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
         >
           <option value="">Любое время</option>
-          {Array.from({ length: 14 }, (_, i) => i + 8).map((hour) => (
+          {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
             <option key={hour} value={`${hour.toString().padStart(2, '0')}:00`}>
               {hour.toString().padStart(2, '0')}:00
             </option>
