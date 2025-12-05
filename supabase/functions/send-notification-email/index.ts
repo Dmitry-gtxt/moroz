@@ -33,6 +33,16 @@ interface BookingConfirmedRequest {
   priceTotal: number;
 }
 
+interface BookingRejectedRequest {
+  type: "booking_rejected";
+  customerEmail: string;
+  customerName: string;
+  performerName: string;
+  bookingDate: string;
+  bookingTime: string;
+  rejectionReason: string;
+}
+
 interface ReviewNotificationRequest {
   type: "new_review";
   performerEmail: string;
@@ -54,7 +64,7 @@ interface BookingCancelledRequest {
   cancelledBy: "customer" | "performer";
 }
 
-type NotificationRequest = BookingNotificationRequest | BookingConfirmedRequest | ReviewNotificationRequest | BookingCancelledRequest;
+type NotificationRequest = BookingNotificationRequest | BookingConfirmedRequest | BookingRejectedRequest | ReviewNotificationRequest | BookingCancelledRequest;
 
 const eventTypeLabels: Record<string, string> = {
   home: "На дом",
@@ -98,14 +108,19 @@ const handler = async (req: Request): Promise<Response> => {
         body: JSON.stringify({
           from: "ДедМороз.kg <onboarding@resend.dev>",
           to: [performerEmail],
-          subject: "🎄 Новое бронирование!",
+          subject: "🎄 Новая заявка на бронирование!",
           html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h1 style="color: #c41e3a; margin-bottom: 24px;">🎅 Новый заказ!</h1>
+              <h1 style="color: #c41e3a; margin-bottom: 24px;">🎅 Новая заявка!</h1>
               <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${performerName}</strong>!</p>
-              <p style="font-size: 16px; color: #333;">У вас новое бронирование на платформе ДедМороз.kg</p>
+              <p style="font-size: 16px; color: #333;">У вас новая заявка на бронирование на платформе ДедМороз.kg</p>
+              
+              <div style="background: #fff3e0; border-radius: 12px; padding: 16px; margin: 16px 0;">
+                <p style="margin: 0; color: #e65100;">⚠️ <strong>Важно:</strong> Подтвердите или отклоните заявку в личном кабинете. До подтверждения время остаётся доступным для других клиентов.</p>
+              </div>
+              
               <div style="background: #f9f9f9; border-radius: 12px; padding: 20px; margin: 24px 0;">
-                <h3 style="margin-top: 0; color: #333;">📋 Детали заказа:</h3>
+                <h3 style="margin-top: 0; color: #333;">📋 Детали заявки:</h3>
                 <p><strong>Дата:</strong> ${bookingDate}</p>
                 <p><strong>Время:</strong> ${bookingTime}</p>
                 <p><strong>Тип:</strong> ${eventTypeLabels[eventType] || eventType}</p>
@@ -117,7 +132,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <p><strong>Имя:</strong> ${customerName}</p>
                 <p><strong>Телефон:</strong> <a href="tel:${customerPhone}" style="color: #c41e3a;">${customerPhone}</a></p>
               </div>
-              <p style="font-size: 14px; color: #666;">Подтвердите заказ в личном кабинете.</p>
+              <p style="font-size: 14px; color: #666;">Подтвердите или отклоните заявку в личном кабинете.</p>
             </div>
           `,
         }),
@@ -154,12 +169,12 @@ const handler = async (req: Request): Promise<Response> => {
         body: JSON.stringify({
           from: "ДедМороз.kg <onboarding@resend.dev>",
           to: [customerEmail],
-          subject: "✅ Ваш заказ подтверждён!",
+          subject: "✅ Ваша заявка подтверждена!",
           html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h1 style="color: #2e7d32; margin-bottom: 24px;">✅ Заказ подтверждён!</h1>
+              <h1 style="color: #2e7d32; margin-bottom: 24px;">✅ Заявка подтверждена!</h1>
               <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${customerName}</strong>!</p>
-              <p style="font-size: 16px; color: #333;">Отличные новости! Исполнитель <strong>${performerName}</strong> подтвердил ваш заказ.</p>
+              <p style="font-size: 16px; color: #333;">Отличные новости! Исполнитель <strong>${performerName}</strong> подтвердил вашу заявку. Время забронировано!</p>
               
               <div style="background: #e8f5e9; border-radius: 12px; padding: 20px; margin: 24px 0;">
                 <h3 style="margin-top: 0; color: #333;">🎄 Детали визита:</h3>
@@ -188,6 +203,65 @@ const handler = async (req: Request): Promise<Response> => {
 
       const data = await res.json();
       console.log("Customer confirmation email response:", data);
+
+      return new Response(JSON.stringify({ success: true, data }), {
+        status: res.ok ? 200 : 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    if (payload.type === "booking_rejected") {
+      const { customerEmail, customerName, performerName, bookingDate, bookingTime, rejectionReason } = payload as BookingRejectedRequest;
+
+      if (!customerEmail) {
+        console.log("No customer email provided, skipping notification");
+        return new Response(JSON.stringify({ success: true, skipped: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      console.log("Sending rejection notice to customer:", customerEmail);
+
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: "ДедМороз.kg <onboarding@resend.dev>",
+          to: [customerEmail],
+          subject: "😔 Заявка отклонена",
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h1 style="color: #d32f2f; margin-bottom: 24px;">😔 Заявка отклонена</h1>
+              <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${customerName}</strong>!</p>
+              <p style="font-size: 16px; color: #333;">К сожалению, исполнитель <strong>${performerName}</strong> не смог принять вашу заявку.</p>
+              
+              <div style="background: #ffebee; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                <h3 style="margin-top: 0; color: #333;">📋 Детали заявки:</h3>
+                <p><strong>📅 Дата:</strong> ${bookingDate}</p>
+                <p><strong>⏰ Время:</strong> ${bookingTime}</p>
+              </div>
+              
+              <div style="background: #fff3e0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                <h3 style="margin-top: 0; color: #333;">💬 Причина:</h3>
+                <p style="color: #555;">${rejectionReason}</p>
+              </div>
+              
+              <p style="font-size: 14px; color: #666;">Не расстраивайтесь! Вы можете выбрать другого исполнителя в нашем каталоге. Предоплата будет возвращена.</p>
+              
+              <div style="text-align: center; margin-top: 24px;">
+                <a href="https://dedmoroz.kg/catalog" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">🎅 Найти другого исполнителя</a>
+              </div>
+            </div>
+          `,
+        }),
+      });
+
+      const data = await res.json();
+      console.log("Rejection email response:", data);
 
       return new Response(JSON.stringify({ success: true, data }), {
         status: res.ok ? 200 : 500,

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Star, MapPin, Video, CheckCircle } from 'lucide-react';
+import { Star, MapPin, Video, CheckCircle, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { Database } from '@/integrations/supabase/types';
@@ -10,6 +10,7 @@ type District = Database['public']['Tables']['districts']['Row'];
 interface PerformerCardProps {
   performer: PerformerProfile;
   districts: District[];
+  pendingRequestsCount?: number; // Number of pending booking requests
 }
 
 const performerTypeLabels: Record<string, string> = {
@@ -19,7 +20,7 @@ const performerTypeLabels: Record<string, string> = {
   duo: 'Дуэт',
 };
 
-export function PerformerCard({ performer, districts }: PerformerCardProps) {
+export function PerformerCard({ performer, districts, pendingRequestsCount = 0 }: PerformerCardProps) {
   const getDistrictNames = (slugs: string[]) => {
     return slugs
       .map((slug) => districts.find((d) => d.slug === slug)?.name)
@@ -70,6 +71,16 @@ export function PerformerCard({ performer, districts }: PerformerCardProps) {
             <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
               <CheckCircle className="h-5 w-5 text-white" />
             </div>
+          </div>
+        )}
+
+        {/* Pending requests indicator */}
+        {pendingRequestsCount > 0 && (
+          <div className="absolute bottom-3 left-3">
+            <Badge variant="secondary" className="bg-amber-500/90 text-white border-0">
+              <Clock className="h-3 w-3 mr-1" />
+              {pendingRequestsCount} {pendingRequestsCount === 1 ? 'запрос' : pendingRequestsCount < 5 ? 'запроса' : 'запросов'}
+            </Badge>
           </div>
         )}
       </div>

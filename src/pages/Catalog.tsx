@@ -16,11 +16,15 @@ type District = Database['public']['Tables']['districts']['Row'];
 type PerformerType = Database['public']['Enums']['performer_type'];
 type EventFormat = Database['public']['Enums']['event_format'];
 
+// Map of performer_id -> count of pending booking requests
+type PendingRequestsMap = Record<string, number>;
+
 const Catalog = () => {
   const [searchParams] = useSearchParams();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [performers, setPerformers] = useState<PerformerProfile[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<PendingRequestsMap>({});
   const [loading, setLoading] = useState(true);
   
 const initialFilters: Filters = {
@@ -36,7 +40,7 @@ const initialFilters: Filters = {
     async function fetchData() {
       setLoading(true);
       
-      const [performersRes, districtsRes] = await Promise.all([
+      const [performersRes, districtsRes, pendingBookingsRes] = await Promise.all([
         supabase
           .from('performer_profiles')
           .select('*')
@@ -46,6 +50,12 @@ const initialFilters: Filters = {
           .from('districts')
           .select('*')
           .order('name'),
+        // Fetch pending bookings count per performer
+        supabase
+          .from('bookings')
+          .select('performer_id')
+          .eq('status', 'pending')
+          .gte('booking_date', new Date().toISOString().split('T')[0]),
       ]);
 
       if (performersRes.data) {
@@ -53,6 +63,15 @@ const initialFilters: Filters = {
       }
       if (districtsRes.data) {
         setDistricts(districtsRes.data);
+      }
+      
+      // Count pending requests per performer
+      if (pendingBookingsRes.data) {
+        const counts: PendingRequestsMap = {};
+        pendingBookingsRes.data.forEach((booking) => {
+          counts[booking.performer_id] = (counts[booking.performer_id] || 0) + 1;
+        });
+        setPendingRequests(counts);
       }
       
       setLoading(false);
@@ -263,7 +282,11 @@ const initialFilters: Filters = {
                       className="animate-fade-in"
                       style={{ animationDelay: `${index * 0.05}s` }}
                     >
-                      <PerformerCard performer={performer} districts={districts} />
+                      <PerformerCard 
+                        performer={performer} 
+                        districts={districts}
+                        pendingRequestsCount={pendingRequests[performer.id] || 0}
+                      />
                     </div>
                   ))}
                 </div>

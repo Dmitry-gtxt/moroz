@@ -20,6 +20,7 @@ interface CancelBookingDialogProps {
   customerName?: string;
   performerName?: string;
   role: 'customer' | 'performer';
+  isRejection?: boolean; // true when rejecting a pending booking (vs canceling confirmed)
 }
 
 export function CancelBookingDialog({
@@ -30,6 +31,7 @@ export function CancelBookingDialog({
   customerName,
   performerName,
   role,
+  isRejection = false,
 }: CancelBookingDialogProps) {
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,52 +51,68 @@ export function CancelBookingDialog({
 
   const targetName = role === 'customer' ? performerName : customerName;
 
+  const title = isRejection ? 'Отклонение заявки' : 'Отмена бронирования';
+  const actionWord = isRejection ? 'отклонить' : 'отменить';
+  const confirmButtonText = isRejection ? 'Отклонить заявку' : 'Подтвердить отмену';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <AlertTriangle className="h-5 w-5" />
-            Отмена бронирования
+            {title}
           </DialogTitle>
           <DialogDescription>
-            Вы собираетесь отменить заказ на {bookingDate}
-            {targetName && ` ${role === 'customer' ? 'у исполнителя' : 'от клиента'} ${targetName}`}.
+            Вы собираетесь {actionWord} заявку на {bookingDate}
+            {targetName && ` от клиента ${targetName}`}.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <div className="p-4 bg-destructive/10 rounded-lg text-sm text-destructive">
-            <p className="font-medium mb-1">Внимание!</p>
-            <p>
-              {role === 'customer' 
-                ? 'При отмене менее чем за 24 часа предоплата может быть удержана.'
-                : 'Частые отмены могут негативно повлиять на ваш рейтинг.'}
-            </p>
-          </div>
+          {!isRejection && (
+            <div className="p-4 bg-destructive/10 rounded-lg text-sm text-destructive">
+              <p className="font-medium mb-1">Внимание!</p>
+              <p>
+                {role === 'customer' 
+                  ? 'При отмене менее чем за 24 часа предоплата может быть удержана.'
+                  : 'Частые отмены могут негативно повлиять на ваш рейтинг.'}
+              </p>
+            </div>
+          )}
+
+          {isRejection && (
+            <div className="p-4 bg-muted rounded-lg text-sm">
+              <p className="text-muted-foreground">
+                Время останется свободным для других клиентов. Клиенту будет отправлено уведомление.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
-            <Label htmlFor="reason">Причина отмены *</Label>
+            <Label htmlFor="reason">Причина {isRejection ? 'отклонения' : 'отмены'} *</Label>
             <Textarea
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder={
-                role === 'customer'
-                  ? 'Например: изменились планы, ребёнок заболел...'
-                  : 'Например: болезнь, форс-мажор, конфликт расписания...'
+                isRejection
+                  ? 'Например: не работаю в этом районе, уже занят в это время...'
+                  : role === 'customer'
+                    ? 'Например: изменились планы, ребёнок заболел...'
+                    : 'Например: болезнь, форс-мажор, конфликт расписания...'
               }
               rows={3}
             />
             <p className="text-xs text-muted-foreground">
-              Причина будет отправлена {role === 'customer' ? 'исполнителю' : 'клиенту'} по email
+              Причина будет отправлена клиенту по email
             </p>
           </div>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            Не отменять
+            Отмена
           </Button>
           <Button 
             variant="destructive" 
@@ -102,7 +120,7 @@ export function CancelBookingDialog({
             disabled={!reason.trim() || loading}
           >
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Подтвердить отмену
+            {confirmButtonText}
           </Button>
         </DialogFooter>
       </DialogContent>
