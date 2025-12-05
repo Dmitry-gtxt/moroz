@@ -180,13 +180,9 @@ const Booking = () => {
 
         if (error) throw error;
 
-        // Update slot status if slot was selected
-        if (slot?.id) {
-          await supabase
-            .from('availability_slots')
-            .update({ status: 'booked' })
-            .eq('id', slot.id);
-        }
+        // NOTE: We do NOT mark the slot as booked yet!
+        // The slot will be marked as booked only when the performer CONFIRMS the booking.
+        // This allows other customers to see that the slot has pending requests.
 
         // Send email notification (non-blocking)
         sendBookingNotification({

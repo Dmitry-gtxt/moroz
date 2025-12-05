@@ -41,9 +41,10 @@ export default function PerformerBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
-  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; booking: Booking | null }>({
+  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; booking: Booking | null; action: 'reject' | 'cancel' }>({
     open: false,
     booking: null,
+    action: 'cancel',
   });
 
   useEffect(() => {
@@ -106,6 +107,14 @@ export default function PerformerBookings() {
           .eq('id', booking.slot_id);
       }
 
+      // Mark the slot as booked when confirming
+      if (newStatus === 'confirmed' && booking?.slot_id) {
+        await supabase
+          .from('availability_slots')
+          .update({ status: 'booked' })
+          .eq('id', booking.slot_id);
+      }
+
       // Send customer notification when booking is confirmed
       if (newStatus === 'confirmed' && booking?.customer_email) {
         supabase.functions.invoke('send-notification-email', {
@@ -122,6 +131,45 @@ export default function PerformerBookings() {
         });
       }
     }
+  };
+
+  const rejectBooking = async (bookingId: string, reason: string) => {
+    const booking = bookings.find(b => b.id === bookingId);
+    if (!booking) return;
+
+    const { error } = await supabase
+      .from('bookings')
+      .update({ 
+        status: 'cancelled',
+        cancellation_reason: reason,
+        cancelled_by: 'performer',
+      })
+      .eq('id', bookingId);
+
+    if (error) {
+      toast.error('Ошибка отклонения заявки');
+      throw error;
+    }
+
+    // Note: slot was never marked as booked for pending requests, so no need to free it
+
+    // Send email notification about rejection
+    if (booking.customer_email) {
+      supabase.functions.invoke('send-notification-email', {
+        body: {
+          type: 'booking_rejected',
+          customerEmail: booking.customer_email,
+          customerName: booking.customer_name,
+          performerName: performerName,
+          bookingDate: format(new Date(booking.booking_date), 'd MMMM yyyy', { locale: ru }),
+          bookingTime: booking.booking_time,
+          rejectionReason: reason,
+        },
+      });
+    }
+
+    toast.success('Заявка отклонена');
+    setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'cancelled', cancellation_reason: reason, cancelled_by: 'performer' } : b));
   };
 
   const cancelBooking = async (bookingId: string, reason: string) => {
@@ -142,8 +190,8 @@ export default function PerformerBookings() {
       throw error;
     }
 
-    // Free up the slot
-    if (booking.slot_id) {
+    // Free up the slot only for confirmed bookings
+    if (booking.slot_id && booking.status === 'confirmed') {
       await supabase
         .from('availability_slots')
         .update({ status: 'free' })
@@ -167,7 +215,7 @@ export default function PerformerBookings() {
     }
 
     toast.success('Заказ отменён');
-    setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'cancelled' } : b));
+    setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'cancelled', cancellation_reason: reason, cancelled_by: 'performer' } : b));
   };
 
   const filteredBookings = bookings.filter(b => {
@@ -290,7 +338,7 @@ export default function PerformerBookings() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setCancelDialog({ open: true, booking })}
+                                onClick={() => setCancelDialog({ open: true, booking, action: 'reject' })}
                               >
                                 <X className="h-4 w-4 mr-1" />
                                 Отклонить
@@ -310,7 +358,7 @@ export default function PerformerBookings() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setCancelDialog({ open: true, booking })}
+                                onClick={() => setCancelDialog({ open: true, booking, action: 'cancel' })}
                               >
                                 <X className="h-4 w-4 mr-1" />
                                 Отменить
@@ -338,10 +386,15 @@ export default function PerformerBookings() {
           <CancelBookingDialog
             open={cancelDialog.open}
             onOpenChange={(open) => setCancelDialog({ ...cancelDialog, open })}
-            onConfirm={(reason) => cancelBooking(cancelDialog.booking!.id, reason)}
+            onConfirm={(reason) => 
+              cancelDialog.action === 'reject' 
+                ? rejectBooking(cancelDialog.booking!.id, reason)
+                : cancelBooking(cancelDialog.booking!.id, reason)
+            }
             bookingDate={format(new Date(cancelDialog.booking.booking_date), 'd MMMM yyyy', { locale: ru })}
             customerName={cancelDialog.booking.customer_name}
             role="performer"
+            isRejection={cancelDialog.action === 'reject'}
           />
         )}
       </div>
