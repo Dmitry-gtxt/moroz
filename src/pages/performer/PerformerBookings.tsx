@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CancelBookingDialog } from '@/components/bookings/CancelBookingDialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -36,9 +37,14 @@ const eventTypeLabels: Record<string, string> = {
 export default function PerformerBookings() {
   const { user, loading: authLoading } = useAuth();
   const [performerId, setPerformerId] = useState<string | null>(null);
+  const [performerName, setPerformerName] = useState<string>('');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
+  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; booking: Booking | null }>({
+    open: false,
+    booking: null,
+  });
 
   useEffect(() => {
     async function fetchData() {
@@ -46,7 +52,7 @@ export default function PerformerBookings() {
 
       const { data: profile } = await supabase
         .from('performer_profiles')
-        .select('id')
+        .select('id, display_name')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -56,6 +62,7 @@ export default function PerformerBookings() {
       }
 
       setPerformerId(profile.id);
+      setPerformerName(profile.display_name);
 
       const { data: bookingsData, error } = await supabase
         .from('bookings')
@@ -91,20 +98,22 @@ export default function PerformerBookings() {
       toast.success('Статус обновлён');
       setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: newStatus } : b));
 
+      // Free up the slot if cancelled
+      if (newStatus === 'cancelled' && booking?.slot_id) {
+        await supabase
+          .from('availability_slots')
+          .update({ status: 'free' })
+          .eq('id', booking.slot_id);
+      }
+
       // Send customer notification when booking is confirmed
       if (newStatus === 'confirmed' && booking?.customer_email) {
-        const { data: performer } = await supabase
-          .from('performer_profiles')
-          .select('display_name')
-          .eq('id', performerId)
-          .maybeSingle();
-
         supabase.functions.invoke('send-notification-email', {
           body: {
             type: 'booking_confirmed',
             customerEmail: booking.customer_email,
             customerName: booking.customer_name,
-            performerName: performer?.display_name || 'Исполнитель',
+            performerName: performerName,
             bookingDate: format(new Date(booking.booking_date), 'd MMMM yyyy', { locale: ru }),
             bookingTime: booking.booking_time,
             address: booking.address,
@@ -113,6 +122,52 @@ export default function PerformerBookings() {
         });
       }
     }
+  };
+
+  const cancelBooking = async (bookingId: string, reason: string) => {
+    const booking = bookings.find(b => b.id === bookingId);
+    if (!booking) return;
+
+    const { error } = await supabase
+      .from('bookings')
+      .update({ 
+        status: 'cancelled',
+        cancellation_reason: reason,
+        cancelled_by: 'performer',
+      })
+      .eq('id', bookingId);
+
+    if (error) {
+      toast.error('Ошибка отмены заказа');
+      throw error;
+    }
+
+    // Free up the slot
+    if (booking.slot_id) {
+      await supabase
+        .from('availability_slots')
+        .update({ status: 'free' })
+        .eq('id', booking.slot_id);
+    }
+
+    // Send email notification
+    if (booking.customer_email) {
+      supabase.functions.invoke('send-notification-email', {
+        body: {
+          type: 'booking_cancelled',
+          customerEmail: booking.customer_email,
+          customerName: booking.customer_name,
+          performerName: performerName,
+          bookingDate: format(new Date(booking.booking_date), 'd MMMM yyyy', { locale: ru }),
+          bookingTime: booking.booking_time,
+          cancellationReason: reason,
+          cancelledBy: 'performer',
+        },
+      });
+    }
+
+    toast.success('Заказ отменён');
+    setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'cancelled' } : b));
   };
 
   const filteredBookings = bookings.filter(b => {
@@ -216,6 +271,15 @@ export default function PerformerBookings() {
                           </div>
                         )}
 
+                        {booking.status === 'cancelled' && booking.cancellation_reason && (
+                          <div className="p-3 bg-destructive/10 rounded-lg text-sm">
+                            <p className="font-medium mb-1 text-destructive">
+                              Причина отмены {booking.cancelled_by === 'customer' ? '(клиент)' : ''}:
+                            </p>
+                            <p className="text-muted-foreground">{booking.cancellation_reason}</p>
+                          </div>
+                        )}
+
                         <div className="flex items-center justify-between pt-2 border-t">
                           <div className="text-lg font-bold">
                             {booking.price_total.toLocaleString()} сом
@@ -226,7 +290,7 @@ export default function PerformerBookings() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                                onClick={() => setCancelDialog({ open: true, booking })}
                               >
                                 <X className="h-4 w-4 mr-1" />
                                 Отклонить
@@ -242,13 +306,23 @@ export default function PerformerBookings() {
                           )}
 
                           {booking.status === 'confirmed' && (
-                            <Button
-                              size="sm"
-                              onClick={() => updateBookingStatus(booking.id, 'completed')}
-                            >
-                              <Check className="h-4 w-4 mr-1" />
-                              Завершить
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCancelDialog({ open: true, booking })}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Отменить
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => updateBookingStatus(booking.id, 'completed')}
+                              >
+                                <Check className="h-4 w-4 mr-1" />
+                                Завершить
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </CardContent>
@@ -259,6 +333,17 @@ export default function PerformerBookings() {
             )}
           </TabsContent>
         </Tabs>
+
+        {cancelDialog.booking && (
+          <CancelBookingDialog
+            open={cancelDialog.open}
+            onOpenChange={(open) => setCancelDialog({ ...cancelDialog, open })}
+            onConfirm={(reason) => cancelBooking(cancelDialog.booking!.id, reason)}
+            bookingDate={format(new Date(cancelDialog.booking.booking_date), 'd MMMM yyyy', { locale: ru })}
+            customerName={cancelDialog.booking.customer_name}
+            role="performer"
+          />
+        )}
       </div>
     </PerformerLayout>
   );

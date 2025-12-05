@@ -1,0 +1,4 @@
+-- Add cancellation fields to bookings
+ALTER TABLE public.bookings 
+ADD COLUMN IF NOT EXISTS cancellation_reason text,
+ADD COLUMN IF NOT EXISTS cancelled_by text CHECK (cancelled_by IN ('customer', 'performer', 'admin'));

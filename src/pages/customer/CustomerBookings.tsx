@@ -6,13 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewForm } from '@/components/reviews/ReviewForm';
+import { CancelBookingDialog } from '@/components/bookings/CancelBookingDialog';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   Calendar, Clock, MapPin, Star, Loader2, 
-  Package, User, MessageCircle, CheckCircle
+  Package, User, X, CheckCircle
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -55,6 +56,11 @@ export default function CustomerBookings() {
     open: boolean;
     booking: BookingWithPerformer | null;
   }>({ open: false, booking: null });
+  const [cancelDialog, setCancelDialog] = useState<{
+    open: boolean;
+    booking: BookingWithPerformer | null;
+  }>({ open: false, booking: null });
+  const [userProfile, setUserProfile] = useState<{ full_name: string } | null>(null);
 
   const fetchBookings = async () => {
     if (!user) return;
@@ -114,8 +120,50 @@ export default function CustomerBookings() {
     }
     if (user) {
       fetchBookings();
+      // Get user profile for email notifications
+      supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) setUserProfile(data);
+        });
     }
   }, [user, authLoading, navigate]);
+
+  const cancelBooking = async (bookingId: string, reason: string) => {
+    const booking = bookings.find(b => b.id === bookingId);
+    if (!booking) return;
+
+    const { error } = await supabase
+      .from('bookings')
+      .update({
+        status: 'cancelled',
+        cancellation_reason: reason,
+        cancelled_by: 'customer',
+      })
+      .eq('id', bookingId);
+
+    if (error) {
+      toast.error('Ошибка отмены заказа');
+      throw error;
+    }
+
+    // Free up the slot
+    if (booking.slot_id) {
+      await supabase
+        .from('availability_slots')
+        .update({ status: 'free' })
+        .eq('id', booking.slot_id);
+    }
+
+    // Note: Email notification to performer is handled by database trigger or admin action
+    // We show the cancellation in their dashboard immediately
+
+    toast.success('Заказ отменён');
+    fetchBookings();
+  };
 
   const filteredBookings = bookings.filter(booking => {
     if (activeTab === 'all') return true;
@@ -232,12 +280,33 @@ export default function CustomerBookings() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-4 border-t border-border">
+                    {booking.status === 'cancelled' && booking.cancellation_reason && (
+                      <div className="p-3 bg-destructive/10 rounded-lg text-sm">
+                        <p className="font-medium mb-1 text-destructive">
+                          Причина отмены {booking.cancelled_by === 'performer' ? '(исполнитель)' : ''}:
+                        </p>
+                        <p className="text-muted-foreground">{booking.cancellation_reason}</p>
+                      </div>
+                    )}
+
+                      <div className="flex items-center justify-between pt-4 border-t border-border">
                       <div className="text-lg font-semibold">
                         {booking.price_total.toLocaleString()} сом
                       </div>
                       
                       <div className="flex gap-2">
+                        {/* Cancel button for pending/confirmed */}
+                        {['pending', 'confirmed'].includes(booking.status) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCancelDialog({ open: true, booking })}
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Отменить
+                          </Button>
+                        )}
+                        
                         {booking.status === 'completed' && !booking.hasReview && (
                           <Button
                             variant="gold"
@@ -282,6 +351,17 @@ export default function CustomerBookings() {
           customerId={user.id}
           customerName={reviewModal.booking.customer_name}
           onReviewSubmitted={fetchBookings}
+        />
+      )}
+
+      {cancelDialog.booking && (
+        <CancelBookingDialog
+          open={cancelDialog.open}
+          onOpenChange={(open) => setCancelDialog({ ...cancelDialog, open })}
+          onConfirm={(reason) => cancelBooking(cancelDialog.booking!.id, reason)}
+          bookingDate={format(parseISO(cancelDialog.booking.booking_date), 'd MMMM yyyy', { locale: ru })}
+          performerName={cancelDialog.booking.performer?.display_name}
+          role="customer"
         />
       )}
     </CustomerLayout>
