@@ -31,9 +31,11 @@ const Auth = () => {
     setModeState(modeFromUrl);
   }, [modeFromUrl]);
 
-  // Update URL when mode changes internally
+  // Update URL when mode changes internally, preserving other params like redirect
   const setMode = (newMode: AuthMode) => {
-    setSearchParams({ mode: newMode }, { replace: true });
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('mode', newMode);
+    setSearchParams(newParams, { replace: true });
   };
 
   useEffect(() => {
