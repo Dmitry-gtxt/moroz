@@ -13,11 +13,14 @@ import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
 type District = Database['public']['Tables']['districts']['Row'];
+type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'];
 type PerformerType = Database['public']['Enums']['performer_type'];
 type EventFormat = Database['public']['Enums']['event_format'];
 
 // Map of performer_id -> count of pending booking requests
 type PendingRequestsMap = Record<string, number>;
+// Map of performer_id -> available slots for selected date
+type AvailabilityMap = Record<string, AvailabilitySlot[]>;
 
 const Catalog = () => {
   const [searchParams] = useSearchParams();
@@ -25,17 +28,19 @@ const Catalog = () => {
   const [performers, setPerformers] = useState<PerformerProfile[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequestsMap>({});
+  const [availability, setAvailability] = useState<AvailabilityMap>({});
   const [loading, setLoading] = useState(true);
   
-const initialFilters: Filters = {
+  const initialFilters: Filters = {
     district: searchParams.get('district') || undefined,
     date: searchParams.get('date') || undefined,
-    timeSlot: searchParams.get('time') || undefined,
+    timeSlots: searchParams.get('time') ? [searchParams.get('time')!] : undefined,
     sortBy: 'rating',
   };
 
   const [filters, setFilters] = useState<Filters>(initialFilters);
 
+  // Fetch performers, districts, and pending requests
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
@@ -50,7 +55,6 @@ const initialFilters: Filters = {
           .from('districts')
           .select('*')
           .order('name'),
-        // Fetch pending bookings count per performer
         supabase
           .from('bookings')
           .select('performer_id')
@@ -65,7 +69,6 @@ const initialFilters: Filters = {
         setDistricts(districtsRes.data);
       }
       
-      // Count pending requests per performer
       if (pendingBookingsRes.data) {
         const counts: PendingRequestsMap = {};
         pendingBookingsRes.data.forEach((booking) => {
@@ -79,6 +82,36 @@ const initialFilters: Filters = {
 
     fetchData();
   }, []);
+
+  // Fetch availability when date filter changes
+  useEffect(() => {
+    async function fetchAvailability() {
+      if (!filters.date) {
+        setAvailability({});
+        return;
+      }
+
+      const { data } = await supabase
+        .from('availability_slots')
+        .select('*')
+        .eq('date', filters.date)
+        .eq('status', 'free')
+        .order('start_time');
+
+      if (data) {
+        const availMap: AvailabilityMap = {};
+        data.forEach((slot) => {
+          if (!availMap[slot.performer_id]) {
+            availMap[slot.performer_id] = [];
+          }
+          availMap[slot.performer_id].push(slot);
+        });
+        setAvailability(availMap);
+      }
+    }
+
+    fetchAvailability();
+  }, [filters.date]);
 
   const filteredPerformers = useMemo(() => {
     let result = [...performers];
@@ -120,6 +153,17 @@ const initialFilters: Filters = {
       result = result.filter((p) => p.video_greeting_url);
     }
 
+    // Filter by availability on selected date and time slots
+    if (filters.date && filters.timeSlots && filters.timeSlots.length > 0) {
+      result = result.filter((p) => {
+        const performerSlots = availability[p.id] || [];
+        // Check if performer has at least one of the selected time slots available
+        return filters.timeSlots!.some(selectedTime => 
+          performerSlots.some(slot => slot.start_time.startsWith(selectedTime.slice(0, 5)))
+        );
+      });
+    }
+
     // Sort
     switch (filters.sortBy) {
       case 'rating':
@@ -137,13 +181,13 @@ const initialFilters: Filters = {
     }
 
     return result;
-  }, [performers, filters]);
+  }, [performers, filters, availability]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filters.district) count++;
     if (filters.date) count++;
-    if (filters.timeSlot) count++;
+    if (filters.timeSlots?.length) count++;
     if (filters.priceFrom || filters.priceTo) count++;
     if (filters.performerType?.length) count++;
     if (filters.eventFormat?.length) count++;
@@ -248,6 +292,18 @@ const initialFilters: Filters = {
                       onRemove={() => setFilters({ ...filters, district: undefined })}
                     />
                   )}
+                  {filters.date && (
+                    <FilterChip
+                      label={new Date(filters.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                      onRemove={() => setFilters({ ...filters, date: undefined })}
+                    />
+                  )}
+                  {filters.timeSlots && filters.timeSlots.length > 0 && (
+                    <FilterChip
+                      label={`Время: ${filters.timeSlots.length} ч.`}
+                      onRemove={() => setFilters({ ...filters, timeSlots: undefined })}
+                    />
+                  )}
                   {filters.hasVideo && (
                     <FilterChip
                       label="С видео"
@@ -286,6 +342,8 @@ const initialFilters: Filters = {
                         performer={performer} 
                         districts={districts}
                         pendingRequestsCount={pendingRequests[performer.id] || 0}
+                        availableSlots={filters.date ? availability[performer.id] : undefined}
+                        selectedDate={filters.date}
                       />
                     </div>
                   ))}

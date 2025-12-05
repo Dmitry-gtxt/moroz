@@ -1,16 +1,19 @@
 import { Link } from 'react-router-dom';
-import { Star, MapPin, Video, CheckCircle, Clock } from 'lucide-react';
+import { Star, MapPin, Video, CheckCircle, Clock, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
 type District = Database['public']['Tables']['districts']['Row'];
+type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'];
 
 interface PerformerCardProps {
   performer: PerformerProfile;
   districts: District[];
-  pendingRequestsCount?: number; // Number of pending booking requests
+  pendingRequestsCount?: number;
+  availableSlots?: AvailabilitySlot[]; // Available slots for selected date
+  selectedDate?: string; // Currently selected date filter
 }
 
 const performerTypeLabels: Record<string, string> = {
@@ -20,7 +23,13 @@ const performerTypeLabels: Record<string, string> = {
   duo: 'Дуэт',
 };
 
-export function PerformerCard({ performer, districts, pendingRequestsCount = 0 }: PerformerCardProps) {
+export function PerformerCard({ 
+  performer, 
+  districts, 
+  pendingRequestsCount = 0,
+  availableSlots,
+  selectedDate,
+}: PerformerCardProps) {
   const getDistrictNames = (slugs: string[]) => {
     return slugs
       .map((slug) => districts.find((d) => d.slug === slug)?.name)
@@ -28,6 +37,28 @@ export function PerformerCard({ performer, districts, pendingRequestsCount = 0 }
       .slice(0, 2)
       .join(', ');
   };
+
+  // Format available hours for display
+  const getAvailableHours = () => {
+    if (!availableSlots || availableSlots.length === 0) return null;
+    
+    const hours = availableSlots
+      .map(slot => {
+        const hour = parseInt(slot.start_time.slice(0, 2));
+        return hour === 0 ? '24' : hour.toString();
+      })
+      .slice(0, 6); // Show max 6 hours
+    
+    const remaining = availableSlots.length - 6;
+    
+    return {
+      hours,
+      remaining: remaining > 0 ? remaining : 0,
+      total: availableSlots.length,
+    };
+  };
+
+  const availableHoursData = selectedDate ? getAvailableHours() : null;
 
   const photoUrl = performer.photo_urls?.[0] || 'https://images.unsplash.com/photo-1576919228236-a097c32a5cd4?w=400&h=400&fit=crop';
   const price = performer.price_from ?? performer.base_price;
@@ -75,7 +106,7 @@ export function PerformerCard({ performer, districts, pendingRequestsCount = 0 }
         )}
 
         {/* Pending requests indicator */}
-        {pendingRequestsCount > 0 && (
+        {pendingRequestsCount > 0 && !selectedDate && (
           <div className="absolute bottom-3 left-3">
             <Badge variant="secondary" className="bg-amber-500/90 text-white border-0">
               <Clock className="h-3 w-3 mr-1" />
@@ -101,8 +132,39 @@ export function PerformerCard({ performer, districts, pendingRequestsCount = 0 }
           </div>
         </div>
 
+        {/* Availability for selected date */}
+        {selectedDate && (
+          <div className="mb-4 p-3 rounded-lg bg-secondary/50">
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">
+                Свободно на {new Date(selectedDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}:
+              </span>
+            </div>
+            {availableHoursData ? (
+              <div className="flex flex-wrap gap-1">
+                {availableHoursData.hours.map((hour, i) => (
+                  <span 
+                    key={i}
+                    className="px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-medium"
+                  >
+                    {hour}:00
+                  </span>
+                ))}
+                {availableHoursData.remaining > 0 && (
+                  <span className="px-2 py-0.5 text-xs text-muted-foreground">
+                    +{availableHoursData.remaining}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground">Нет свободных слотов</span>
+            )}
+          </div>
+        )}
+
         {/* Description */}
-        {performer.description && (
+        {!selectedDate && performer.description && (
           <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
             {performer.description}
           </p>
@@ -126,7 +188,7 @@ export function PerformerCard({ performer, districts, pendingRequestsCount = 0 }
             <span className="text-sm text-muted-foreground"> сом</span>
           </div>
           <Button variant="gold" size="sm" asChild>
-            <Link to={`/performer/${performer.id}`}>
+            <Link to={`/performer/${performer.id}${selectedDate ? `?date=${selectedDate}` : ''}`}>
               Выбрать
             </Link>
           </Button>

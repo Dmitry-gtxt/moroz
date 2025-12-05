@@ -11,7 +11,7 @@ type District = Database['public']['Tables']['districts']['Row'];
 export interface Filters {
   district?: string;
   date?: string;
-  timeSlot?: string;
+  timeSlots?: string[]; // Array of selected hours like ["10:00", "11:00", "12:00"]
   priceFrom?: number;
   priceTo?: number;
   performerType?: PerformerType[];
@@ -99,13 +99,15 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
         />
       </div>
 
-      {/* Time - Grid 4x6 (hours 1-24) */}
+      {/* Time - Grid 4x6 (hours 1-24, multi-select) */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-sm font-semibold">Время начала</Label>
-          {filters.timeSlot && (
+          <Label className="text-sm font-semibold">
+            Время {filters.timeSlots?.length ? `(${filters.timeSlots.length})` : ''}
+          </Label>
+          {filters.timeSlots && filters.timeSlots.length > 0 && (
             <button
-              onClick={() => onFiltersChange({ ...filters, timeSlot: undefined })}
+              onClick={() => onFiltersChange({ ...filters, timeSlots: undefined })}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
               Сбросить
@@ -114,19 +116,23 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
         </div>
         <div className="grid grid-cols-4 gap-1">
           {Array.from({ length: 24 }, (_, i) => i + 1).map((hour) => {
-            // Display hour: 1-23 as is, 24 as "24:00"
             const displayHour = hour === 24 ? '24' : hour.toString().padStart(2, '0');
-            // Value: 1-23 as "01:00"-"23:00", 24 as "24:00" (or "00:00" internally)
             const value = hour === 24 ? '24:00' : `${hour.toString().padStart(2, '0')}:00`;
-            const isSelected = filters.timeSlot === value;
+            const isSelected = filters.timeSlots?.includes(value) || false;
             
             return (
               <button
                 key={hour}
-                onClick={() => onFiltersChange({ 
-                  ...filters, 
-                  timeSlot: isSelected ? undefined : value 
-                })}
+                onClick={() => {
+                  const currentSlots = filters.timeSlots || [];
+                  const newSlots = isSelected
+                    ? currentSlots.filter(s => s !== value)
+                    : [...currentSlots, value].sort();
+                  onFiltersChange({ 
+                    ...filters, 
+                    timeSlots: newSlots.length > 0 ? newSlots : undefined 
+                  });
+                }}
                 className={`py-1.5 px-1 rounded text-xs font-medium transition-colors ${
                   isSelected
                     ? 'bg-accent text-white'
@@ -138,6 +144,10 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
             );
           })}
         </div>
+        {/* Quick range selection hint */}
+        <p className="text-xs text-muted-foreground">
+          Можно выбрать несколько часов
+        </p>
       </div>
 
       {/* Performer Type */}
