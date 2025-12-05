@@ -20,9 +20,12 @@ interface ScheduleEditorProps {
   onSlotsUpdate?: () => void;
 }
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i); // 0:00 - 23:00
+const HOURS = Array.from({ length: 24 }, (_, i) => i + 1); // 1:00 - 24:00
 const DAYS_OF_WEEK = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+
+// Helper to format hour for display (1-24 format)
+const formatHour = (hour: number) => hour === 24 ? '24' : hour.toString().padStart(2, '0');
 
 interface DaySchedule {
   isWorkDay: boolean;
@@ -116,11 +119,16 @@ export function ScheduleEditor({ performerId, onSlotsUpdate }: ScheduleEditorPro
 
         // Create hourly slots
         for (let hour = daySchedule.startHour; hour < daySchedule.endHour; hour++) {
+          // Handle hour 24 as 00:00 for storage
+          const startTimeDb = `${hour.toString().padStart(2, '0')}:00`;
+          const endHourDb = hour + 1 === 24 ? 0 : hour + 1;
+          const endTimeDb = `${endHourDb.toString().padStart(2, '0')}:00`;
+          
           slotsToCreate.push({
             performer_id: performerId,
             date: format(date, 'yyyy-MM-dd'),
-            start_time: `${hour.toString().padStart(2, '0')}:00`,
-            end_time: `${(hour + 1).toString().padStart(2, '0')}:00`,
+            start_time: startTimeDb,
+            end_time: endTimeDb,
             status: 'free',
           });
         }
@@ -244,9 +252,9 @@ export function ScheduleEditor({ performerId, onSlotsUpdate }: ScheduleEditorPro
                               }
                               className="h-9 px-2 rounded border border-input bg-background text-sm"
                             >
-                              {HOURS.map((hour) => (
+                              {HOURS.slice(0, 23).map((hour) => (
                                 <option key={hour} value={hour}>
-                                  {hour.toString().padStart(2, '0')}:00
+                                  {formatHour(hour)}:00
                                 </option>
                               ))}
                             </select>
@@ -261,9 +269,9 @@ export function ScheduleEditor({ performerId, onSlotsUpdate }: ScheduleEditorPro
                               }
                               className="h-9 px-2 rounded border border-input bg-background text-sm"
                             >
-                              {HOURS.map((hour) => (
+                              {HOURS.filter(h => h > schedule.startHour).map((hour) => (
                                 <option key={hour} value={hour}>
-                                  {hour.toString().padStart(2, '0')}:00
+                                  {formatHour(hour)}:00
                                 </option>
                               ))}
                             </select>

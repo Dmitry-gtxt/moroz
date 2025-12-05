@@ -99,26 +99,45 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
         />
       </div>
 
-      {/* Time */}
+      {/* Time - Grid 4x6 (hours 1-24) */}
       <div className="space-y-3">
-        <Label className="text-sm font-semibold">Время начала</Label>
-        <select
-          value={filters.timeSlot || ''}
-          onChange={(e) =>
-            onFiltersChange({
-              ...filters,
-              timeSlot: e.target.value || undefined,
-            })
-          }
-          className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
-        >
-          <option value="">Любое время</option>
-          {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-            <option key={hour} value={`${hour.toString().padStart(2, '0')}:00`}>
-              {hour.toString().padStart(2, '0')}:00
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-semibold">Время начала</Label>
+          {filters.timeSlot && (
+            <button
+              onClick={() => onFiltersChange({ ...filters, timeSlot: undefined })}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Сбросить
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-4 gap-1">
+          {Array.from({ length: 24 }, (_, i) => i + 1).map((hour) => {
+            // Display hour: 1-23 as is, 24 as "24:00"
+            const displayHour = hour === 24 ? '24' : hour.toString().padStart(2, '0');
+            // Value: 1-23 as "01:00"-"23:00", 24 as "24:00" (or "00:00" internally)
+            const value = hour === 24 ? '24:00' : `${hour.toString().padStart(2, '0')}:00`;
+            const isSelected = filters.timeSlot === value;
+            
+            return (
+              <button
+                key={hour}
+                onClick={() => onFiltersChange({ 
+                  ...filters, 
+                  timeSlot: isSelected ? undefined : value 
+                })}
+                className={`py-1.5 px-1 rounded text-xs font-medium transition-colors ${
+                  isSelected
+                    ? 'bg-accent text-white'
+                    : 'bg-secondary hover:bg-secondary/80 text-foreground'
+                }`}
+              >
+                {displayHour}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Performer Type */}
