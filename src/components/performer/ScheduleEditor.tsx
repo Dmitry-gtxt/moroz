@@ -20,7 +20,7 @@ interface ScheduleEditorProps {
   onSlotsUpdate?: () => void;
 }
 
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 8); // 8:00 - 21:00
+const HOURS = Array.from({ length: 24 }, (_, i) => i); // 0:00 - 23:00
 const DAYS_OF_WEEK = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
