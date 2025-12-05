@@ -1,5 +1,6 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { SEOHead } from '@/components/seo/SEOHead';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { 
@@ -83,6 +84,11 @@ const faq = [
 export default function HowItWorks() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEOHead 
+        title="Как это работает"
+        description="Узнайте как заказать Деда Мороза в Бишкеке за 4 простых шага. Выбор исполнителя, бронирование, оплата и праздник!"
+        keywords="как заказать деда мороза, инструкция, бронирование деда мороза"
+      />
       <Header />
       <main className="flex-1">
         {/* Hero */}
