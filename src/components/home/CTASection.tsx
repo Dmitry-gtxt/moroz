@@ -35,7 +35,7 @@ export function CTASection() {
               className="border-white/30 text-white hover:bg-white/10 hover:text-white"
               asChild
             >
-              <Link to="/for-performers">
+              <Link to="/become-performer">
                 Стать исполнителем
               </Link>
             </Button>
