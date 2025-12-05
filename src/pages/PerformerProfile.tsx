@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { SEOHead } from '@/components/seo/SEOHead';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -122,6 +123,11 @@ const PerformerProfile = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEOHead 
+        title={performer.display_name}
+        description={`Закажите ${performer.display_name} в Бишкеке. Рейтинг ${Number(performer.rating_average).toFixed(1)}, ${performer.rating_count ?? 0} отзывов. Цена от ${performer.price_from ?? performer.base_price} сом.`}
+        type="profile"
+      />
       <Header />
       <main className="flex-1">
         {/* Breadcrumb */}

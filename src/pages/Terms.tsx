@@ -1,9 +1,14 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { SEOHead } from '@/components/seo/SEOHead';
 
 export default function Terms() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEOHead 
+        title="Пользовательское соглашение"
+        description="Пользовательское соглашение сервиса ДедМороз.kg. Условия использования платформы для клиентов и исполнителей."
+      />
       <Header />
       <main className="flex-1 py-12">
         <div className="container max-w-3xl">

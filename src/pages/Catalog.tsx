@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { SEOHead } from '@/components/seo/SEOHead';
 import { PerformerCard } from '@/components/performers/PerformerCard';
 import { CatalogFilters, Filters } from '@/components/catalog/CatalogFilters';
 import { supabase } from '@/integrations/supabase/client';
@@ -138,6 +139,11 @@ const Catalog = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEOHead 
+        title="Каталог Дедов Морозов"
+        description="Выберите проверенного Деда Мороза или Снегурочку в Бишкеке. Фильтры по району, цене и рейтингу. Отзывы реальных клиентов."
+        keywords="каталог дед мороз, снегурочка бишкек, заказать деда мороза, новогодние персонажи"
+      />
       <Header />
       <main className="flex-1">
         {/* Page Header */}

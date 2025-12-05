@@ -1,9 +1,14 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { SEOHead } from '@/components/seo/SEOHead';
 
 export default function Privacy() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEOHead 
+        title="Политика конфиденциальности"
+        description="Политика конфиденциальности сервиса ДедМороз.kg. Узнайте как мы защищаем ваши персональные данные."
+      />
       <Header />
       <main className="flex-1 py-12">
         <div className="container max-w-3xl">

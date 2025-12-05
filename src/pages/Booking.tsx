@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { SEOHead } from '@/components/seo/SEOHead';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -247,6 +248,10 @@ const Booking = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEOHead 
+        title={`Бронирование — ${performer.display_name}`}
+        description={`Забронируйте ${performer.display_name} на новогоднее поздравление в Бишкеке.`}
+      />
       <Header />
       <main className="flex-1">
         {/* Progress bar */}
