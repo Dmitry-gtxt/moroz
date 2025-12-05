@@ -284,6 +284,7 @@ export default function CustomerBookings() {
           performerId={reviewModal.booking.performer_id}
           performerName={reviewModal.booking.performer.display_name}
           customerId={user.id}
+          customerName={reviewModal.booking.customer_name}
           onReviewSubmitted={fetchBookings}
         />
       )}

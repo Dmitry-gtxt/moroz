@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { sendReviewNotification } from '@/lib/notifications';
 
 interface ReviewFormProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface ReviewFormProps {
   performerId: string;
   performerName: string;
   customerId: string;
+  customerName: string;
   onReviewSubmitted: () => void;
 }
 
@@ -29,6 +31,7 @@ export function ReviewForm({
   performerId,
   performerName,
   customerId,
+  customerName,
   onReviewSubmitted,
 }: ReviewFormProps) {
   const [rating, setRating] = useState(5);
@@ -71,6 +74,14 @@ export function ReviewForm({
           })
           .eq('id', performerId);
       }
+
+      // Send email notification (non-blocking)
+      sendReviewNotification({
+        performerId,
+        customerName,
+        rating,
+        reviewText: text.trim() || undefined,
+      });
 
       toast.success('Спасибо за ваш отзыв!');
       onReviewSubmitted();
