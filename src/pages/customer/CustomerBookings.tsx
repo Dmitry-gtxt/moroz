@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { CustomerLayout } from '@/components/customer/CustomerLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,8 +46,7 @@ const eventTypeLabels: Record<string, string> = {
 };
 
 export default function CustomerBookings() {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [bookings, setBookings] = useState<BookingWithPerformer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,10 +113,6 @@ export default function CustomerBookings() {
   };
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth?redirect=/cabinet/bookings');
-      return;
-    }
     if (user) {
       fetchBookings();
       // Get user profile for email notifications
@@ -130,7 +125,7 @@ export default function CustomerBookings() {
           if (data) setUserProfile(data);
         });
     }
-  }, [user, authLoading, navigate]);
+  }, [user]);
 
   const cancelBooking = async (bookingId: string, reason: string) => {
     const booking = bookings.find(b => b.id === bookingId);
@@ -173,7 +168,7 @@ export default function CustomerBookings() {
     return true;
   });
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <CustomerLayout>
         <div className="flex items-center justify-center py-16">
