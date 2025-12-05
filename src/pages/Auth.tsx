@@ -14,7 +14,7 @@ type AuthMode = 'login' | 'register' | 'forgot-password';
 const Auth = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/';
+  const redirectTo = searchParams.get('redirect') || '/cabinet';
   const modeFromUrl = (searchParams.get('mode') as AuthMode) || 'login';
   
   const [mode, setModeState] = useState<AuthMode>(modeFromUrl);
