@@ -117,17 +117,19 @@ export function Header() {
                 </DropdownMenu>
               ) : (
                 <>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link to="/auth?mode=login">
-                      <LogIn className="h-4 w-4 mr-1" />
-                      Войти
-                    </Link>
-                  </Button>
-                  <Button variant="gold" size="sm" asChild>
-                    <Link to="/auth?mode=register">
-                      Регистрация
-                    </Link>
-                  </Button>
+                  <Link 
+                    to="/auth?mode=login"
+                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold h-9 px-3 text-foreground hover:bg-accent/10 hover:text-accent active:bg-accent/20 transition-all duration-200"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    Войти
+                  </Link>
+                  <Link 
+                    to="/auth?mode=register"
+                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold h-9 px-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-md hover:shadow-lg transition-all duration-200"
+                  >
+                    Регистрация
+                  </Link>
                 </>
               )}
             </>
@@ -206,12 +208,20 @@ export function Header() {
               </>
             ) : (
               <div className="flex gap-2 px-4">
-                <Button variant="outline" size="sm" className="flex-1" asChild>
-                  <Link to="/auth?mode=login" onClick={() => setIsMenuOpen(false)}>Войти</Link>
-                </Button>
-                <Button variant="gold" size="sm" className="flex-1" asChild>
-                  <Link to="/auth?mode=register" onClick={() => setIsMenuOpen(false)}>Регистрация</Link>
-                </Button>
+                <Link 
+                  to="/auth?mode=login" 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex-1 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold h-9 px-3 border-2 border-input bg-background text-foreground hover:bg-secondary transition-all"
+                >
+                  Войти
+                </Link>
+                <Link 
+                  to="/auth?mode=register" 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex-1 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold h-9 px-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-md transition-all"
+                >
+                  Регистрация
+                </Link>
               </div>
             )}
           </nav>
