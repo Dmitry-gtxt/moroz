@@ -15,8 +15,9 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/';
+  const initialMode = (searchParams.get('mode') as AuthMode) || 'login';
   
-  const [mode, setMode] = useState<AuthMode>('login');
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',

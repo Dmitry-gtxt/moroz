@@ -9,18 +9,18 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md",
-        outline: "border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 shadow-md hover:shadow-lg",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/80 shadow-md",
+        outline: "border-2 border-input bg-background text-foreground hover:bg-secondary hover:border-primary/50 active:bg-secondary/80",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 active:bg-secondary/70",
+        ghost: "text-foreground hover:bg-accent/10 hover:text-accent active:bg-accent/20",
         link: "text-primary underline-offset-4 hover:underline",
-        // Festive variants
-        gold: "bg-accent text-white hover:opacity-90 shadow-md hover:shadow-lg transition-shadow",
-        hero: "bg-accent text-white font-bold hover:opacity-90 shadow-lg",
-        winter: "bg-primary text-primary-foreground hover:bg-primary/80 shadow-md hover:shadow-lg",
-        frost: "bg-frost text-primary border border-frost-dark hover:bg-frost-dark/20",
-        santa: "bg-santa text-white hover:bg-santa-dark shadow-md",
+        // Festive variants with improved contrast
+        gold: "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold hover:from-amber-600 hover:to-orange-600 active:from-amber-700 active:to-orange-700 shadow-md hover:shadow-lg transition-all",
+        hero: "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold hover:from-amber-600 hover:to-orange-600 active:from-amber-700 active:to-orange-700 shadow-lg hover:shadow-xl transition-all",
+        winter: "bg-primary text-primary-foreground hover:bg-primary/80 active:bg-primary/70 shadow-md hover:shadow-lg",
+        frost: "bg-frost text-primary border border-frost-dark hover:bg-frost-dark/20 active:bg-frost-dark/30",
+        santa: "bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-md",
       },
       size: {
         default: "h-10 px-4 py-2",
