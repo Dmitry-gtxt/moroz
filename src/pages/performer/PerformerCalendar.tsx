@@ -10,11 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { format, isSameDay, addDays } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Loader2, Plus, Trash2, Clock } from 'lucide-react';
+import { Loader2, Plus, Trash2, Clock, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ScheduleEditor } from '@/components/performer/ScheduleEditor';
 import type { Database } from '@/integrations/supabase/types';
 
 type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'];
@@ -209,6 +211,17 @@ export default function PerformerCalendar() {
     return <Navigate to="/become-performer" replace />;
   }
 
+  const refreshSlots = async () => {
+    if (!performerId) return;
+    const { data } = await supabase
+      .from('availability_slots')
+      .select('*')
+      .eq('performer_id', performerId)
+      .order('date')
+      .order('start_time');
+    if (data) setSlots(data);
+  };
+
   return (
     <PerformerLayout>
       <div className="space-y-6">
@@ -217,153 +230,172 @@ export default function PerformerCalendar() {
           <p className="text-muted-foreground mt-1">Управление расписанием и доступностью</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Calendar */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle>Выберите дату</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                locale={ru}
-                className="rounded-md border pointer-events-auto"
-                modifiers={{
-                  hasSlots: datesWithSlots,
-                }}
-                modifiersStyles={{
-                  hasSlots: {
-                    fontWeight: 'bold',
-                    textDecoration: 'underline',
-                    textDecorationColor: 'hsl(var(--accent))',
-                  },
-                }}
-                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-              />
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="schedule" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="schedule" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Настройка расписания
+            </TabsTrigger>
+            <TabsTrigger value="slots" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Детальный просмотр
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Slots for selected date */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>
-                  {format(selectedDate, 'd MMMM yyyy', { locale: ru })}
-                </CardTitle>
-                <CardDescription>
-                  {selectedDateSlots.length === 0 
-                    ? 'Нет доступных слотов' 
-                    : `${selectedDateSlots.length} слот(ов)`
-                  }
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={addQuickSlots}>
-                  Добавить день
-                </Button>
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm">
-                      <Plus className="h-4 w-4 mr-1" />
-                      Добавить слот
+          <TabsContent value="schedule">
+            <ScheduleEditor performerId={performerId} onSlotsUpdate={refreshSlots} />
+          </TabsContent>
+
+          <TabsContent value="slots">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Calendar */}
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <CardTitle>Выберите дату</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    locale={ru}
+                    className="rounded-md border pointer-events-auto"
+                    modifiers={{
+                      hasSlots: datesWithSlots,
+                    }}
+                    modifiersStyles={{
+                      hasSlots: {
+                        fontWeight: 'bold',
+                        textDecoration: 'underline',
+                        textDecorationColor: 'hsl(var(--accent))',
+                      },
+                    }}
+                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Slots for selected date */}
+              <Card className="lg:col-span-2">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>
+                      {format(selectedDate, 'd MMMM yyyy', { locale: ru })}
+                    </CardTitle>
+                    <CardDescription>
+                      {selectedDateSlots.length === 0 
+                        ? 'Нет доступных слотов' 
+                        : `${selectedDateSlots.length} слот(ов)`
+                      }
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={addQuickSlots}>
+                      Добавить день
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Добавить слот</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 pt-4">
-                      <p className="text-sm text-muted-foreground">
-                        {format(selectedDate, 'd MMMM yyyy', { locale: ru })}
-                      </p>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Начало</Label>
-                          <Select value={newStartTime} onValueChange={setNewStartTime}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {timeSlots.map(time => (
-                                <SelectItem key={time} value={time}>{time}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Конец</Label>
-                          <Select value={newEndTime} onValueChange={setNewEndTime}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {timeSlots.map(time => (
-                                <SelectItem key={time} value={time}>{time}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <Button onClick={handleAddSlot} className="w-full">
-                        Добавить
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {selectedDateSlots.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Clock className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>Нет слотов на эту дату</p>
-                  <p className="text-sm mt-1">Добавьте слоты для приёма заказов</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {selectedDateSlots.map((slot) => {
-                    const status = statusLabels[slot.status];
-                    return (
-                      <div
-                        key={slot.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="text-lg font-medium">
-                            {slot.start_time.slice(0, 5)} — {slot.end_time.slice(0, 5)}
+                    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm">
+                          <Plus className="h-4 w-4 mr-1" />
+                          Добавить слот
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Добавить слот</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 pt-4">
+                          <p className="text-sm text-muted-foreground">
+                            {format(selectedDate, 'd MMMM yyyy', { locale: ru })}
+                          </p>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Начало</Label>
+                              <Select value={newStartTime} onValueChange={setNewStartTime}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {timeSlots.map(time => (
+                                    <SelectItem key={time} value={time}>{time}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Конец</Label>
+                              <Select value={newEndTime} onValueChange={setNewEndTime}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {timeSlots.map(time => (
+                                    <SelectItem key={time} value={time}>{time}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
-                          <Badge className={status.color}>{status.label}</Badge>
+                          <Button onClick={handleAddSlot} className="w-full">
+                            Добавить
+                          </Button>
                         </div>
-                        <div className="flex gap-2">
-                          {slot.status !== 'booked' && (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleToggleBlock(slot)}
-                              >
-                                {slot.status === 'free' ? 'Заблокировать' : 'Разблокировать'}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteSlot(slot.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {selectedDateSlots.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Clock className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>Нет слотов на эту дату</p>
+                      <p className="text-sm mt-1">Добавьте слоты для приёма заказов</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {selectedDateSlots.map((slot) => {
+                        const status = statusLabels[slot.status];
+                        return (
+                          <div
+                            key={slot.id}
+                            className="flex items-center justify-between p-4 border rounded-lg"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="text-lg font-medium">
+                                {slot.start_time.slice(0, 5)} — {slot.end_time.slice(0, 5)}
+                              </div>
+                              <Badge className={status.color}>{status.label}</Badge>
+                            </div>
+                            <div className="flex gap-2">
+                              {slot.status !== 'booked' && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleToggleBlock(slot)}
+                                  >
+                                    {slot.status === 'free' ? 'Заблокировать' : 'Разблокировать'}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteSlot(slot.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </PerformerLayout>
   );

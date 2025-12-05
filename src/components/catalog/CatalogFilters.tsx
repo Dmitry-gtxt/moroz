@@ -11,7 +11,7 @@ type District = Database['public']['Tables']['districts']['Row'];
 export interface Filters {
   district?: string;
   date?: string;
-  timeSlot?: 'morning' | 'afternoon' | 'evening';
+  timeSlot?: string;
   priceFrom?: number;
   priceTo?: number;
   performerType?: PerformerType[];
@@ -101,21 +101,23 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
 
       {/* Time */}
       <div className="space-y-3">
-        <Label className="text-sm font-semibold">Время</Label>
+        <Label className="text-sm font-semibold">Время начала</Label>
         <select
           value={filters.timeSlot || ''}
           onChange={(e) =>
             onFiltersChange({
               ...filters,
-              timeSlot: (e.target.value as 'morning' | 'afternoon' | 'evening') || undefined,
+              timeSlot: e.target.value || undefined,
             })
           }
           className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
         >
           <option value="">Любое время</option>
-          <option value="morning">Утро (10:00-12:00)</option>
-          <option value="afternoon">День (14:00-16:00)</option>
-          <option value="evening">Вечер (18:00-20:00)</option>
+          {Array.from({ length: 14 }, (_, i) => i + 8).map((hour) => (
+            <option key={hour} value={`${hour.toString().padStart(2, '0')}:00`}>
+              {hour.toString().padStart(2, '0')}:00
+            </option>
+          ))}
         </select>
       </div>
 
