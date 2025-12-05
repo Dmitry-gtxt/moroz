@@ -216,7 +216,7 @@ export type Database = {
           rating_average: number | null
           rating_count: number | null
           updated_at: string
-          user_id: string
+          user_id: string | null
           verification_status: Database["public"]["Enums"]["verification_status"]
           video_greeting_url: string | null
         }
@@ -240,7 +240,7 @@ export type Database = {
           rating_average?: number | null
           rating_count?: number | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           verification_status?: Database["public"]["Enums"]["verification_status"]
           video_greeting_url?: string | null
         }
@@ -264,7 +264,7 @@ export type Database = {
           rating_average?: number | null
           rating_count?: number | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           verification_status?: Database["public"]["Enums"]["verification_status"]
           video_greeting_url?: string | null
         }
