@@ -19,7 +19,9 @@ import PerformerDashboard from "./pages/performer/PerformerDashboard";
 import PerformerProfilePage from "./pages/performer/PerformerProfile";
 import PerformerCalendar from "./pages/performer/PerformerCalendar";
 import PerformerBookings from "./pages/performer/PerformerBookings";
+import CustomerDashboard from "./pages/customer/CustomerDashboard";
 import CustomerBookings from "./pages/customer/CustomerBookings";
+import CustomerProfile from "./pages/customer/CustomerProfile";
 import HowItWorks from "./pages/HowItWorks";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -48,7 +50,10 @@ const App = () => (
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
-            {/* Customer routes */}
+            {/* Customer cabinet routes */}
+            <Route path="/cabinet" element={<CustomerDashboard />} />
+            <Route path="/cabinet/bookings" element={<CustomerBookings />} />
+            <Route path="/cabinet/profile" element={<CustomerProfile />} />
             <Route path="/my-bookings" element={<CustomerBookings />} />
             {/* Performer dashboard routes */}
             <Route path="/performer" element={<PerformerDashboard />} />
