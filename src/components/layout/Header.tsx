@@ -100,10 +100,13 @@ export function Header() {
                       </>
                     )}
                     <DropdownMenuItem asChild>
-                      <Link to="/my-bookings">Мои заказы</Link>
+                      <Link to="/cabinet">Личный кабинет</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/profile">Профиль</Link>
+                      <Link to="/cabinet/bookings">Мои заказы</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/cabinet/profile">Профиль</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
@@ -178,7 +181,14 @@ export function Header() {
                   </Link>
                 )}
                 <Link 
-                  to="/my-bookings" 
+                  to="/cabinet" 
+                  className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Личный кабинет
+                </Link>
+                <Link 
+                  to="/cabinet/bookings" 
                   className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
