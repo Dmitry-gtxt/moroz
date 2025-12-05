@@ -42,7 +42,19 @@ interface ReviewNotificationRequest {
   reviewText?: string;
 }
 
-type NotificationRequest = BookingNotificationRequest | BookingConfirmedRequest | ReviewNotificationRequest;
+interface BookingCancelledRequest {
+  type: "booking_cancelled";
+  customerEmail?: string;
+  performerEmail?: string;
+  customerName: string;
+  performerName: string;
+  bookingDate: string;
+  bookingTime: string;
+  cancellationReason: string;
+  cancelledBy: "customer" | "performer";
+}
+
+type NotificationRequest = BookingNotificationRequest | BookingConfirmedRequest | ReviewNotificationRequest | BookingCancelledRequest;
 
 const eventTypeLabels: Record<string, string> = {
   home: "На дом",
@@ -228,6 +240,110 @@ const handler = async (req: Request): Promise<Response> => {
       const data = await res.json();
       return new Response(JSON.stringify({ success: true, data }), {
         status: res.ok ? 200 : 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    if (payload.type === "booking_cancelled") {
+      const { customerEmail, performerEmail, customerName, performerName, bookingDate, bookingTime, cancellationReason, cancelledBy } = payload as BookingCancelledRequest;
+
+      const emails: Promise<Response>[] = [];
+
+      // Send to customer if performer cancelled
+      if (cancelledBy === "performer" && customerEmail) {
+        console.log("Sending cancellation notice to customer:", customerEmail);
+        emails.push(
+          fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${RESEND_API_KEY}`,
+            },
+            body: JSON.stringify({
+              from: "ДедМороз.kg <onboarding@resend.dev>",
+              to: [customerEmail],
+              subject: "❌ Заказ отменён исполнителем",
+              html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                  <h1 style="color: #d32f2f; margin-bottom: 24px;">❌ Заказ отменён</h1>
+                  <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${customerName}</strong>!</p>
+                  <p style="font-size: 16px; color: #333;">К сожалению, исполнитель <strong>${performerName}</strong> отменил ваш заказ.</p>
+                  
+                  <div style="background: #ffebee; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                    <h3 style="margin-top: 0; color: #333;">📋 Детали отменённого заказа:</h3>
+                    <p><strong>📅 Дата:</strong> ${bookingDate}</p>
+                    <p><strong>⏰ Время:</strong> ${bookingTime}</p>
+                  </div>
+                  
+                  <div style="background: #fff3e0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                    <h3 style="margin-top: 0; color: #333;">💬 Причина отмены:</h3>
+                    <p style="color: #555;">${cancellationReason}</p>
+                  </div>
+                  
+                  <p style="font-size: 14px; color: #666;">Вы можете выбрать другого исполнителя в нашем каталоге. Предоплата будет возвращена.</p>
+                  
+                  <div style="text-align: center; margin-top: 24px;">
+                    <a href="https://dedmoroz.kg/catalog" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">🎅 Найти другого исполнителя</a>
+                  </div>
+                </div>
+              `,
+            }),
+          })
+        );
+      }
+
+      // Send to performer if customer cancelled
+      if (cancelledBy === "customer" && performerEmail) {
+        console.log("Sending cancellation notice to performer:", performerEmail);
+        emails.push(
+          fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${RESEND_API_KEY}`,
+            },
+            body: JSON.stringify({
+              from: "ДедМороз.kg <onboarding@resend.dev>",
+              to: [performerEmail],
+              subject: "❌ Клиент отменил заказ",
+              html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                  <h1 style="color: #d32f2f; margin-bottom: 24px;">❌ Заказ отменён клиентом</h1>
+                  <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${performerName}</strong>!</p>
+                  <p style="font-size: 16px; color: #333;">Клиент <strong>${customerName}</strong> отменил бронирование.</p>
+                  
+                  <div style="background: #ffebee; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                    <h3 style="margin-top: 0; color: #333;">📋 Детали отменённого заказа:</h3>
+                    <p><strong>📅 Дата:</strong> ${bookingDate}</p>
+                    <p><strong>⏰ Время:</strong> ${bookingTime}</p>
+                  </div>
+                  
+                  <div style="background: #fff3e0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                    <h3 style="margin-top: 0; color: #333;">💬 Причина отмены:</h3>
+                    <p style="color: #555;">${cancellationReason}</p>
+                  </div>
+                  
+                  <p style="font-size: 14px; color: #666;">Освободившееся время снова доступно для бронирования.</p>
+                </div>
+              `,
+            }),
+          })
+        );
+      }
+
+      if (emails.length === 0) {
+        console.log("No recipient emails provided, skipping notification");
+        return new Response(JSON.stringify({ success: true, skipped: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      const responses = await Promise.all(emails);
+      const allOk = responses.every(r => r.ok);
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: allOk ? 200 : 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
