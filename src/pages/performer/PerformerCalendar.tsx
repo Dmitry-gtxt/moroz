@@ -168,12 +168,13 @@ export default function PerformerCalendar() {
     if (!performerId) return;
 
     const slotsToAdd = [];
-    for (let hour = 10; hour <= 20; hour += 2) {
+    // Create 1-hour slots from 10:00 to 22:00 (12 slots)
+    for (let hour = 10; hour < 22; hour++) {
       slotsToAdd.push({
         performer_id: performerId,
         date: format(selectedDate, 'yyyy-MM-dd'),
         start_time: `${hour.toString().padStart(2, '0')}:00`,
-        end_time: `${(hour + 2).toString().padStart(2, '0')}:00`,
+        end_time: `${(hour + 1).toString().padStart(2, '0')}:00`,
         status: 'free' as SlotStatus,
       });
     }
@@ -183,7 +184,7 @@ export default function PerformerCalendar() {
     if (error) {
       toast.error('Некоторые слоты уже существуют');
     } else {
-      toast.success('Слоты добавлены');
+      toast.success(`Добавлено ${slotsToAdd.length} слотов по 1 часу`);
       // Refresh
       const { data } = await supabase
         .from('availability_slots')

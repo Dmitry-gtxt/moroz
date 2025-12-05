@@ -141,16 +141,24 @@ export function ScheduleEditor({ performerId, onSlotsUpdate }: ScheduleEditorPro
       return;
     }
 
-    // Upsert to avoid duplicates
-    const { error } = await supabase
+    // Insert new slots (ignore duplicates)
+    const { data, error } = await supabase
       .from('availability_slots')
-      .upsert(slotsToCreate, { onConflict: 'performer_id,date,start_time', ignoreDuplicates: true });
+      .insert(slotsToCreate)
+      .select();
 
     if (error) {
-      console.error('Error creating slots:', error);
-      toast.error('Ошибка создания слотов');
+      // Check for duplicate key error
+      if (error.code === '23505') {
+        toast.info('Некоторые слоты уже существуют, пропущены дубликаты');
+        fetchExistingSlots();
+        onSlotsUpdate?.();
+      } else {
+        console.error('Error creating slots:', error);
+        toast.error('Ошибка создания слотов');
+      }
     } else {
-      toast.success(`Создано ${slotsToCreate.length} слотов`);
+      toast.success(`Создано ${data?.length || slotsToCreate.length} слотов`);
       fetchExistingSlots();
       onSlotsUpdate?.();
     }

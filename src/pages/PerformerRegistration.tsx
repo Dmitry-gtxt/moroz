@@ -70,6 +70,8 @@ export default function PerformerRegistration() {
   // Files
   const [photos, setPhotos] = useState<File[]>([]);
   const [photosPreviews, setPhotosPreviews] = useState<string[]>([]);
+  const [video, setVideo] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [documents, setDocuments] = useState<{ type: DocumentType; file: File }[]>([]);
 
   useEffect(() => {
@@ -116,6 +118,31 @@ export default function PerformerRegistration() {
     URL.revokeObjectURL(photosPreviews[index]);
     setPhotos(photos.filter((_, i) => i !== index));
     setPhotosPreviews(photosPreviews.filter((_, i) => i !== index));
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Видео должно быть не более 50 МБ');
+      return;
+    }
+    
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    
+    setVideo(file);
+    setVideoPreview(URL.createObjectURL(file));
+  };
+
+  const removeVideo = () => {
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    setVideo(null);
+    setVideoPreview(null);
   };
 
   const handleDocumentUpload = (type: DocumentType, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -211,6 +238,23 @@ export default function PerformerRegistration() {
         photoUrls.push(publicUrl);
       }
 
+      // 1.5 Upload video if present
+      let videoUrl: string | null = null;
+      if (video) {
+        const videoFileName = `${user.id}/${Date.now()}-${video.name}`;
+        const { error: videoUploadError } = await supabase.storage
+          .from('performer-videos')
+          .upload(videoFileName, video);
+        
+        if (videoUploadError) throw videoUploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('performer-videos')
+          .getPublicUrl(videoFileName);
+        
+        videoUrl = publicUrl;
+      }
+
       // 2. Create performer profile
       const { data: profile, error: profileError } = await supabase
         .from('performer_profiles')
@@ -227,6 +271,7 @@ export default function PerformerRegistration() {
           experience_years: experienceYears ? parseInt(experienceYears) : 0,
           costume_style: costumeStyle || null,
           photo_urls: photoUrls,
+          video_greeting_url: videoUrl,
           is_active: false,
           verification_status: 'pending',
         })
@@ -531,6 +576,42 @@ export default function PerformerRegistration() {
                         accept="image/*"
                         multiple
                         onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {/* Video upload */}
+                <div className="space-y-3">
+                  <Label>Видео-приветствие (до 50 МБ)</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Запишите короткое приветствие для родителей
+                  </p>
+                  
+                  {videoPreview ? (
+                    <div className="relative max-w-md">
+                      <video 
+                        src={videoPreview} 
+                        controls 
+                        className="w-full rounded-lg border"
+                      />
+                      <button
+                        onClick={removeVideo}
+                        className="absolute top-2 right-2 p-1 bg-destructive text-destructive-foreground rounded-full"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
+                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                      <span className="text-sm text-muted-foreground">Загрузить видео</span>
+                      <span className="text-xs text-muted-foreground mt-1">MP4, MOV до 50 МБ</span>
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={handleVideoUpload}
                         className="hidden"
                       />
                     </label>
