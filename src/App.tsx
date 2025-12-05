@@ -19,6 +19,7 @@ import PerformerDashboard from "./pages/performer/PerformerDashboard";
 import PerformerProfilePage from "./pages/performer/PerformerProfile";
 import PerformerCalendar from "./pages/performer/PerformerCalendar";
 import PerformerBookings from "./pages/performer/PerformerBookings";
+import CustomerBookings from "./pages/customer/CustomerBookings";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,8 @@ const App = () => (
             <Route path="/login" element={<Auth />} />
             <Route path="/register" element={<Auth />} />
             <Route path="/become-performer" element={<PerformerRegistration />} />
+            {/* Customer routes */}
+            <Route path="/my-bookings" element={<CustomerBookings />} />
             {/* Performer dashboard routes */}
             <Route path="/performer" element={<PerformerDashboard />} />
             <Route path="/performer/profile" element={<PerformerProfilePage />} />
