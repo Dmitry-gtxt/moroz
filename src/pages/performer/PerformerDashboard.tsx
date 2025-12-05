@@ -167,7 +167,7 @@ export default function PerformerDashboard() {
   }
 
   if (!user) {
-    return <Navigate to="/auth?redirect=/performer" replace />;
+    return <Navigate to={{ pathname: '/auth', search: 'redirect=/performer' }} replace />;
   }
 
   if (hasProfile === false) {
