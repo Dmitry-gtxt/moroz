@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, Upload, X, Save } from 'lucide-react';
+import { Loader2, Upload, X, Save, Video, Trash2 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
@@ -57,6 +57,8 @@ export default function PerformerProfilePage() {
   const [experienceYears, setExperienceYears] = useState('');
   const [costumeStyle, setCostumeStyle] = useState('');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -80,6 +82,7 @@ export default function PerformerProfilePage() {
         setExperienceYears(p.experience_years?.toString() || '');
         setCostumeStyle(p.costume_style || '');
         setPhotoUrls(p.photo_urls);
+        setVideoUrl(p.video_greeting_url);
       }
 
       if (districtsRes.data) {
@@ -133,6 +136,38 @@ export default function PerformerProfilePage() {
     setPhotoUrls(photoUrls.filter((_, i) => i !== index));
   };
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Check file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Видео слишком большое. Максимум 50 МБ');
+      return;
+    }
+
+    setUploadingVideo(true);
+    const fileName = `${user.id}/${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from('performer-videos').upload(fileName, file);
+    
+    if (error) {
+      console.error('Video upload error:', error);
+      toast.error('Ошибка загрузки видео');
+      setUploadingVideo(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('performer-videos').getPublicUrl(fileName);
+    setVideoUrl(publicUrl);
+    setUploadingVideo(false);
+    toast.success('Видео загружено');
+  };
+
+  const removeVideo = async () => {
+    setVideoUrl(null);
+    toast.success('Видео удалено');
+  };
+
   const handleSave = async () => {
     if (!profile) return;
 
@@ -151,6 +186,7 @@ export default function PerformerProfilePage() {
         experience_years: experienceYears ? parseInt(experienceYears) : null,
         costume_style: costumeStyle || null,
         photo_urls: photoUrls,
+        video_greeting_url: videoUrl,
       })
       .eq('id', profile.id);
 
@@ -221,6 +257,62 @@ export default function PerformerProfilePage() {
                 </label>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Video greeting */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Video className="h-5 w-5" />
+              Видео-приветствие
+            </CardTitle>
+            <CardDescription>
+              Короткое видео до 50 МБ (mp4, webm, mov). Клиенты смогут увидеть вас в деле!
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {videoUrl ? (
+              <div className="space-y-4">
+                <div className="relative aspect-video rounded-lg overflow-hidden border bg-black">
+                  <video 
+                    src={videoUrl} 
+                    controls 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <Button variant="destructive" size="sm" onClick={removeVideo}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Удалить видео
+                </Button>
+              </div>
+            ) : (
+              <label className={`
+                flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-lg 
+                cursor-pointer hover:border-primary/50 transition-colors
+                ${uploadingVideo ? 'opacity-50 pointer-events-none' : ''}
+              `}>
+                {uploadingVideo ? (
+                  <>
+                    <Loader2 className="h-10 w-10 text-primary animate-spin mb-3" />
+                    <span className="text-muted-foreground">Загрузка...</span>
+                  </>
+                ) : (
+                  <>
+                    <Video className="h-10 w-10 text-muted-foreground mb-3" />
+                    <span className="font-medium">Загрузить видео</span>
+                    <span className="text-sm text-muted-foreground mt-1">MP4, WebM, MOV до 50 МБ</span>
+                  </>
+                )}
+                <input 
+                  type="file" 
+                  accept="video/mp4,video/webm,video/quicktime" 
+                  onChange={handleVideoUpload} 
+                  className="hidden" 
+                  disabled={uploadingVideo}
+                />
+              </label>
+            )}
           </CardContent>
         </Card>
 
