@@ -194,13 +194,12 @@ const Catalog = () => {
                     <CatalogFilters
                       filters={filters}
                       districts={districts}
-                      onFiltersChange={(newFilters) => {
-                        setFilters(newFilters);
-                      }}
+                      onFiltersChange={setFilters}
                       onClear={() => {
                         clearFilters();
                         setIsFilterOpen(false);
                       }}
+                      onApply={() => setIsFilterOpen(false)}
                     />
                   </div>
                 </SheetContent>

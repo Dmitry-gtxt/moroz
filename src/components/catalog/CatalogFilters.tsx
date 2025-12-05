@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, MapPin, Star, Video, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Star, Video, Trash2, Check } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerType = Database['public']['Enums']['performer_type'];
@@ -26,6 +26,7 @@ interface CatalogFiltersProps {
   districts: District[];
   onFiltersChange: (filters: Filters) => void;
   onClear: () => void;
+  onApply?: () => void;
 }
 
 const performerTypes: { value: PerformerType; label: string }[] = [
@@ -44,7 +45,7 @@ const eventFormats: { value: EventFormat; label: string }[] = [
   { value: 'outdoor', label: 'На улице' },
 ];
 
-export function CatalogFilters({ filters, districts, onFiltersChange, onClear }: CatalogFiltersProps) {
+export function CatalogFilters({ filters, districts, onFiltersChange, onClear, onApply }: CatalogFiltersProps) {
   const handleTypeChange = (type: PerformerType, checked: boolean) => {
     const currentTypes = filters.performerType || [];
     const newTypes = checked
@@ -254,11 +255,19 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear }:
         </select>
       </div>
 
-      {/* Clear Button */}
-      <Button variant="outline" className="w-full" onClick={onClear}>
-        <Trash2 className="h-4 w-4 mr-2" />
-        Сбросить фильтры
-      </Button>
+      {/* Action Buttons */}
+      <div className="space-y-2 pt-4 border-t border-border">
+        {onApply && (
+          <Button className="w-full" onClick={onApply}>
+            <Check className="h-4 w-4 mr-2" />
+            Применить
+          </Button>
+        )}
+        <Button variant="outline" className="w-full" onClick={onClear}>
+          <Trash2 className="h-4 w-4 mr-2" />
+          Сбросить фильтры
+        </Button>
+      </div>
     </div>
   );
 }
