@@ -22,7 +22,7 @@ export function HeroSection() {
     <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-hero">
       {/* Animated snowflakes background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(25)].map((_, i) => (
           <div
             key={i}
             className="absolute text-white/10 animate-snowfall"
@@ -36,23 +36,56 @@ export function HeroSection() {
             ❄
           </div>
         ))}
+        {/* Santa emojis floating */}
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={`santa-${i}`}
+            className="absolute text-4xl animate-float opacity-20"
+            style={{
+              left: `${10 + i * 15}%`,
+              top: `${20 + Math.random() * 40}%`,
+              animationDelay: `${i * 0.5}s`,
+            }}
+          >
+            🎅
+          </div>
+        ))}
+        {/* Horse emojis for Year of the Horse */}
+        {[...Array(4)].map((_, i) => (
+          <div
+            key={`horse-${i}`}
+            className="absolute text-3xl animate-float opacity-15"
+            style={{
+              right: `${5 + i * 20}%`,
+              bottom: `${15 + Math.random() * 30}%`,
+              animationDelay: `${i * 0.8}s`,
+            }}
+          >
+            🐴
+          </div>
+        ))}
       </div>
 
       {/* Decorative gradient orbs */}
       <div className="absolute top-20 right-20 w-96 h-96 bg-accent/20 rounded-full blur-3xl" />
       <div className="absolute bottom-20 left-20 w-64 h-64 bg-frost/10 rounded-full blur-3xl" />
+      
+      {/* Horse silhouette decoration */}
+      <div className="absolute bottom-0 right-0 text-[200px] leading-none text-white/5 font-display font-bold pointer-events-none select-none hidden lg:block">
+        🐎
+      </div>
 
       <div className="container relative z-10 py-20">
         <div className="max-w-3xl mx-auto text-center space-y-8">
-          {/* Badge */}
+          {/* Badge with Year of Horse */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm animate-fade-in">
             <Sparkles className="h-4 w-4 text-accent" />
-            <span className="text-sm text-white/90">Сезон 2024-2025 открыт!</span>
+            <span className="text-sm text-white/90">🐴 Сезон 2025-2026 • Год Лошади!</span>
           </div>
 
           {/* Main heading */}
           <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            Дед Мороз на дом
+            🎅 Дед Мороз на дом
             <br />
             <span className="text-accent">в Бишкеке</span>
           </h1>
@@ -143,16 +176,20 @@ export function HeroSection() {
             style={{ animationDelay: '0.4s' }}
           >
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-400" />
+              <span className="text-lg">🎅</span>
               <span>100+ исполнителей</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-accent" />
+              <span className="text-lg">⭐</span>
               <span>500+ отзывов</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-400" />
+              <span className="text-lg">🔒</span>
               <span>Безопасная оплата</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🐴</span>
+              <span>Год Лошади 2026</span>
             </div>
           </div>
         </div>

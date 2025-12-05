@@ -35,8 +35,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/my-bookings" className="hover:text-accent transition-colors">
-                  Мои заказы
+                <Link to="/cabinet" className="hover:text-accent transition-colors">
+                  Личный кабинет
                 </Link>
               </li>
             </ul>
@@ -89,7 +89,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-primary-foreground/20 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-primary-foreground/60">
-          <p>© {new Date().getFullYear()} ДедМороз.kg. Все права защищены.</p>
+          <p>© 2025-2026 ДедМороз.kg • Сезон Года Лошади 🐴</p>
           <div className="flex gap-6">
             <Link to="/privacy" className="hover:text-accent transition-colors">
               Политика конфиденциальности
