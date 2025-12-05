@@ -117,19 +117,19 @@ export function Header() {
                 </DropdownMenu>
               ) : (
                 <>
-                  <Link 
-                    to="/auth?mode=login"
+                  <button 
+                    onClick={() => navigate('/auth?mode=login')}
                     className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold h-9 px-3 text-foreground hover:bg-accent/10 hover:text-accent active:bg-accent/20 transition-all duration-200"
                   >
                     <LogIn className="h-4 w-4" />
                     Войти
-                  </Link>
-                  <Link 
-                    to="/auth?mode=register"
+                  </button>
+                  <button 
+                    onClick={() => navigate('/auth?mode=register')}
                     className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold h-9 px-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-md hover:shadow-lg transition-all duration-200"
                   >
                     Регистрация
-                  </Link>
+                  </button>
                 </>
               )}
             </>
@@ -208,20 +208,18 @@ export function Header() {
               </>
             ) : (
               <div className="flex gap-2 px-4">
-                <Link 
-                  to="/auth?mode=login" 
-                  onClick={() => setIsMenuOpen(false)}
+                <button 
+                  onClick={() => { navigate('/auth?mode=login'); setIsMenuOpen(false); }}
                   className="flex-1 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold h-9 px-3 border-2 border-input bg-background text-foreground hover:bg-secondary transition-all"
                 >
                   Войти
-                </Link>
-                <Link 
-                  to="/auth?mode=register" 
-                  onClick={() => setIsMenuOpen(false)}
+                </button>
+                <button 
+                  onClick={() => { navigate('/auth?mode=register'); setIsMenuOpen(false); }}
                   className="flex-1 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold h-9 px-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-md transition-all"
                 >
                   Регистрация
-                </Link>
+                </button>
               </div>
             )}
           </nav>
