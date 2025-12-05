@@ -8,11 +8,13 @@ import {
   ShoppingCart, 
   LogOut,
   Home,
-  Snowflake
+  Snowflake,
+  Search
 } from 'lucide-react';
 
 const navItems = [
   { to: '/cabinet', icon: LayoutDashboard, label: 'Обзор' },
+  { to: '/catalog', icon: Search, label: 'Каталог' },
   { to: '/cabinet/bookings', icon: ShoppingCart, label: 'Мои заказы' },
   { to: '/cabinet/profile', icon: User, label: 'Профиль' },
 ];
