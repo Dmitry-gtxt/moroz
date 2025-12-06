@@ -1,0 +1,251 @@
+import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { getCustomerPrice, getCommissionRate } from '@/lib/pricing';
+import { format, addDays, isSameDay } from 'date-fns';
+import { ru } from 'date-fns/locale';
+import { ChevronLeft, ChevronRight, Flame, Snowflake } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface DayPrice {
+  date: Date;
+  avgPrice: number | null;
+  minPrice: number | null;
+  slotsCount: number;
+  isHoliday: boolean;
+}
+
+export function PriceCalendarStrip() {
+  const [dayPrices, setDayPrices] = useState<DayPrice[]>([]);
+  const [commissionRate, setCommissionRate] = useState(40);
+  const [loading, setLoading] = useState(true);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Generate dates from Dec 20 to Jan 10
+  const startDate = new Date(2025, 11, 20); // Dec 20, 2025
+  const endDate = new Date(2026, 0, 10); // Jan 10, 2026
+  
+  // Holiday dates (Dec 31, Jan 1, Jan 7)
+  const holidayDates = [
+    new Date(2025, 11, 31),
+    new Date(2026, 0, 1),
+    new Date(2026, 0, 7),
+  ];
+
+  useEffect(() => {
+    async function fetchPrices() {
+      const [rate] = await Promise.all([getCommissionRate()]);
+      setCommissionRate(rate);
+
+      // Fetch all slots in date range
+      const { data: slots } = await supabase
+        .from('availability_slots')
+        .select('date, price, performer_id')
+        .gte('date', format(startDate, 'yyyy-MM-dd'))
+        .lte('date', format(endDate, 'yyyy-MM-dd'))
+        .eq('status', 'free');
+
+      // Fetch performer base prices for slots without custom price
+      const performerIds = [...new Set(slots?.map(s => s.performer_id) || [])];
+      const { data: performers } = await supabase
+        .from('performer_profiles')
+        .select('id, base_price')
+        .in('id', performerIds);
+
+      const performerPrices = new Map(performers?.map(p => [p.id, p.base_price]) || []);
+
+      // Generate days array
+      const days: DayPrice[] = [];
+      let currentDate = new Date(startDate);
+      
+      while (currentDate <= endDate) {
+        const dateStr = format(currentDate, 'yyyy-MM-dd');
+        const daySlots = slots?.filter(s => s.date === dateStr) || [];
+        
+        const prices = daySlots.map(s => s.price ?? performerPrices.get(s.performer_id) ?? 3000);
+        const avgPrice = prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : null;
+        const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+        
+        const isHoliday = holidayDates.some(h => isSameDay(h, currentDate));
+        
+        days.push({
+          date: new Date(currentDate),
+          avgPrice,
+          minPrice,
+          slotsCount: daySlots.length,
+          isHoliday,
+        });
+        
+        currentDate = addDays(currentDate, 1);
+      }
+
+      setDayPrices(days);
+      setLoading(false);
+    }
+
+    fetchPrices();
+  }, []);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 300;
+      scrollContainerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  // Find min and max prices for gradient coloring
+  const pricesWithValue = dayPrices.filter(d => d.minPrice !== null);
+  const minPriceOverall = pricesWithValue.length > 0 ? Math.min(...pricesWithValue.map(d => d.minPrice!)) : 0;
+  const maxPriceOverall = pricesWithValue.length > 0 ? Math.max(...pricesWithValue.map(d => d.minPrice!)) : 0;
+
+  const getPriceColor = (price: number | null) => {
+    if (price === null) return 'bg-muted';
+    if (maxPriceOverall === minPriceOverall) return 'bg-green-500';
+    
+    const ratio = (price - minPriceOverall) / (maxPriceOverall - minPriceOverall);
+    
+    if (ratio < 0.33) return 'bg-green-500';
+    if (ratio < 0.66) return 'bg-amber-500';
+    return 'bg-red-500';
+  };
+
+  const getPriceIntensity = (price: number | null) => {
+    if (price === null) return 'opacity-30';
+    if (maxPriceOverall === minPriceOverall) return 'opacity-100';
+    
+    const ratio = (price - minPriceOverall) / (maxPriceOverall - minPriceOverall);
+    return ratio > 0.7 ? 'opacity-100' : ratio > 0.4 ? 'opacity-80' : 'opacity-60';
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-card border-y border-border py-4">
+        <div className="container">
+          <div className="h-20 animate-pulse bg-muted rounded-lg" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gradient-to-b from-card to-background border-y border-border py-4 overflow-hidden">
+      <div className="container">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <h3 className="font-display font-semibold text-foreground">Цены на праздники</h3>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full bg-green-500" /> Низкие
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full bg-amber-500" /> Средние
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full bg-red-500" /> Высокие
+              </span>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => scroll('left')}
+              className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => scroll('right')}
+              className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable days */}
+        <div 
+          ref={scrollContainerRef}
+          className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {dayPrices.map((day, index) => {
+            const customerPrice = day.minPrice ? getCustomerPrice(day.minPrice, commissionRate) : null;
+            const isToday = isSameDay(day.date, new Date());
+            const isNewYear = isSameDay(day.date, new Date(2026, 0, 1));
+            const isNYE = isSameDay(day.date, new Date(2025, 11, 31));
+            
+            return (
+              <Link
+                key={index}
+                to={`/catalog?date=${format(day.date, 'yyyy-MM-dd')}`}
+                className={cn(
+                  "flex-shrink-0 w-16 rounded-xl p-2 transition-all hover:scale-105 hover:shadow-lg cursor-pointer",
+                  day.isHoliday ? "ring-2 ring-accent ring-offset-2 ring-offset-background" : "",
+                  isToday ? "bg-accent/10" : "bg-card border border-border/50"
+                )}
+              >
+                {/* Date */}
+                <div className="text-center mb-1.5">
+                  <div className="text-[10px] uppercase text-muted-foreground">
+                    {format(day.date, 'EEE', { locale: ru })}
+                  </div>
+                  <div className={cn(
+                    "text-sm font-semibold",
+                    day.isHoliday ? "text-accent" : "text-foreground"
+                  )}>
+                    {format(day.date, 'd')}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {format(day.date, 'MMM', { locale: ru })}
+                  </div>
+                </div>
+
+                {/* Price bar */}
+                <div className={cn(
+                  "h-1.5 rounded-full mb-1.5",
+                  getPriceColor(day.minPrice),
+                  getPriceIntensity(day.minPrice)
+                )} />
+
+                {/* Price */}
+                <div className="text-center">
+                  {customerPrice ? (
+                    <div className="text-xs font-medium text-foreground">
+                      {(customerPrice / 1000).toFixed(1)}к
+                    </div>
+                  ) : (
+                    <div className="text-[10px] text-muted-foreground">—</div>
+                  )}
+                  {day.slotsCount > 0 && (
+                    <div className="text-[9px] text-muted-foreground">
+                      {day.slotsCount} слот{day.slotsCount === 1 ? '' : day.slotsCount < 5 ? 'а' : 'ов'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Holiday indicator */}
+                {(isNYE || isNewYear) && (
+                  <div className="flex justify-center mt-1">
+                    {isNYE ? (
+                      <Flame className="h-3 w-3 text-orange-500" />
+                    ) : (
+                      <Snowflake className="h-3 w-3 text-blue-400" />
+                    )}
+                  </div>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Footer hint */}
+        <p className="text-xs text-muted-foreground text-center mt-2">
+          Нажмите на дату для просмотра доступных исполнителей
+        </p>
+      </div>
+    </div>
+  );
+}

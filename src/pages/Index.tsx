@@ -1,6 +1,7 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { HeroSection } from '@/components/home/HeroSection';
+import { PriceCalendarStrip } from '@/components/home/PriceCalendarStrip';
 import { HowItWorks } from '@/components/home/HowItWorks';
 import { FeaturesSection } from '@/components/home/FeaturesSection';
 import { TopPerformers } from '@/components/home/TopPerformers';
@@ -14,6 +15,7 @@ const Index = () => {
       <Header />
       <main className="flex-1">
         <HeroSection />
+        <PriceCalendarStrip />
         <HowItWorks />
         <TopPerformers />
         <FeaturesSection />
