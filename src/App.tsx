@@ -12,7 +12,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPerformers from "./pages/admin/AdminPerformers";
-import AdminModeration from "./pages/admin/AdminModeration";
+import AdminVerification from "./pages/admin/AdminVerification";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminPerformerView from "./pages/admin/AdminPerformerView";
 import AdminBookingHistory from "./pages/admin/AdminBookingHistory";
@@ -68,7 +68,7 @@ const App = () => (
             {/* Admin routes */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/performers" element={<AdminPerformers />} />
-            <Route path="/admin/moderation" element={<AdminModeration />} />
+            <Route path="/admin/verification" element={<AdminVerification />} />
             <Route path="/admin/reviews" element={<AdminReviews />} />
             <Route path="/admin/orders" element={<AdminOrders />} />
             <Route path="/admin/history" element={<AdminBookingHistory />} />

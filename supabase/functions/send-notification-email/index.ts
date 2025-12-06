@@ -117,6 +117,31 @@ interface AdminStatusChangeRequest {
   reason: string;
 }
 
+interface VerificationApprovedRequest {
+  type: "verification_approved";
+  performerId: string;
+  performerName: string;
+}
+
+interface VerificationRejectedRequest {
+  type: "verification_rejected";
+  performerId: string;
+  performerName: string;
+  reason: string;
+}
+
+interface ProfileActivatedRequest {
+  type: "profile_activated";
+  performerId: string;
+  performerName: string;
+}
+
+interface VerificationSubmittedAdminRequest {
+  type: "verification_submitted_admin";
+  performerId: string;
+  performerName: string;
+}
+
 type NotificationRequest = 
   | BookingNotificationRequest 
   | BookingConfirmedRequest 
@@ -127,7 +152,11 @@ type NotificationRequest =
   | ProfileUnpublishedAdminRequest
   | WelcomeEmailRequest
   | AdminActionRequest
-  | AdminStatusChangeRequest;
+  | AdminStatusChangeRequest
+  | VerificationApprovedRequest
+  | VerificationRejectedRequest
+  | ProfileActivatedRequest
+  | VerificationSubmittedAdminRequest;
 
 const eventTypeLabels: Record<string, string> = {
   home: "На дом",
@@ -833,6 +862,106 @@ const handler = async (req: Request): Promise<Response> => {
         status: res.ok ? 200 : 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
+    }
+
+    // Handle verification approved
+    if (payload.type === "verification_approved") {
+      const { performerId, performerName } = payload as VerificationApprovedRequest;
+      
+      let emailToSend: string | undefined;
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: performer } = await supabase.from('performer_profiles').select('user_id').eq('id', performerId).single();
+        if (performer?.user_id) {
+          const { data: authUser } = await supabase.auth.admin.getUserById(performer.user_id);
+          emailToSend = authUser?.user?.email;
+        }
+      }
+
+      if (emailToSend) {
+        await sendEmail([emailToSend], "✅ Верификация пройдена!", `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4caf50;">✅ Поздравляем, ${escapeHtml(performerName)}!</h1>
+            <p>Ваш профиль успешно прошёл верификацию. Теперь администратор может активировать ваш профиль для публикации в каталоге.</p>
+          </div>
+        `);
+      }
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders } });
+    }
+
+    // Handle verification rejected
+    if (payload.type === "verification_rejected") {
+      const { performerId, performerName, reason } = payload as VerificationRejectedRequest;
+      
+      let emailToSend: string | undefined;
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: performer } = await supabase.from('performer_profiles').select('user_id').eq('id', performerId).single();
+        if (performer?.user_id) {
+          const { data: authUser } = await supabase.auth.admin.getUserById(performer.user_id);
+          emailToSend = authUser?.user?.email;
+        }
+      }
+
+      if (emailToSend) {
+        await sendEmail([emailToSend], "❌ Верификация отклонена", `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #f44336;">❌ Верификация не пройдена</h1>
+            <p>Здравствуйте, ${escapeHtml(performerName)}!</p>
+            <p><strong>Причина:</strong> ${escapeHtml(reason)}</p>
+            <p>Вы можете обновить профиль и отправить заявку повторно.</p>
+          </div>
+        `);
+      }
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders } });
+    }
+
+    // Handle profile activated
+    if (payload.type === "profile_activated") {
+      const { performerId, performerName } = payload as ProfileActivatedRequest;
+      
+      let emailToSend: string | undefined;
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: performer } = await supabase.from('performer_profiles').select('user_id').eq('id', performerId).single();
+        if (performer?.user_id) {
+          const { data: authUser } = await supabase.auth.admin.getUserById(performer.user_id);
+          emailToSend = authUser?.user?.email;
+        }
+      }
+
+      if (emailToSend) {
+        await sendEmail([emailToSend], "🎉 Ваш профиль активирован!", `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4caf50;">🎉 Поздравляем, ${escapeHtml(performerName)}!</h1>
+            <p>Ваш профиль теперь виден в каталоге и доступен для бронирования!</p>
+            <div style="background: #e8f5e9; padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <h3>🚀 Рекомендации для успеха:</h3>
+              <ul>
+                <li>Укажите дни и часы работы в расписании</li>
+                <li>Добавьте больше качественных фотографий</li>
+                <li>Загрузите видео-приветствие — это повышает доверие клиентов</li>
+                <li>Заполните подробное описание о себе</li>
+              </ul>
+            </div>
+          </div>
+        `);
+      }
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders } });
+    }
+
+    // Handle verification submitted to admin
+    if (payload.type === "verification_submitted_admin") {
+      const { performerId, performerName } = payload as VerificationSubmittedAdminRequest;
+      
+      await sendEmail([ADMIN_EMAIL], "🔔 Верификация: новая заявка", `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #1976d2;">📋 Новая заявка на верификацию</h1>
+          <p>Исполнитель <strong>${escapeHtml(performerName)}</strong> подал заявку на верификацию.</p>
+          <p><a href="https://dedmoroz.kg/admin/verification" style="background: #1976d2; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Перейти к верификации</a></p>
+        </div>
+      `);
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders } });
     }
 
     throw new Error("Unknown notification type");

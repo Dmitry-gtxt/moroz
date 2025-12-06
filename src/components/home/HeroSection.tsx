@@ -128,9 +128,14 @@ export function HeroSection() {
                     className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-accent/50"
                   >
                     <option value="" className="text-foreground">Любое время</option>
-                    <option value="morning" className="text-foreground">Утро (10:00-12:00)</option>
-                    <option value="afternoon" className="text-foreground">День (14:00-16:00)</option>
-                    <option value="evening" className="text-foreground">Вечер (18:00-20:00)</option>
+                    {Array.from({ length: 24 }, (_, i) => i + 1).map((hour) => {
+                      const displayHour = hour === 24 ? '24:00' : `${hour.toString().padStart(2, '0')}:00`;
+                      return (
+                        <option key={hour} value={displayHour} className="text-foreground">
+                          {displayHour}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               </div>
