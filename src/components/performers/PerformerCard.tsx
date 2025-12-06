@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, MapPin, Video, CheckCircle, Clock, Calendar } from 'lucide-react';
+import { Star, MapPin, Video, CheckCircle, Clock, Calendar, Play, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getCustomerPrice, getCommissionRate } from '@/lib/pricing';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { getCustomerPrice } from '@/lib/pricing';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
@@ -36,6 +37,7 @@ export function PerformerCard({
   selectedDate,
   commissionRate = 40,
 }: PerformerCardProps) {
+  const [showVideo, setShowVideo] = useState(false);
   const getDistrictNames = (slugs: string[]) => {
     return slugs
       .map((slug) => districts.find((d) => d.slug === slug)?.name)
@@ -102,14 +104,19 @@ export function PerformerCard({
           ))}
         </div>
 
-        {/* Video badge */}
+        {/* Video play button */}
         {performer.video_greeting_url && (
-          <div className="absolute top-3 right-3">
-            <Badge className="bg-accent text-white">
-              <Video className="h-3 w-3 mr-1" />
-              Видео
-            </Badge>
-          </div>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowVideo(true);
+            }}
+            className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors shadow-lg"
+          >
+            <Play className="h-3 w-3 fill-current" />
+            Видео
+          </button>
         )}
 
         {/* Verified badge */}
@@ -205,10 +212,30 @@ export function PerformerCard({
           </div>
           <Button variant="gold" size="sm" asChild>
             <Link to={`/performer/${performer.id}${selectedDate ? `?date=${selectedDate}` : ''}`}>
-              Выбрать
+              Подробнее
             </Link>
           </Button>
         </div>
+
+        {/* Video dialog */}
+        <Dialog open={showVideo} onOpenChange={setShowVideo}>
+          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black">
+            <button
+              onClick={() => setShowVideo(false)}
+              className="absolute top-2 right-2 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <video
+              src={performer.video_greeting_url || ''}
+              controls
+              autoPlay
+              className="w-full max-h-[80vh] object-contain"
+            >
+              Ваш браузер не поддерживает воспроизведение видео.
+            </video>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
