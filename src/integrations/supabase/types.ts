@@ -375,6 +375,80 @@ export type Database = {
           },
         ]
       }
+      support_chats: {
+        Row: {
+          created_at: string
+          id: string
+          performer_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          performer_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          performer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_chats_performer_id_fkey"
+            columns: ["performer_id"]
+            isOneToOne: true
+            referencedRelation: "performer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_chats_performer_id_fkey"
+            columns: ["performer_id"]
+            isOneToOne: true
+            referencedRelation: "public_performers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_messages: {
+        Row: {
+          chat_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_id: string
+          sender_type: string
+          text: string
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id: string
+          sender_type: string
+          text: string
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+          sender_type?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "support_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string

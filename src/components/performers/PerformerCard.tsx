@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Star, MapPin, Video, CheckCircle, Clock, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { getCustomerPrice } from '@/lib/pricing';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
@@ -61,7 +62,8 @@ export function PerformerCard({
   const availableHoursData = selectedDate ? getAvailableHours() : null;
 
   const photoUrl = performer.photo_urls?.[0] || 'https://images.unsplash.com/photo-1576919228236-a097c32a5cd4?w=400&h=400&fit=crop';
-  const price = performer.price_from ?? performer.base_price;
+  const performerPrice = performer.price_from ?? performer.base_price;
+  const customerPrice = getCustomerPrice(performerPrice);
 
   return (
     <div className="group bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">
@@ -183,7 +185,7 @@ export function PerformerCard({
           <div>
             <span className="text-sm text-muted-foreground">от </span>
             <span className="font-display text-xl font-bold text-accent">
-              {price.toLocaleString()}
+              {customerPrice.toLocaleString()}
             </span>
             <span className="text-sm text-muted-foreground"> сом</span>
           </div>
