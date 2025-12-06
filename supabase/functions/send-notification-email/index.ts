@@ -100,6 +100,23 @@ interface WelcomeEmailRequest {
   fullName: string;
 }
 
+interface AdminActionRequest {
+  type: "admin_action";
+  performerId: string;
+  performerName: string;
+  action: "photo_deleted" | "video_deleted";
+  reason: string;
+}
+
+interface AdminStatusChangeRequest {
+  type: "admin_status_change";
+  performerId: string;
+  performerName: string;
+  changeType: "verification" | "publication";
+  newValue: string | boolean;
+  reason: string;
+}
+
 type NotificationRequest = 
   | BookingNotificationRequest 
   | BookingConfirmedRequest 
@@ -108,7 +125,9 @@ type NotificationRequest =
   | BookingCancelledRequest
   | ProfilePendingVerificationRequest
   | ProfileUnpublishedAdminRequest
-  | WelcomeEmailRequest;
+  | WelcomeEmailRequest
+  | AdminActionRequest
+  | AdminStatusChangeRequest;
 
 const eventTypeLabels: Record<string, string> = {
   home: "На дом",
@@ -621,6 +640,194 @@ const handler = async (req: Request): Promise<Response> => {
 
       const data = await res.json();
       console.log("Welcome email response:", data);
+
+      return new Response(JSON.stringify({ success: true, data }), {
+        status: res.ok ? 200 : 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Handle admin actions (photo/video deletion)
+    if (payload.type === "admin_action") {
+      const { performerId, performerName, action, reason } = payload as AdminActionRequest;
+
+      let emailToSend: string | undefined;
+
+      // Get performer's email
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        
+        const { data: performer } = await supabase
+          .from('performer_profiles')
+          .select('user_id')
+          .eq('id', performerId)
+          .single();
+        
+        if (performer?.user_id) {
+          const { data: authUser } = await supabase.auth.admin.getUserById(performer.user_id);
+          emailToSend = authUser?.user?.email;
+        }
+      }
+
+      if (!emailToSend) {
+        console.log("No performer email found, skipping admin action notification");
+        return new Response(JSON.stringify({ success: true, skipped: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      const actionText = action === "photo_deleted" ? "фотографию" : "видео-приветствие";
+      const actionEmoji = action === "photo_deleted" ? "🖼️" : "🎬";
+
+      console.log("Sending admin action notification to:", emailToSend);
+
+      const res = await sendEmail(
+        [emailToSend],
+        `⚠️ Модератор удалил ${actionText} из вашего профиля`,
+        `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #ff9800; margin-bottom: 24px;">${actionEmoji} Уведомление от модератора</h1>
+            <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${escapeHtml(performerName)}</strong>!</p>
+            <p style="font-size: 16px; color: #333;">Модератор платформы удалил ${actionText} из вашего профиля.</p>
+            
+            <div style="background: #fff3e0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+              <h3 style="margin-top: 0; color: #333;">📝 Причина:</h3>
+              <p style="color: #555;">${escapeHtml(reason)}</p>
+            </div>
+            
+            <div style="background: #e3f2fd; border-radius: 12px; padding: 20px; margin: 24px 0;">
+              <p style="margin: 0; color: #1565c0;">ℹ️ Вы можете загрузить новое ${action === "photo_deleted" ? "фото" : "видео"} в личном кабинете, соответствующее правилам платформы.</p>
+            </div>
+            
+            <p style="font-size: 14px; color: #666;">Если у вас есть вопросы, свяжитесь с нами через чат поддержки в личном кабинете.</p>
+          </div>
+        `
+      );
+
+      const data = await res.json();
+      console.log("Admin action email response:", data);
+
+      return new Response(JSON.stringify({ success: true, data }), {
+        status: res.ok ? 200 : 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Handle admin status changes (verification/publication)
+    if (payload.type === "admin_status_change") {
+      const { performerId, performerName, changeType, newValue, reason } = payload as AdminStatusChangeRequest;
+
+      let emailToSend: string | undefined;
+
+      // Get performer's email
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        
+        const { data: performer } = await supabase
+          .from('performer_profiles')
+          .select('user_id')
+          .eq('id', performerId)
+          .single();
+        
+        if (performer?.user_id) {
+          const { data: authUser } = await supabase.auth.admin.getUserById(performer.user_id);
+          emailToSend = authUser?.user?.email;
+        }
+      }
+
+      if (!emailToSend) {
+        console.log("No performer email found, skipping status change notification");
+        return new Response(JSON.stringify({ success: true, skipped: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      let subject: string;
+      let title: string;
+      let description: string;
+      let statusColor: string;
+
+      if (changeType === "verification") {
+        const verificationLabels: Record<string, string> = {
+          unverified: "Не верифицирован",
+          pending: "На проверке",
+          verified: "Верифицирован",
+          rejected: "Отклонён",
+        };
+        const statusLabel = verificationLabels[newValue as string] || newValue;
+        
+        if (newValue === "verified") {
+          subject = "✅ Ваш профиль верифицирован!";
+          title = "✅ Верификация пройдена!";
+          description = "Поздравляем! Ваш профиль успешно прошёл верификацию.";
+          statusColor = "#4caf50";
+        } else if (newValue === "rejected") {
+          subject = "❌ Верификация отклонена";
+          title = "❌ Верификация не пройдена";
+          description = "К сожалению, ваш профиль не прошёл верификацию.";
+          statusColor = "#f44336";
+        } else {
+          subject = `📋 Статус верификации изменён: ${statusLabel}`;
+          title = "📋 Изменение статуса верификации";
+          description = `Ваш статус верификации изменён на "${statusLabel}".`;
+          statusColor = "#ff9800";
+        }
+      } else {
+        // Publication change
+        if (newValue === true) {
+          subject = "🎉 Ваш профиль опубликован!";
+          title = "🎉 Профиль активирован!";
+          description = "Отличные новости! Ваш профиль теперь виден в каталоге и доступен для бронирования.";
+          statusColor = "#4caf50";
+        } else {
+          subject = "⚠️ Ваш профиль снят с публикации";
+          title = "⚠️ Профиль деактивирован";
+          description = "Ваш профиль был снят с публикации модератором.";
+          statusColor = "#ff9800";
+        }
+      }
+
+      console.log("Sending status change notification to:", emailToSend);
+
+      const res = await sendEmail(
+        [emailToSend],
+        subject,
+        `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: ${statusColor}; margin-bottom: 24px;">${title}</h1>
+            <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${escapeHtml(performerName)}</strong>!</p>
+            <p style="font-size: 16px; color: #333;">${description}</p>
+            
+            <div style="background: #f5f5f5; border-radius: 12px; padding: 20px; margin: 24px 0; border-left: 4px solid ${statusColor};">
+              <h3 style="margin-top: 0; color: #333;">💬 Комментарий модератора:</h3>
+              <p style="color: #555;">${escapeHtml(reason)}</p>
+            </div>
+            
+            ${changeType === "publication" && newValue === true ? `
+            <div style="background: #e8f5e9; border-radius: 12px; padding: 20px; margin: 24px 0;">
+              <h3 style="margin-top: 0; color: #2e7d32;">🚀 Что дальше?</h3>
+              <ul style="color: #333; margin: 0; padding-left: 20px;">
+                <li style="margin: 8px 0;">Убедитесь, что указали дни и часы работы в расписании</li>
+                <li style="margin: 8px 0;">Чем больше фотографий — тем выше интерес клиентов</li>
+                <li style="margin: 8px 0;">Видео-приветствие значительно повышает конверсию бронирований</li>
+                <li style="margin: 8px 0;">Качественное описание помогает выделиться среди конкурентов</li>
+              </ul>
+            </div>
+            ` : ''}
+            
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="https://dedmoroz.kg/performer/dashboard" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти в личный кабинет</a>
+            </div>
+            
+            <p style="font-size: 14px; color: #666; margin-top: 24px;">Если у вас есть вопросы, свяжитесь с нами через чат поддержки.</p>
+          </div>
+        `
+      );
+
+      const data = await res.json();
+      console.log("Status change email response:", data);
 
       return new Response(JSON.stringify({ success: true, data }), {
         status: res.ok ? 200 : 500,

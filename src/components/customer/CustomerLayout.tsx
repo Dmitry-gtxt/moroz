@@ -1,5 +1,7 @@
 import { Link, useLocation, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { 
@@ -9,7 +11,8 @@ import {
   LogOut,
   Home,
   Snowflake,
-  Search
+  Search,
+  Star
 } from 'lucide-react';
 
 const navItems = [
@@ -26,6 +29,25 @@ interface CustomerLayoutProps {
 export function CustomerLayout({ children }: CustomerLayoutProps) {
   const { user, signOut, loading } = useAuth();
   const location = useLocation();
+  const [hasPerformerProfile, setHasPerformerProfile] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    async function checkPerformerProfile() {
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('performer_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      setHasPerformerProfile(!!data);
+    }
+
+    if (user) {
+      checkPerformerProfile();
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -72,6 +94,17 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
               </Link>
             );
           })}
+
+          {/* Show "Become Performer" button if user doesn't have performer profile */}
+          {hasPerformerProfile === false && (
+            <Link
+              to="/become-performer"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-gradient-to-r from-accent/10 to-primary/10 hover:from-accent/20 hover:to-primary/20 text-foreground border border-accent/30 mt-4"
+            >
+              <Star className="h-5 w-5 text-accent" />
+              <span className="font-medium">Стать исполнителем</span>
+            </Link>
+          )}
         </nav>
 
         <div className="p-4 border-t border-border space-y-2">
