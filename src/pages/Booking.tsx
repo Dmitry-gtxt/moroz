@@ -12,11 +12,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { sendBookingNotification } from '@/lib/notifications';
 import { toast } from 'sonner';
 import { 
-  Calendar, Clock, MapPin, Users, CreditCard, 
-  CheckCircle, ArrowLeft, ShieldCheck, LogIn, Loader2
+  Calendar, Clock, MapPin, Users, 
+  CheckCircle, ArrowLeft, LogIn, Loader2
 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 import { bookingStep1Schema, bookingStep2Schema } from '@/lib/validations/booking';
+import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment } from '@/lib/pricing';
 import { ZodError } from 'zod';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
@@ -130,8 +131,11 @@ const Booking = () => {
   const slotDate = slot?.date || new Date().toISOString().split('T')[0];
   const slotTime = slot ? `${slot.start_time.slice(0, 5)}-${slot.end_time.slice(0, 5)}` : '10:00-12:00';
 
-  const prepaymentAmount = Math.round((performer.price_from ?? performer.base_price) * 0.3);
-  const totalAmount = performer.price_from ?? performer.base_price;
+  // Pricing: performer sets base_price, customer sees +40% markup
+  const performerPrice = performer.price_from ?? performer.base_price;
+  const customerPrice = getCustomerPrice(performerPrice); // What customer sees (140%)
+  const prepaymentAmount = getPrepaymentAmount(performerPrice); // 40% of performer price - platform commission
+  const performerPayment = getPerformerPayment(performerPrice); // 100% - paid in cash to performer
   const photoUrl = performer.photo_urls?.[0] || '/placeholder.svg';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -195,7 +199,7 @@ const Booking = () => {
 
       setSubmitting(true);
       try {
-        // Create booking
+        // Create booking - payment will be made AFTER performer confirms
         const { data: booking, error } = await supabase.from('bookings').insert({
           customer_id: user.id,
           performer_id: performer.id,
@@ -210,10 +214,10 @@ const Booking = () => {
           customer_name: formData.customerName,
           customer_phone: formData.customerPhone,
           customer_email: formData.customerEmail || null,
-          price_total: totalAmount,
-          prepayment_amount: prepaymentAmount,
-          status: 'pending',
-          payment_status: 'prepayment_paid',
+          price_total: customerPrice, // Total customer sees (with markup)
+          prepayment_amount: prepaymentAmount, // 40% of performer price
+          status: 'pending', // Awaiting performer confirmation
+          payment_status: 'not_paid', // Payment made after confirmation
         }).select().single();
 
         if (error) throw error;
@@ -232,7 +236,7 @@ const Booking = () => {
           bookingTime: slotTime,
           address: formData.address,
           eventType: formData.eventType,
-          priceTotal: totalAmount,
+          priceTotal: customerPrice,
         });
 
         toast.success('Бронирование успешно создано!');
@@ -491,42 +495,38 @@ const Booking = () => {
 
                 {step === 3 && (
                   <div className="bg-card rounded-2xl p-6 border border-border animate-fade-in">
-                    <h2 className="font-display text-xl font-semibold mb-6">Оплата предоплаты</h2>
+                    <h2 className="font-display text-xl font-semibold mb-6">Подтверждение заказа</h2>
                     
                     <div className="bg-secondary/50 rounded-xl p-4 mb-6">
                       <div className="flex items-center gap-3 mb-3">
-                        <ShieldCheck className="h-5 w-5 text-green-500" />
-                        <span className="font-semibold">Безопасная оплата</span>
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <span className="font-semibold">Как это работает</span>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Ваши деньги хранятся на сервисе до выполнения заказа. 
-                        Если исполнитель не придёт — мы вернём предоплату.
+                        После создания заказа исполнитель получит уведомление и подтвердит его.
+                        Оплата предоплаты потребуется только после подтверждения исполнителем.
                       </p>
                     </div>
 
                     <div className="space-y-4 mb-6">
                       <div className="flex justify-between py-3 border-b border-border">
                         <span className="text-muted-foreground">Стоимость визита</span>
-                        <span className="font-semibold">{totalAmount.toLocaleString()} сом</span>
+                        <span className="font-semibold">{customerPrice.toLocaleString()} сом</span>
                       </div>
                       <div className="flex justify-between py-3 border-b border-border">
-                        <span className="text-muted-foreground">Предоплата (30%)</span>
+                        <span className="text-muted-foreground">Предоплата (после подтверждения)</span>
                         <span className="font-bold text-lg text-accent">{prepaymentAmount.toLocaleString()} сом</span>
                       </div>
                       <div className="flex justify-between py-3">
-                        <span className="text-muted-foreground">Оплата исполнителю при встрече</span>
-                        <span>{(totalAmount - prepaymentAmount).toLocaleString()} сом</span>
+                        <span className="text-muted-foreground">Оплата исполнителю наличкой</span>
+                        <span>{performerPayment.toLocaleString()} сом</span>
                       </div>
                     </div>
 
-                    {/* Mock payment form */}
-                    <div className="bg-muted/50 rounded-xl p-6 mb-6 text-center">
-                      <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                      <p className="text-muted-foreground mb-4">
-                        Здесь будет форма оплаты
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        (Для демо-версии нажмите «Оплатить» для симуляции успешной оплаты)
+                    <div className="bg-muted/30 rounded-xl p-4 mb-6">
+                      <p className="text-sm text-muted-foreground text-center">
+                        Сейчас оплата не требуется. Вы сможете оплатить предоплату после того, 
+                        как исполнитель подтвердит ваш заказ.
                       </p>
                     </div>
 
@@ -539,9 +539,9 @@ const Booking = () => {
                         {submitting ? (
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         ) : (
-                          <CreditCard className="h-4 w-4 mr-2" />
+                          <CheckCircle className="h-4 w-4 mr-2" />
                         )}
-                        {submitting ? 'Обработка...' : `Оплатить ${prepaymentAmount.toLocaleString()} сом`}
+                        {submitting ? 'Обработка...' : 'Отправить заявку'}
                       </Button>
                     </div>
                   </div>
@@ -552,10 +552,10 @@ const Booking = () => {
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center">
                       <CheckCircle className="h-10 w-10 text-green-500" />
                     </div>
-                    <h2 className="font-display text-2xl font-bold mb-2">Заказ успешно создан!</h2>
+                    <h2 className="font-display text-2xl font-bold mb-2">Заявка отправлена!</h2>
                     <p className="text-muted-foreground mb-6">
-                      Исполнитель получил ваш заказ и скоро подтвердит его. 
-                      Мы отправим вам уведомление.
+                      Исполнитель получил вашу заявку и скоро подтвердит её. 
+                      После подтверждения вы сможете оплатить предоплату.
                     </p>
                     
                     <div className="bg-secondary/50 rounded-xl p-4 mb-6 text-left">
@@ -574,12 +574,12 @@ const Booking = () => {
                           <span>{slotTime}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Адрес:</span>
-                          <span>{formData.address}</span>
+                          <span className="text-muted-foreground">Стоимость:</span>
+                          <span className="font-semibold">{customerPrice.toLocaleString()} сом</span>
                         </div>
-                        <div className="flex justify-between font-semibold">
-                          <span>Предоплата внесена:</span>
-                          <span className="text-accent">{prepaymentAmount.toLocaleString()} сом</span>
+                        <div className="flex justify-between text-accent">
+                          <span>Предоплата (после подтверждения):</span>
+                          <span className="font-bold">{prepaymentAmount.toLocaleString()} сом</span>
                         </div>
                       </div>
                     </div>
@@ -591,7 +591,7 @@ const Booking = () => {
                         </Link>
                       </Button>
                       <Button variant="gold" className="flex-1" asChild>
-                        <Link to="/my-bookings">
+                        <Link to="/cabinet/bookings">
                           Мои заказы
                         </Link>
                       </Button>
@@ -645,11 +645,15 @@ const Booking = () => {
                   <div className="mt-4 pt-4 border-t border-border">
                     <div className="flex justify-between mb-2">
                       <span className="text-muted-foreground">Итого:</span>
-                      <span className="font-bold">{totalAmount.toLocaleString()} сом</span>
+                      <span className="font-bold">{customerPrice.toLocaleString()} сом</span>
                     </div>
                     <div className="flex justify-between text-accent">
                       <span>Предоплата:</span>
                       <span className="font-bold">{prepaymentAmount.toLocaleString()} сом</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground text-sm mt-2">
+                      <span>Наличкой исполнителю:</span>
+                      <span>{performerPayment.toLocaleString()} сом</span>
                     </div>
                   </div>
                 </div>
