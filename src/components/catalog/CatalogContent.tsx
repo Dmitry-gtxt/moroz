@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { PerformerCard } from '@/components/performers/PerformerCard';
 import { CatalogFilters, Filters } from '@/components/catalog/CatalogFilters';
 import { supabase } from '@/integrations/supabase/client';
+import { getCommissionRate } from '@/lib/pricing';
 import { SlidersHorizontal, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -28,6 +29,7 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
   const [districts, setDistricts] = useState<District[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequestsMap>({});
   const [availability, setAvailability] = useState<AvailabilityMap>({});
+  const [commissionRate, setCommissionRate] = useState(40);
   const [loading, setLoading] = useState(true);
   
   const initialFilters: Filters = {
@@ -43,7 +45,7 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
     async function fetchData() {
       setLoading(true);
       
-      const [performersRes, districtsRes, pendingBookingsRes] = await Promise.all([
+      const [performersRes, districtsRes, pendingBookingsRes, rate] = await Promise.all([
         supabase
           .from('performer_profiles')
           .select('*')
@@ -58,6 +60,7 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
           .select('performer_id')
           .eq('status', 'pending')
           .gte('booking_date', new Date().toISOString().split('T')[0]),
+        getCommissionRate(),
       ]);
 
       if (performersRes.data) {
@@ -66,6 +69,7 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
       if (districtsRes.data) {
         setDistricts(districtsRes.data);
       }
+      setCommissionRate(rate);
       
       if (pendingBookingsRes.data) {
         const counts: PendingRequestsMap = {};
@@ -335,6 +339,7 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
                     pendingRequestsCount={pendingRequests[performer.id] || 0}
                     availableSlots={filters.date ? availability[performer.id] : undefined}
                     selectedDate={filters.date}
+                    commissionRate={commissionRate}
                   />
                 </div>
               ))}
