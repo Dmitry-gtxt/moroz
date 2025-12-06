@@ -3,14 +3,17 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { PerformerLayout } from './PerformerDashboard';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { FloatingSaveButton } from '@/components/ui/floating-save-button';
+import { UploadProgress } from '@/components/ui/upload-progress';
+import { useVideoUpload } from '@/hooks/useVideoUpload';
 import { toast } from 'sonner';
-import { Loader2, Upload, X, Save, Video, Trash2 } from 'lucide-react';
+import { Loader2, Upload, X, Video, Trash2 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
@@ -58,7 +61,12 @@ export default function PerformerProfilePage() {
   const [costumeStyle, setCostumeStyle] = useState('');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [uploadingVideo, setUploadingVideo] = useState(false);
+
+  // Video upload with progress
+  const { uploadVideo, uploading: uploadingVideo, progress: uploadProgress, fileName: uploadFileName } = useVideoUpload({
+    userId: user?.id || '',
+    onSuccess: (url) => setVideoUrl(url),
+  });
 
   useEffect(() => {
     async function fetchData() {
@@ -139,28 +147,7 @@ export default function PerformerProfilePage() {
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-
-    // Check file size (max 50MB)
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error('Видео слишком большое. Максимум 50 МБ');
-      return;
-    }
-
-    setUploadingVideo(true);
-    const fileName = `${user.id}/${Date.now()}-${file.name}`;
-    const { error } = await supabase.storage.from('performer-videos').upload(fileName, file);
-    
-    if (error) {
-      console.error('Video upload error:', error);
-      toast.error('Ошибка загрузки видео');
-      setUploadingVideo(false);
-      return;
-    }
-
-    const { data: { publicUrl } } = supabase.storage.from('performer-videos').getPublicUrl(fileName);
-    setVideoUrl(publicUrl);
-    setUploadingVideo(false);
-    toast.success('Видео загружено');
+    await uploadVideo(file);
   };
 
   const removeVideo = async () => {
@@ -218,16 +205,10 @@ export default function PerformerProfilePage() {
 
   return (
     <PerformerLayout>
-      <div className="space-y-6 max-w-3xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-display font-bold text-foreground">Мой профиль</h1>
-            <p className="text-muted-foreground mt-1">Редактирование информации</p>
-          </div>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-            Сохранить
-          </Button>
+      <div className="space-y-6 max-w-3xl pb-20">
+        <div>
+          <h1 className="text-3xl font-display font-bold text-foreground">Мой профиль</h1>
+          <p className="text-muted-foreground mt-1">Редактирование информации</p>
         </div>
 
         {/* Photos */}
@@ -272,7 +253,11 @@ export default function PerformerProfilePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {videoUrl ? (
+            {uploadingVideo ? (
+              <div className="p-6 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5">
+                <UploadProgress progress={uploadProgress} fileName={uploadFileName} />
+              </div>
+            ) : videoUrl ? (
               <div className="space-y-4">
                 <div className="relative aspect-video rounded-lg overflow-hidden border bg-black">
                   <video 
@@ -287,29 +272,15 @@ export default function PerformerProfilePage() {
                 </Button>
               </div>
             ) : (
-              <label className={`
-                flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-lg 
-                cursor-pointer hover:border-primary/50 transition-colors
-                ${uploadingVideo ? 'opacity-50 pointer-events-none' : ''}
-              `}>
-                {uploadingVideo ? (
-                  <>
-                    <Loader2 className="h-10 w-10 text-primary animate-spin mb-3" />
-                    <span className="text-muted-foreground">Загрузка...</span>
-                  </>
-                ) : (
-                  <>
-                    <Video className="h-10 w-10 text-muted-foreground mb-3" />
-                    <span className="font-medium">Загрузить видео</span>
-                    <span className="text-sm text-muted-foreground mt-1">MP4, WebM, MOV до 50 МБ</span>
-                  </>
-                )}
+              <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
+                <Video className="h-10 w-10 text-muted-foreground mb-3" />
+                <span className="font-medium">Загрузить видео</span>
+                <span className="text-sm text-muted-foreground mt-1">MP4, WebM, MOV до 50 МБ</span>
                 <input 
                   type="file" 
                   accept="video/mp4,video/webm,video/quicktime" 
                   onChange={handleVideoUpload} 
                   className="hidden" 
-                  disabled={uploadingVideo}
                 />
               </label>
             )}
@@ -464,6 +435,9 @@ export default function PerformerProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Floating Save Button */}
+      <FloatingSaveButton onClick={handleSave} saving={saving} />
     </PerformerLayout>
   );
 }

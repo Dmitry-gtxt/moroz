@@ -3,12 +3,12 @@ import { CustomerLayout } from '@/components/customer/CustomerLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SEOHead } from '@/components/seo/SEOHead';
+import { FloatingSaveButton } from '@/components/ui/floating-save-button';
 import { toast } from 'sonner';
-import { User, Mail, Phone, Save, Loader2 } from 'lucide-react';
+import { User, Mail, Phone } from 'lucide-react';
 
 export default function CustomerProfile() {
   const { user } = useAuth();
@@ -32,8 +32,7 @@ export default function CustomerProfile() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setLoading(true);
 
     try {
@@ -46,7 +45,6 @@ export default function CustomerProfile() {
 
       if (error) throw error;
 
-      // Also update profiles table if exists
       await supabase
         .from('profiles')
         .upsert({
@@ -70,14 +68,13 @@ export default function CustomerProfile() {
     <CustomerLayout>
       <SEOHead title="Мой профиль" />
       
-      <div className="space-y-8">
+      <div className="space-y-8 pb-20">
         <div>
           <h1 className="text-3xl font-display font-bold text-foreground">Мой профиль</h1>
           <p className="text-muted-foreground mt-1">Управление личными данными</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Profile Form */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
@@ -87,7 +84,7 @@ export default function CustomerProfile() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-6">
                   <div>
                     <Label htmlFor="email">Email</Label>
                     <div className="relative mt-1">
@@ -135,26 +132,11 @@ export default function CustomerProfile() {
                       />
                     </div>
                   </div>
-
-                  <Button type="submit" variant="gold" disabled={loading}>
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Сохранение...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Сохранить изменения
-                      </>
-                    )}
-                  </Button>
-                </form>
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Account Info */}
           <div>
             <Card>
               <CardHeader>
@@ -182,6 +164,8 @@ export default function CustomerProfile() {
           </div>
         </div>
       </div>
+
+      <FloatingSaveButton onClick={handleSubmit} saving={loading} />
     </CustomerLayout>
   );
 }
