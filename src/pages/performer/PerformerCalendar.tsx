@@ -10,14 +10,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { format, isSameDay, addDays } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Loader2, Plus, Trash2, Clock, CalendarCheck, AlertCircle } from 'lucide-react';
+import { Loader2, Plus, Trash2, Clock, CalendarCheck, AlertCircle, Pencil, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getCustomerPrice, getCommissionRate, formatPrice } from '@/lib/pricing';
 import type { Database } from '@/integrations/supabase/types';
 
-type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'];
+type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'] & {
+  price?: number | null;
+};
 type SlotStatus = Database['public']['Enums']['slot_status'];
 
 // Generate hours 1-24
@@ -28,6 +32,8 @@ const formatHour = (hour: number) => `${hour.toString().padStart(2, '0')}:00`;
 export default function PerformerCalendar() {
   const { user, loading: authLoading } = useAuth();
   const [performerId, setPerformerId] = useState<string | null>(null);
+  const [basePrice, setBasePrice] = useState<number>(3000);
+  const [commissionRate, setCommissionRate] = useState<number>(40);
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
@@ -35,28 +41,43 @@ export default function PerformerCalendar() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [slotToDelete, setSlotToDelete] = useState<AvailabilitySlot | null>(null);
   
+  // Price editing state
+  const [priceDialogOpen, setPriceDialogOpen] = useState(false);
+  const [slotToEditPrice, setSlotToEditPrice] = useState<AvailabilitySlot | null>(null);
+  const [editingPrice, setEditingPrice] = useState<string>('');
+  
+  // Bulk price editing for day
+  const [dayPriceDialogOpen, setDayPriceDialogOpen] = useState(false);
+  const [dayPrice, setDayPrice] = useState<string>('');
+  
   // Form for adding range
   const [rangeStart, setRangeStart] = useState(10);
   const [rangeEnd, setRangeEnd] = useState(20);
+  const [rangePrice, setRangePrice] = useState<string>('');
 
   useEffect(() => {
-    async function fetchPerformerId() {
+    async function fetchPerformerData() {
       if (!user) return;
 
-      const { data } = await supabase
-        .from('performer_profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const [profileRes, rate] = await Promise.all([
+        supabase
+          .from('performer_profiles')
+          .select('id, base_price')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        getCommissionRate()
+      ]);
 
-      if (data) {
-        setPerformerId(data.id);
+      if (profileRes.data) {
+        setPerformerId(profileRes.data.id);
+        setBasePrice(profileRes.data.base_price);
       }
+      setCommissionRate(rate);
       setLoading(false);
     }
 
     if (!authLoading) {
-      fetchPerformerId();
+      fetchPerformerData();
     }
   }, [user, authLoading]);
 
@@ -105,6 +126,8 @@ export default function PerformerCalendar() {
       return;
     }
 
+    const customPrice = rangePrice ? parseInt(rangePrice) : null;
+
     const slotsToAdd = [];
     for (let hour = rangeStart; hour < rangeEnd; hour++) {
       const startTime = formatHour(hour);
@@ -117,6 +140,7 @@ export default function PerformerCalendar() {
         start_time: startTime,
         end_time: endTime,
         status: 'free' as SlotStatus,
+        price: customPrice,
       });
     }
 
@@ -132,9 +156,78 @@ export default function PerformerCalendar() {
     } else {
       toast.success(`Добавлено ${slotsToAdd.length} слотов`);
       setAddDialogOpen(false);
+      setRangePrice('');
     }
     fetchSlots();
   };
+
+  // Update single slot price
+  const handleUpdateSlotPrice = async () => {
+    if (!slotToEditPrice) return;
+
+    const newPrice = editingPrice ? parseInt(editingPrice) : null;
+
+    const { error } = await supabase
+      .from('availability_slots')
+      .update({ price: newPrice })
+      .eq('id', slotToEditPrice.id);
+
+    if (error) {
+      toast.error('Ошибка обновления цены');
+    } else {
+      toast.success('Цена обновлена');
+      setSlots(slots.map(s => s.id === slotToEditPrice.id ? { ...s, price: newPrice } : s));
+      setPriceDialogOpen(false);
+      setSlotToEditPrice(null);
+      setEditingPrice('');
+    }
+  };
+
+  // Update all free slots for day
+  const handleUpdateDayPrice = async () => {
+    if (!performerId) return;
+
+    const newPrice = dayPrice ? parseInt(dayPrice) : null;
+    const freeSlotIds = selectedDateSlots.filter(s => s.status === 'free').map(s => s.id);
+
+    if (freeSlotIds.length === 0) {
+      toast.info('Нет свободных слотов для обновления');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('availability_slots')
+      .update({ price: newPrice })
+      .in('id', freeSlotIds);
+
+    if (error) {
+      toast.error('Ошибка обновления цен');
+    } else {
+      toast.success(`Цены обновлены для ${freeSlotIds.length} слотов`);
+      setSlots(slots.map(s => freeSlotIds.includes(s.id) ? { ...s, price: newPrice } : s));
+      setDayPriceDialogOpen(false);
+      setDayPrice('');
+    }
+  };
+
+  // Reset slot price to base
+  const handleResetSlotPrice = async (slot: AvailabilitySlot) => {
+    const { error } = await supabase
+      .from('availability_slots')
+      .update({ price: null })
+      .eq('id', slot.id);
+
+    if (error) {
+      toast.error('Ошибка сброса цены');
+    } else {
+      toast.success('Цена сброшена до базовой');
+      setSlots(slots.map(s => s.id === slot.id ? { ...s, price: null } : s));
+    }
+  };
+
+  // Get display price for slot
+  const getSlotPrice = (slot: AvailabilitySlot) => slot.price ?? basePrice;
+  const getSlotCustomerPrice = (slot: AvailabilitySlot) => getCustomerPrice(getSlotPrice(slot), commissionRate);
 
   // Delete single slot
   const handleDeleteSlot = async (slot: AvailabilitySlot) => {
@@ -351,6 +444,20 @@ export default function PerformerCalendar() {
                       <p className="text-sm text-muted-foreground">
                         Будет создано: {Math.max(0, rangeEnd - rangeStart)} слотов
                       </p>
+                      
+                      {/* Price for new slots */}
+                      <div className="space-y-2 pt-2 border-t">
+                        <Label>Цена за слот (сом)</Label>
+                        <Input
+                          type="number"
+                          placeholder={`Базовая: ${basePrice}`}
+                          value={rangePrice}
+                          onChange={(e) => setRangePrice(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Оставьте пустым для использования базовой цены ({formatPrice(basePrice)})
+                        </p>
+                      </div>
                     </div>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
@@ -362,6 +469,20 @@ export default function PerformerCalendar() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                
+                {freeSlots.length > 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setDayPrice('');
+                      setDayPriceDialogOpen(true);
+                    }}
+                  >
+                    <Coins className="h-4 w-4 mr-1" />
+                    Цены дня
+                  </Button>
+                )}
                 
                 {selectedDateSlots.length > 0 && (
                   <Button 
@@ -413,6 +534,18 @@ export default function PerformerCalendar() {
                         </div>
                         
                         <div className="flex gap-2">
+                          {/* Price display */}
+                          <div className="flex items-center gap-2 mr-2">
+                            <span className="text-sm font-medium">
+                              {formatPrice(getSlotPrice(slot))}
+                            </span>
+                            {slot.price !== null && slot.price !== basePrice && (
+                              <Badge variant="outline" className="text-xs">
+                                Особая цена
+                              </Badge>
+                            )}
+                          </div>
+                          
                           {isBooked ? (
                             <Button
                               variant="outline"
@@ -423,6 +556,18 @@ export default function PerformerCalendar() {
                             </Button>
                           ) : (
                             <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSlotToEditPrice(slot);
+                                  setEditingPrice(slot.price?.toString() || '');
+                                  setPriceDialogOpen(true);
+                                }}
+                                title="Изменить цену"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -457,6 +602,13 @@ export default function PerformerCalendar() {
                   </p>
                 </div>
               )}
+              
+              {/* Price legend */}
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Базовая цена:</strong> {formatPrice(basePrice)} → <strong>Клиент видит:</strong> {formatPrice(getCustomerPrice(basePrice, commissionRate))}
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -482,6 +634,86 @@ export default function PerformerCalendar() {
               onClick={() => slotToDelete && handleDeleteSlot(slotToDelete)}
             >
               Удалить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit slot price dialog */}
+      <Dialog open={priceDialogOpen} onOpenChange={setPriceDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Изменить цену слота</DialogTitle>
+          </DialogHeader>
+          {slotToEditPrice && (
+            <div className="space-y-4 pt-4">
+              <p className="text-sm text-muted-foreground">
+                Слот: {slotToEditPrice.start_time.slice(0, 5)} — {slotToEditPrice.end_time.slice(0, 5)}
+              </p>
+              <div className="space-y-2">
+                <Label>Цена (сом)</Label>
+                <Input
+                  type="number"
+                  placeholder={`Базовая: ${basePrice}`}
+                  value={editingPrice}
+                  onChange={(e) => setEditingPrice(e.target.value)}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Оставьте пустым для использования базовой цены.
+                Клиент увидит: {formatPrice(getCustomerPrice(editingPrice ? parseInt(editingPrice) : basePrice, commissionRate))}
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPriceDialogOpen(false)}>
+              Отмена
+            </Button>
+            {slotToEditPrice?.price !== null && (
+              <Button 
+                variant="secondary"
+                onClick={() => slotToEditPrice && handleResetSlotPrice(slotToEditPrice).then(() => setPriceDialogOpen(false))}
+              >
+                Сбросить
+              </Button>
+            )}
+            <Button onClick={handleUpdateSlotPrice}>
+              Сохранить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit day prices dialog */}
+      <Dialog open={dayPriceDialogOpen} onOpenChange={setDayPriceDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Установить цену для всех слотов дня</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <p className="text-sm text-muted-foreground">
+              {format(selectedDate, 'd MMMM yyyy', { locale: ru })} — {freeSlots.length} свободных слотов
+            </p>
+            <div className="space-y-2">
+              <Label>Цена за слот (сом)</Label>
+              <Input
+                type="number"
+                placeholder={`Базовая: ${basePrice}`}
+                value={dayPrice}
+                onChange={(e) => setDayPrice(e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Оставьте пустым для сброса к базовой цене.
+              Клиент увидит: {formatPrice(getCustomerPrice(dayPrice ? parseInt(dayPrice) : basePrice, commissionRate))}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDayPriceDialogOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={handleUpdateDayPrice}>
+              Применить ко всем
             </Button>
           </DialogFooter>
         </DialogContent>

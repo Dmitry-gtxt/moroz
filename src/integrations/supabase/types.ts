@@ -21,6 +21,7 @@ export type Database = {
           end_time: string
           id: string
           performer_id: string
+          price: number | null
           start_time: string
           status: Database["public"]["Enums"]["slot_status"]
         }
@@ -30,6 +31,7 @@ export type Database = {
           end_time: string
           id?: string
           performer_id: string
+          price?: number | null
           start_time: string
           status?: Database["public"]["Enums"]["slot_status"]
         }
@@ -39,6 +41,7 @@ export type Database = {
           end_time?: string
           id?: string
           performer_id?: string
+          price?: number | null
           start_time?: string
           status?: Database["public"]["Enums"]["slot_status"]
         }

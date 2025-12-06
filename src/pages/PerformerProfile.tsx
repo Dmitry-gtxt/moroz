@@ -17,7 +17,9 @@ import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfileType = Database['public']['Tables']['performer_profiles']['Row'];
 type District = Database['public']['Tables']['districts']['Row'];
-type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'];
+type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'] & {
+  price?: number | null;
+};
 type Review = Database['public']['Tables']['reviews']['Row'];
 
 const performerTypeLabels: Record<string, string> = {
@@ -139,16 +141,38 @@ const PerformerProfile = () => {
     return getSlotsForDate(dateStr).length > 0;
   };
 
+  // Get price range for a date
+  const getPriceRangeForDate = (dateStr: string) => {
+    const dateSlots = getSlotsForDate(dateStr);
+    if (dateSlots.length === 0) return null;
+    
+    const prices = dateSlots.map(s => s.price ?? performer.base_price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    
+    return { min: getCustomerPrice(minPrice, commissionRate), max: getCustomerPrice(maxPrice, commissionRate) };
+  };
+
+  // Get slot price
+  const getSlotCustomerPrice = (slot: AvailabilitySlot) => {
+    const slotPrice = slot.price ?? performer.base_price;
+    return getCustomerPrice(slotPrice, commissionRate);
+  };
+
   const availableSlotsForSelectedDate = selectedDate ? getSlotsForDate(selectedDate) : [];
+  const selectedDatePriceRange = selectedDate ? getPriceRangeForDate(selectedDate) : null;
   const photoUrl = performer.photo_urls?.[0] || 'https://images.unsplash.com/photo-1576919228236-a097c32a5cd4?w=400&h=400&fit=crop';
-  const performerPrice = performer.price_from ?? performer.base_price;
-  const customerPrice = getCustomerPrice(performerPrice, commissionRate);
+  
+  // Get min price for display (from all slots or base price)
+  const allPrices = slots.map(s => s.price ?? performer.base_price);
+  const minPerformerPrice = allPrices.length > 0 ? Math.min(...allPrices) : performer.base_price;
+  const customerPriceFrom = getCustomerPrice(minPerformerPrice, commissionRate);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <SEOHead 
         title={performer.display_name}
-        description={`Закажите ${performer.display_name} в Бишкеке. Рейтинг ${Number(performer.rating_average).toFixed(1)}, ${performer.rating_count ?? 0} отзывов. Цена от ${customerPrice.toLocaleString()} сом.`}
+        description={`Закажите ${performer.display_name} в Бишкеке. Рейтинг ${Number(performer.rating_average).toFixed(1)}, ${performer.rating_count ?? 0} отзывов. Цена от ${customerPriceFrom.toLocaleString()} сом.`}
         type="profile"
       />
       <Header />
@@ -325,7 +349,7 @@ const PerformerProfile = () => {
                   <div className="text-center mb-6">
                     <span className="text-sm text-muted-foreground">Стоимость от</span>
                     <div className="font-display text-4xl font-bold text-accent">
-                      {customerPrice.toLocaleString()} 
+                      {customerPriceFrom.toLocaleString()} 
                       <span className="text-xl font-normal text-muted-foreground"> сом</span>
                     </div>
                     <span className="text-sm text-muted-foreground">за визит 20-30 минут</span>
@@ -401,19 +425,28 @@ const PerformerProfile = () => {
                   {/* Time Slots */}
                   {selectedDate && (
                     <div className="mb-6">
-                      <h3 className="font-semibold mb-3">
+                      <h3 className="font-semibold mb-2">
                         Доступное время на {format(parseISO(selectedDate), 'd MMMM', { locale: ru })}
                       </h3>
+                      {selectedDatePriceRange && (
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {selectedDatePriceRange.min === selectedDatePriceRange.max 
+                            ? `Цена: ${selectedDatePriceRange.min.toLocaleString()} сом`
+                            : `Цена: ${selectedDatePriceRange.min.toLocaleString()} — ${selectedDatePriceRange.max.toLocaleString()} сом`
+                          }
+                        </p>
+                      )}
                       {availableSlotsForSelectedDate.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 gap-2">
                           {availableSlotsForSelectedDate.map((slot) => {
                             const hasPendingBooking = pendingSlotIds.has(slot.id);
+                            const slotPrice = getSlotCustomerPrice(slot);
                             return (
                               <button
                                 key={slot.id}
                                 onClick={() => setSelectedSlot(slot.id)}
                                 className={`
-                                  py-2 px-3 rounded-lg text-sm font-medium transition-colors relative
+                                  py-2 px-3 rounded-lg text-sm font-medium transition-colors relative flex items-center justify-between
                                   ${selectedSlot === slot.id 
                                     ? 'bg-accent text-white' 
                                     : hasPendingBooking
@@ -422,7 +455,12 @@ const PerformerProfile = () => {
                                   }
                                 `}
                               >
-                                {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                                <span>
+                                  {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                                </span>
+                                <span className={`text-xs ${selectedSlot === slot.id ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                  {slotPrice.toLocaleString()} сом
+                                </span>
                                 {hasPendingBooking && selectedSlot !== slot.id && (
                                   <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full" title="Есть другие заявки" />
                                 )}

@@ -8,7 +8,9 @@ import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
 type District = Database['public']['Tables']['districts']['Row'];
-type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'];
+type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'] & {
+  price?: number | null;
+};
 
 interface PerformerCardProps {
   performer: PerformerProfile;
@@ -62,11 +64,20 @@ export function PerformerCard({
     };
   };
 
+  // Get min price from available slots or base price
+  const getMinPrice = () => {
+    if (availableSlots && availableSlots.length > 0) {
+      const prices = availableSlots.map(s => s.price ?? performer.base_price);
+      return Math.min(...prices);
+    }
+    return performer.base_price;
+  };
+
   const availableHoursData = selectedDate ? getAvailableHours() : null;
 
   const photoUrl = performer.photo_urls?.[0] || 'https://images.unsplash.com/photo-1576919228236-a097c32a5cd4?w=400&h=400&fit=crop';
-  const performerPrice = performer.price_from ?? performer.base_price;
-  const customerPrice = getCustomerPrice(performerPrice, commissionRate);
+  const minPerformerPrice = getMinPrice();
+  const customerPrice = getCustomerPrice(minPerformerPrice, commissionRate);
 
   return (
     <div className="group bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">

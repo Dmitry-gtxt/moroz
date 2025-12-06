@@ -22,7 +22,9 @@ import { ZodError } from 'zod';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
 type District = Database['public']['Tables']['districts']['Row'];
-type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'];
+type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'] & {
+  price?: number | null;
+};
 
 const eventTypeLabels: Record<string, string> = {
   home: 'На дом',
@@ -146,8 +148,8 @@ const Booking = () => {
   const slotDate = slot?.date || new Date().toISOString().split('T')[0];
   const slotTime = slot ? `${slot.start_time.slice(0, 5)}-${slot.end_time.slice(0, 5)}` : '10:00-12:00';
 
-  // Pricing: performer sets base_price, customer sees +X% markup (configurable)
-  const performerPrice = performer.price_from ?? performer.base_price;
+  // Pricing: use slot price if available, otherwise performer's base_price
+  const performerPrice = slot?.price ?? performer.base_price;
   const customerPrice = getCustomerPrice(performerPrice, commissionRate); // What customer sees
   const prepaymentAmount = getPrepaymentAmount(performerPrice, commissionRate); // Platform commission
   const performerPayment = getPerformerPayment(performerPrice); // Paid in cash to performer
