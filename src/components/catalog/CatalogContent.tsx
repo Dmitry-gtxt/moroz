@@ -133,11 +133,31 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
       );
     }
 
-    if (filters.priceFrom) {
-      result = result.filter((p) => (p.price_from ?? p.base_price) >= filters.priceFrom!);
-    }
-    if (filters.priceTo) {
-      result = result.filter((p) => (p.price_from ?? p.base_price) <= filters.priceTo!);
+    // Price filtering - use slot prices if date is selected, otherwise base price
+    if (filters.priceFrom || filters.priceTo) {
+      result = result.filter((p) => {
+        let minPrice = p.base_price;
+        let maxPrice = p.base_price;
+        
+        // If date is selected, check slot prices
+        if (filters.date && availability[p.id]?.length) {
+          const slotPrices = availability[p.id].map(slot => slot.price ?? p.base_price);
+          minPrice = Math.min(...slotPrices);
+          maxPrice = Math.max(...slotPrices);
+        }
+        
+        // Apply commission to get customer-facing price
+        const customerMinPrice = Math.round(minPrice * (1 + commissionRate / 100));
+        const customerMaxPrice = Math.round(maxPrice * (1 + commissionRate / 100));
+        
+        if (filters.priceFrom && customerMaxPrice < filters.priceFrom) {
+          return false;
+        }
+        if (filters.priceTo && customerMinPrice > filters.priceTo) {
+          return false;
+        }
+        return true;
+      });
     }
 
     if (filters.minRating) {
@@ -188,7 +208,7 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
     }
 
     return result;
-  }, [performers, filters, availability]);
+  }, [performers, filters, availability, commissionRate]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -304,6 +324,12 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
                 <FilterChip
                   label="С видео"
                   onRemove={() => setFilters({ ...filters, hasVideo: false })}
+                />
+              )}
+              {(filters.priceFrom || filters.priceTo) && (
+                <FilterChip
+                  label={`${filters.priceFrom || 0} - ${filters.priceTo || '∞'} сом`}
+                  onRemove={() => setFilters({ ...filters, priceFrom: undefined, priceTo: undefined })}
                 />
               )}
               {filters.minRating && (
