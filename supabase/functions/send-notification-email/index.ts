@@ -7,6 +7,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// HTML escape function to prevent XSS/injection in email templates
+function escapeHtml(text: string | undefined | null): string {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 interface BookingNotificationRequest {
   type: "new_booking";
   bookingId: string;
@@ -112,7 +123,7 @@ const handler = async (req: Request): Promise<Response> => {
           html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <h1 style="color: #c41e3a; margin-bottom: 24px;">🎅 Новая заявка!</h1>
-              <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${performerName}</strong>!</p>
+              <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${escapeHtml(performerName)}</strong>!</p>
               <p style="font-size: 16px; color: #333;">У вас новая заявка на бронирование на платформе ДедМороз.kg</p>
               
               <div style="background: #fff3e0; border-radius: 12px; padding: 16px; margin: 16px 0;">
@@ -121,16 +132,16 @@ const handler = async (req: Request): Promise<Response> => {
               
               <div style="background: #f9f9f9; border-radius: 12px; padding: 20px; margin: 24px 0;">
                 <h3 style="margin-top: 0; color: #333;">📋 Детали заявки:</h3>
-                <p><strong>Дата:</strong> ${bookingDate}</p>
-                <p><strong>Время:</strong> ${bookingTime}</p>
-                <p><strong>Тип:</strong> ${eventTypeLabels[eventType] || eventType}</p>
-                <p><strong>Адрес:</strong> ${address}</p>
+                <p><strong>Дата:</strong> ${escapeHtml(bookingDate)}</p>
+                <p><strong>Время:</strong> ${escapeHtml(bookingTime)}</p>
+                <p><strong>Тип:</strong> ${escapeHtml(eventTypeLabels[eventType] || eventType)}</p>
+                <p><strong>Адрес:</strong> ${escapeHtml(address)}</p>
                 <p><strong>Стоимость:</strong> <span style="color: #c41e3a; font-weight: bold;">${priceTotal.toLocaleString()} сом</span></p>
               </div>
               <div style="background: #e8f5e9; border-radius: 12px; padding: 20px; margin: 24px 0;">
                 <h3 style="margin-top: 0; color: #333;">👤 Клиент:</h3>
-                <p><strong>Имя:</strong> ${customerName}</p>
-                <p><strong>Телефон:</strong> <a href="tel:${customerPhone}" style="color: #c41e3a;">${customerPhone}</a></p>
+                <p><strong>Имя:</strong> ${escapeHtml(customerName)}</p>
+                <p><strong>Телефон:</strong> <a href="tel:${escapeHtml(customerPhone)}" style="color: #c41e3a;">${escapeHtml(customerPhone)}</a></p>
               </div>
               <p style="font-size: 14px; color: #666;">Подтвердите или отклоните заявку в личном кабинете.</p>
             </div>
@@ -173,21 +184,21 @@ const handler = async (req: Request): Promise<Response> => {
           html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <h1 style="color: #2e7d32; margin-bottom: 24px;">✅ Заявка подтверждена!</h1>
-              <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${customerName}</strong>!</p>
-              <p style="font-size: 16px; color: #333;">Отличные новости! Исполнитель <strong>${performerName}</strong> подтвердил вашу заявку. Время забронировано!</p>
+              <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${escapeHtml(customerName)}</strong>!</p>
+              <p style="font-size: 16px; color: #333;">Отличные новости! Исполнитель <strong>${escapeHtml(performerName)}</strong> подтвердил вашу заявку. Время забронировано!</p>
               
               <div style="background: #e8f5e9; border-radius: 12px; padding: 20px; margin: 24px 0;">
                 <h3 style="margin-top: 0; color: #333;">🎄 Детали визита:</h3>
-                <p><strong>📅 Дата:</strong> ${bookingDate}</p>
-                <p><strong>⏰ Время:</strong> ${bookingTime}</p>
-                <p><strong>📍 Адрес:</strong> ${address}</p>
+                <p><strong>📅 Дата:</strong> ${escapeHtml(bookingDate)}</p>
+                <p><strong>⏰ Время:</strong> ${escapeHtml(bookingTime)}</p>
+                <p><strong>📍 Адрес:</strong> ${escapeHtml(address)}</p>
                 <p><strong>💰 К оплате при встрече:</strong> <span style="font-weight: bold;">${Math.round(priceTotal * 0.7).toLocaleString()} сом</span></p>
               </div>
               
               ${performerPhone ? `
               <div style="background: #f9f9f9; border-radius: 12px; padding: 20px; margin: 24px 0;">
                 <h3 style="margin-top: 0; color: #333;">📞 Контакт исполнителя:</h3>
-                <p>Если нужно уточнить детали: <a href="tel:${performerPhone}" style="color: #c41e3a; font-weight: bold;">${performerPhone}</a></p>
+                <p>Если нужно уточнить детали: <a href="tel:${escapeHtml(performerPhone)}" style="color: #c41e3a; font-weight: bold;">${escapeHtml(performerPhone)}</a></p>
               </div>
               ` : ''}
               
@@ -236,18 +247,18 @@ const handler = async (req: Request): Promise<Response> => {
           html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <h1 style="color: #d32f2f; margin-bottom: 24px;">😔 Заявка отклонена</h1>
-              <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${customerName}</strong>!</p>
-              <p style="font-size: 16px; color: #333;">К сожалению, исполнитель <strong>${performerName}</strong> не смог принять вашу заявку.</p>
+              <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${escapeHtml(customerName)}</strong>!</p>
+              <p style="font-size: 16px; color: #333;">К сожалению, исполнитель <strong>${escapeHtml(performerName)}</strong> не смог принять вашу заявку.</p>
               
               <div style="background: #ffebee; border-radius: 12px; padding: 20px; margin: 24px 0;">
                 <h3 style="margin-top: 0; color: #333;">📋 Детали заявки:</h3>
-                <p><strong>📅 Дата:</strong> ${bookingDate}</p>
-                <p><strong>⏰ Время:</strong> ${bookingTime}</p>
+                <p><strong>📅 Дата:</strong> ${escapeHtml(bookingDate)}</p>
+                <p><strong>⏰ Время:</strong> ${escapeHtml(bookingTime)}</p>
               </div>
               
               <div style="background: #fff3e0; border-radius: 12px; padding: 20px; margin: 24px 0;">
                 <h3 style="margin-top: 0; color: #333;">💬 Причина:</h3>
-                <p style="color: #555;">${rejectionReason}</p>
+                <p style="color: #555;">${escapeHtml(rejectionReason)}</p>
               </div>
               
               <p style="font-size: 14px; color: #666;">Не расстраивайтесь! Вы можете выбрать другого исполнителя в нашем каталоге. Предоплата будет возвращена.</p>
@@ -295,17 +306,17 @@ const handler = async (req: Request): Promise<Response> => {
           html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <h1 style="color: #c41e3a; margin-bottom: 24px;">✨ Новый отзыв!</h1>
-              <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${performerName}</strong>!</p>
+              <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${escapeHtml(performerName)}</strong>!</p>
               <div style="background: #fff8e1; border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center;">
                 <p style="font-size: 32px; margin: 0;">${stars}</p>
                 <p style="font-size: 24px; font-weight: bold; color: #333; margin: 8px 0;">${rating} из 5</p>
               </div>
               ${reviewText ? `
                 <div style="background: #f9f9f9; border-radius: 12px; padding: 20px; margin: 24px 0;">
-                  <p style="font-style: italic; color: #555;">"${reviewText}"</p>
-                  <p style="text-align: right; color: #999;">— ${customerName}</p>
+                  <p style="font-style: italic; color: #555;">"${escapeHtml(reviewText)}"</p>
+                  <p style="text-align: right; color: #999;">— ${escapeHtml(customerName)}</p>
                 </div>
-              ` : `<p style="color: #666;">Клиент ${customerName} оценил вашу работу.</p>`}
+              ` : `<p style="color: #666;">Клиент ${escapeHtml(customerName)} оценил вашу работу.</p>`}
             </div>
           `,
         }),
@@ -340,18 +351,18 @@ const handler = async (req: Request): Promise<Response> => {
               html: `
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                   <h1 style="color: #d32f2f; margin-bottom: 24px;">❌ Заказ отменён</h1>
-                  <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${customerName}</strong>!</p>
-                  <p style="font-size: 16px; color: #333;">К сожалению, исполнитель <strong>${performerName}</strong> отменил ваш заказ.</p>
+                  <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${escapeHtml(customerName)}</strong>!</p>
+                  <p style="font-size: 16px; color: #333;">К сожалению, исполнитель <strong>${escapeHtml(performerName)}</strong> отменил ваш заказ.</p>
                   
                   <div style="background: #ffebee; border-radius: 12px; padding: 20px; margin: 24px 0;">
                     <h3 style="margin-top: 0; color: #333;">📋 Детали отменённого заказа:</h3>
-                    <p><strong>📅 Дата:</strong> ${bookingDate}</p>
-                    <p><strong>⏰ Время:</strong> ${bookingTime}</p>
+                    <p><strong>📅 Дата:</strong> ${escapeHtml(bookingDate)}</p>
+                    <p><strong>⏰ Время:</strong> ${escapeHtml(bookingTime)}</p>
                   </div>
                   
                   <div style="background: #fff3e0; border-radius: 12px; padding: 20px; margin: 24px 0;">
                     <h3 style="margin-top: 0; color: #333;">💬 Причина отмены:</h3>
-                    <p style="color: #555;">${cancellationReason}</p>
+                    <p style="color: #555;">${escapeHtml(cancellationReason)}</p>
                   </div>
                   
                   <p style="font-size: 14px; color: #666;">Вы можете выбрать другого исполнителя в нашем каталоге. Предоплата будет возвращена.</p>
@@ -383,18 +394,18 @@ const handler = async (req: Request): Promise<Response> => {
               html: `
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                   <h1 style="color: #d32f2f; margin-bottom: 24px;">❌ Заказ отменён клиентом</h1>
-                  <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${performerName}</strong>!</p>
-                  <p style="font-size: 16px; color: #333;">Клиент <strong>${customerName}</strong> отменил бронирование.</p>
+                  <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${escapeHtml(performerName)}</strong>!</p>
+                  <p style="font-size: 16px; color: #333;">Клиент <strong>${escapeHtml(customerName)}</strong> отменил бронирование.</p>
                   
                   <div style="background: #ffebee; border-radius: 12px; padding: 20px; margin: 24px 0;">
                     <h3 style="margin-top: 0; color: #333;">📋 Детали отменённого заказа:</h3>
-                    <p><strong>📅 Дата:</strong> ${bookingDate}</p>
-                    <p><strong>⏰ Время:</strong> ${bookingTime}</p>
+                    <p><strong>📅 Дата:</strong> ${escapeHtml(bookingDate)}</p>
+                    <p><strong>⏰ Время:</strong> ${escapeHtml(bookingTime)}</p>
                   </div>
                   
                   <div style="background: #fff3e0; border-radius: 12px; padding: 20px; margin: 24px 0;">
                     <h3 style="margin-top: 0; color: #333;">💬 Причина отмены:</h3>
-                    <p style="color: #555;">${cancellationReason}</p>
+                    <p style="color: #555;">${escapeHtml(cancellationReason)}</p>
                   </div>
                   
                   <p style="font-size: 14px; color: #666;">Освободившееся время снова доступно для бронирования.</p>
