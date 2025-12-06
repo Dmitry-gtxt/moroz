@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PerformerCard } from '@/components/performers/PerformerCard';
 import { supabase } from '@/integrations/supabase/client';
+import { getCommissionRate } from '@/lib/pricing';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -12,11 +13,12 @@ type District = Database['public']['Tables']['districts']['Row'];
 export function TopPerformers() {
   const [performers, setPerformers] = useState<PerformerProfile[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
+  const [commissionRate, setCommissionRate] = useState(40);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
-      const [performersRes, districtsRes] = await Promise.all([
+      const [performersRes, districtsRes, rate] = await Promise.all([
         supabase
           .from('performer_profiles')
           .select('*')
@@ -26,6 +28,7 @@ export function TopPerformers() {
         supabase
           .from('districts')
           .select('*'),
+        getCommissionRate(),
       ]);
 
       if (performersRes.data) {
@@ -34,6 +37,7 @@ export function TopPerformers() {
       if (districtsRes.data) {
         setDistricts(districtsRes.data);
       }
+      setCommissionRate(rate);
       setLoading(false);
     }
 
@@ -81,7 +85,7 @@ export function TopPerformers() {
               className="animate-fade-in-up"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <PerformerCard performer={performer} districts={districts} />
+              <PerformerCard performer={performer} districts={districts} commissionRate={commissionRate} />
             </div>
           ))}
         </div>

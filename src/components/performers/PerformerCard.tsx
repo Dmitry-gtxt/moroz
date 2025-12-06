@@ -1,8 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, MapPin, Video, CheckCircle, Clock, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getCustomerPrice } from '@/lib/pricing';
+import { getCustomerPrice, getCommissionRate } from '@/lib/pricing';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
@@ -15,6 +16,7 @@ interface PerformerCardProps {
   pendingRequestsCount?: number;
   availableSlots?: AvailabilitySlot[]; // Available slots for selected date
   selectedDate?: string; // Currently selected date filter
+  commissionRate?: number; // Pre-fetched commission rate
 }
 
 const performerTypeLabels: Record<string, string> = {
@@ -30,6 +32,7 @@ export function PerformerCard({
   pendingRequestsCount = 0,
   availableSlots,
   selectedDate,
+  commissionRate = 40,
 }: PerformerCardProps) {
   const getDistrictNames = (slugs: string[]) => {
     return slugs
@@ -63,7 +66,7 @@ export function PerformerCard({
 
   const photoUrl = performer.photo_urls?.[0] || 'https://images.unsplash.com/photo-1576919228236-a097c32a5cd4?w=400&h=400&fit=crop';
   const performerPrice = performer.price_from ?? performer.base_price;
-  const customerPrice = getCustomerPrice(performerPrice);
+  const customerPrice = getCustomerPrice(performerPrice, commissionRate);
 
   return (
     <div className="group bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">

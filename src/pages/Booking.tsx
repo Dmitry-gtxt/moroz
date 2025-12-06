@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 import { bookingStep1Schema, bookingStep2Schema } from '@/lib/validations/booking';
-import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment } from '@/lib/pricing';
+import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment, getCommissionRate } from '@/lib/pricing';
 import { ZodError } from 'zod';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
@@ -42,6 +42,7 @@ const Booking = () => {
   const [performer, setPerformer] = useState<PerformerProfile | null>(null);
   const [districts, setDistricts] = useState<District[]>([]);
   const [slot, setSlot] = useState<AvailabilitySlot | null>(null);
+  const [commissionRate, setCommissionRate] = useState(40);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -63,13 +64,15 @@ const Booking = () => {
     async function fetchData() {
       if (!performerId) return;
 
-      const [performerRes, districtsRes] = await Promise.all([
+      const [performerRes, districtsRes, rate] = await Promise.all([
         supabase.from('performer_profiles').select('*').eq('id', performerId).maybeSingle(),
         supabase.from('districts').select('*'),
+        getCommissionRate(),
       ]);
 
       if (performerRes.data) setPerformer(performerRes.data);
       if (districtsRes.data) setDistricts(districtsRes.data);
+      setCommissionRate(rate);
 
       // Fetch slot if provided
       if (slotId) {
@@ -131,11 +134,11 @@ const Booking = () => {
   const slotDate = slot?.date || new Date().toISOString().split('T')[0];
   const slotTime = slot ? `${slot.start_time.slice(0, 5)}-${slot.end_time.slice(0, 5)}` : '10:00-12:00';
 
-  // Pricing: performer sets base_price, customer sees +40% markup
+  // Pricing: performer sets base_price, customer sees +X% markup (configurable)
   const performerPrice = performer.price_from ?? performer.base_price;
-  const customerPrice = getCustomerPrice(performerPrice); // What customer sees (140%)
-  const prepaymentAmount = getPrepaymentAmount(performerPrice); // 40% of performer price - platform commission
-  const performerPayment = getPerformerPayment(performerPrice); // 100% - paid in cash to performer
+  const customerPrice = getCustomerPrice(performerPrice, commissionRate); // What customer sees
+  const prepaymentAmount = getPrepaymentAmount(performerPrice, commissionRate); // Platform commission
+  const performerPayment = getPerformerPayment(performerPrice); // Paid in cash to performer
   const photoUrl = performer.photo_urls?.[0] || '/placeholder.svg';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

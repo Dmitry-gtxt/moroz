@@ -6,6 +6,7 @@ import { SEOHead } from '@/components/seo/SEOHead';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { getCustomerPrice, getCommissionRate } from '@/lib/pricing';
 import { 
   Star, MapPin, Clock, Users, Video, CheckCircle, 
   ChevronLeft, ChevronRight, Calendar, Play, MessageCircle, Loader2
@@ -45,23 +46,26 @@ const PerformerProfile = () => {
   const [districts, setDistricts] = useState<District[]>([]);
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [commissionRate, setCommissionRate] = useState(40);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       if (!id) return;
 
-      const [performerRes, districtsRes, slotsRes, reviewsRes] = await Promise.all([
+      const [performerRes, districtsRes, slotsRes, reviewsRes, rate] = await Promise.all([
         supabase.from('performer_profiles').select('*').eq('id', id).maybeSingle(),
         supabase.from('districts').select('*'),
         supabase.from('availability_slots').select('*').eq('performer_id', id).eq('status', 'free').gte('date', format(new Date(), 'yyyy-MM-dd')),
         supabase.from('reviews').select('*').eq('performer_id', id).eq('is_visible', true).order('created_at', { ascending: false }),
+        getCommissionRate(),
       ]);
 
       if (performerRes.data) setPerformer(performerRes.data);
       if (districtsRes.data) setDistricts(districtsRes.data);
       if (slotsRes.data) setSlots(slotsRes.data);
       if (reviewsRes.data) setReviews(reviewsRes.data);
+      setCommissionRate(rate);
       
       setLoading(false);
     }
@@ -120,12 +124,14 @@ const PerformerProfile = () => {
 
   const availableSlotsForSelectedDate = selectedDate ? getSlotsForDate(selectedDate) : [];
   const photoUrl = performer.photo_urls?.[0] || 'https://images.unsplash.com/photo-1576919228236-a097c32a5cd4?w=400&h=400&fit=crop';
+  const performerPrice = performer.price_from ?? performer.base_price;
+  const customerPrice = getCustomerPrice(performerPrice, commissionRate);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <SEOHead 
         title={performer.display_name}
-        description={`Закажите ${performer.display_name} в Бишкеке. Рейтинг ${Number(performer.rating_average).toFixed(1)}, ${performer.rating_count ?? 0} отзывов. Цена от ${performer.price_from ?? performer.base_price} сом.`}
+        description={`Закажите ${performer.display_name} в Бишкеке. Рейтинг ${Number(performer.rating_average).toFixed(1)}, ${performer.rating_count ?? 0} отзывов. Цена от ${customerPrice.toLocaleString()} сом.`}
         type="profile"
       />
       <Header />
@@ -302,7 +308,7 @@ const PerformerProfile = () => {
                   <div className="text-center mb-6">
                     <span className="text-sm text-muted-foreground">Стоимость от</span>
                     <div className="font-display text-4xl font-bold text-accent">
-                      {(performer.price_from ?? performer.base_price).toLocaleString()} 
+                      {customerPrice.toLocaleString()} 
                       <span className="text-xl font-normal text-muted-foreground"> сом</span>
                     </div>
                     <span className="text-sm text-muted-foreground">за визит 20-30 минут</span>
