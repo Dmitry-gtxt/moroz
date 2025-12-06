@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, FileCheck, ShoppingCart, TrendingUp } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Users, FileCheck, ShoppingCart, TrendingUp, Settings, Loader2, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { clearCommissionCache } from '@/lib/pricing';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -11,14 +16,19 @@ export default function AdminDashboard() {
     totalOrders: 0,
     pendingOrders: 0,
   });
+  
+  const [commissionRate, setCommissionRate] = useState('40');
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
-    async function fetchStats() {
-      const [performers, pendingDocs, bookings, pendingBookings] = await Promise.all([
+    async function fetchData() {
+      const [performers, pendingDocs, bookings, pendingBookings, settings] = await Promise.all([
         supabase.from('performer_profiles').select('id', { count: 'exact', head: true }),
         supabase.from('verification_documents').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('bookings').select('id', { count: 'exact', head: true }),
         supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('platform_settings').select('*').eq('key', 'commission_rate').maybeSingle(),
       ]);
 
       setStats({
@@ -27,10 +37,40 @@ export default function AdminDashboard() {
         totalOrders: bookings.count ?? 0,
         pendingOrders: pendingBookings.count ?? 0,
       });
+
+      if (settings.data) {
+        setCommissionRate(settings.data.value);
+      }
+      setLoadingSettings(false);
     }
 
-    fetchStats();
+    fetchData();
   }, []);
+
+  const handleSaveSettings = async () => {
+    const rate = parseInt(commissionRate, 10);
+    if (isNaN(rate) || rate < 0 || rate > 100) {
+      toast.error('Введите корректный процент (0-100)');
+      return;
+    }
+
+    setSavingSettings(true);
+    
+    const { error } = await supabase
+      .from('platform_settings')
+      .update({ value: commissionRate })
+      .eq('key', 'commission_rate');
+
+    if (error) {
+      toast.error('Ошибка сохранения настроек');
+      console.error(error);
+    } else {
+      clearCommissionCache();
+      toast.success('Настройки сохранены. Новый процент будет применён ко всем новым бронированиям.');
+    }
+    
+    setSavingSettings(false);
+  };
 
   const statCards = [
     { title: 'Всего исполнителей', value: stats.totalPerformers, icon: Users, color: 'text-primary' },
@@ -62,6 +102,62 @@ export default function AdminDashboard() {
             </Card>
           ))}
         </div>
+
+        {/* General Settings */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Генеральные настройки
+            </CardTitle>
+            <CardDescription>
+              Настройки платформы, влияющие на все заказы
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingSettings ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Загрузка настроек...
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="max-w-sm space-y-2">
+                  <Label htmlFor="commissionRate">
+                    Процент наценки на цену исполнителя (%)
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="commissionRate"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={commissionRate}
+                      onChange={(e) => setCommissionRate(e.target.value)}
+                      className="max-w-24"
+                    />
+                    <span className="flex items-center text-muted-foreground">%</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Этот процент добавляется к цене исполнителя и становится предоплатой (комиссией платформы).
+                    Например, при {commissionRate}% и цене исполнителя 5000 сом, клиент увидит{' '}
+                    {Math.round(5000 * (1 + parseInt(commissionRate || '0', 10) / 100))} сом,
+                    а предоплата составит {Math.round(5000 * (parseInt(commissionRate || '0', 10) / 100))} сом.
+                  </p>
+                </div>
+
+                <Button onClick={handleSaveSettings} disabled={savingSettings}>
+                  {savingSettings ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Сохранить настройки
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );

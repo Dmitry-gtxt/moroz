@@ -53,6 +53,7 @@ export default function PerformerRegistration() {
   
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [checkingExisting, setCheckingExisting] = useState(true);
   const [districts, setDistricts] = useState<District[]>([]);
   const [districtsLoading, setDistrictsLoading] = useState(true);
   
@@ -62,8 +63,7 @@ export default function PerformerRegistration() {
   const [selectedTypes, setSelectedTypes] = useState<PerformerType[]>([]);
   const [selectedFormats, setSelectedFormats] = useState<EventFormat[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
-  const [priceFrom, setPriceFrom] = useState('');
-  const [priceTo, setPriceTo] = useState('');
+  const [basePrice, setBasePrice] = useState('');
   const [experienceYears, setExperienceYears] = useState('');
   const [costumeStyle, setCostumeStyle] = useState('');
   
@@ -73,6 +73,34 @@ export default function PerformerRegistration() {
   const [video, setVideo] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [documents, setDocuments] = useState<{ type: DocumentType; file: File }[]>([]);
+
+  // Check if user already has a performer profile
+  useEffect(() => {
+    async function checkExistingProfile() {
+      if (!user) {
+        setCheckingExisting(false);
+        return;
+      }
+
+      const { data: existingProfile } = await supabase
+        .from('performer_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        // User already has a profile, redirect to performer dashboard
+        navigate('/performer', { replace: true });
+        return;
+      }
+
+      setCheckingExisting(false);
+    }
+
+    if (!authLoading) {
+      checkExistingProfile();
+    }
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     async function fetchDistricts() {
@@ -97,6 +125,15 @@ export default function PerformerRegistration() {
   // Redirect to auth if not logged in (after all hooks)
   if (!authLoading && !user) {
     return <Navigate to="/auth?redirect=/become-performer" replace />;
+  }
+
+  // Show loading while checking existing profile
+  if (checkingExisting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,8 +229,8 @@ export default function PerformerRegistration() {
         toast.error('Выберите хотя бы один район');
         return false;
       }
-      if (!priceFrom) {
-        toast.error('Укажите минимальную цену');
+      if (!basePrice) {
+        toast.error('Укажите цену за 30 минут');
         return false;
       }
       return true;
@@ -265,9 +302,7 @@ export default function PerformerRegistration() {
           performer_types: selectedTypes,
           formats: selectedFormats,
           district_slugs: selectedDistricts,
-          price_from: parseInt(priceFrom),
-          price_to: priceTo ? parseInt(priceTo) : null,
-          base_price: parseInt(priceFrom),
+          base_price: parseInt(basePrice),
           experience_years: experienceYears ? parseInt(experienceYears) : 0,
           costume_style: costumeStyle || null,
           photo_urls: photoUrls,
@@ -505,29 +540,20 @@ export default function PerformerRegistration() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="priceFrom">Цена от (сом) *</Label>
-                    <Input
-                      id="priceFrom"
-                      type="number"
-                      min="0"
-                      value={priceFrom}
-                      onChange={(e) => setPriceFrom(e.target.value)}
-                      placeholder="3000"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="priceTo">Цена до (сом)</Label>
-                    <Input
-                      id="priceTo"
-                      type="number"
-                      min="0"
-                      value={priceTo}
-                      onChange={(e) => setPriceTo(e.target.value)}
-                      placeholder="10000"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="basePrice">Цена за 30 минут (сом) *</Label>
+                  <Input
+                    id="basePrice"
+                    type="number"
+                    min="0"
+                    value={basePrice}
+                    onChange={(e) => setBasePrice(e.target.value)}
+                    placeholder="3000"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Это сумма, которую вы получите наличкой после мероприятия. 
+                    Клиент увидит цену с учётом сервисного сбора.
+                  </p>
                 </div>
 
                 <div className="flex gap-4">

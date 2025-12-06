@@ -9,8 +9,10 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { SupportChatDialog } from '@/components/admin/SupportChatDialog';
+import { RatingAdjustDialog } from '@/components/admin/RatingAdjustDialog';
 import { Eye, Star, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import { getCustomerPrice, getPrepaymentAmount, getCommissionRate } from '@/lib/pricing';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
@@ -32,25 +34,40 @@ const verificationLabels: Record<string, { label: string; variant: 'default' | '
 export default function AdminPerformers() {
   const [performers, setPerformers] = useState<PerformerProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [commissionRate, setCommissionRateState] = useState(40);
   const [chatDialog, setChatDialog] = useState<{ open: boolean; performerId: string; performerName: string }>({
     open: false,
     performerId: '',
     performerName: '',
   });
+  const [ratingDialog, setRatingDialog] = useState<{ 
+    open: boolean; 
+    performerId: string; 
+    performerName: string;
+    currentRating: number;
+  }>({
+    open: false,
+    performerId: '',
+    performerName: '',
+    currentRating: 0,
+  });
 
   async function fetchPerformers() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('performer_profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    
+    const [performersRes, commissionRes] = await Promise.all([
+      supabase.from('performer_profiles').select('*').order('created_at', { ascending: false }),
+      getCommissionRate(),
+    ]);
 
-    if (error) {
+    if (performersRes.error) {
       toast.error('Ошибка загрузки исполнителей');
-      console.error(error);
+      console.error(performersRes.error);
     } else {
-      setPerformers(data ?? []);
+      setPerformers(performersRes.data ?? []);
     }
+    
+    setCommissionRateState(commissionRes);
     setLoading(false);
   }
 
@@ -112,7 +129,7 @@ export default function AdminPerformers() {
                     <TableHead>Имя</TableHead>
                     <TableHead>Тип</TableHead>
                     <TableHead>Рейтинг</TableHead>
-                    <TableHead>Цена от</TableHead>
+                    <TableHead>Цена</TableHead>
                     <TableHead>Верификация</TableHead>
                     <TableHead>Активен</TableHead>
                     <TableHead className="text-right">Действия</TableHead>
@@ -121,6 +138,10 @@ export default function AdminPerformers() {
                 <TableBody>
                   {performers.map((performer) => {
                     const verification = verificationLabels[performer.verification_status] ?? verificationLabels.unverified;
+                    const performerPrice = performer.base_price;
+                    const customerPrice = getCustomerPrice(performerPrice, commissionRate);
+                    const prepayment = getPrepaymentAmount(performerPrice, commissionRate);
+                    
                     return (
                       <TableRow key={performer.id}>
                         <TableCell className="font-medium">{performer.display_name}</TableCell>
@@ -128,13 +149,31 @@ export default function AdminPerformers() {
                           {performer.performer_types?.map((type) => performerTypeLabels[type] ?? type).join(', ') || '—'}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setRatingDialog({
+                              open: true,
+                              performerId: performer.id,
+                              performerName: performer.display_name,
+                              currentRating: Number(performer.rating_average) || 0,
+                            })}
+                            className="flex items-center gap-1 hover:bg-muted p-1 rounded transition-colors"
+                            title="Изменить рейтинг"
+                          >
                             <Star className="h-4 w-4 fill-accent text-accent" />
                             <span>{Number(performer.rating_average).toFixed(1)}</span>
                             <span className="text-muted-foreground">({performer.rating_count})</span>
+                          </button>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-0.5">
+                            <div className="font-semibold text-accent">
+                              {customerPrice.toLocaleString()} сом
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              исп: {performerPrice.toLocaleString()} + бронь: {prepayment.toLocaleString()}
+                            </div>
                           </div>
                         </TableCell>
-                        <TableCell>{performer.price_from ?? performer.base_price} сом</TableCell>
                         <TableCell>
                           <Select
                             value={performer.verification_status}
@@ -193,6 +232,15 @@ export default function AdminPerformers() {
         onOpenChange={(open) => setChatDialog({ ...chatDialog, open })}
         performerId={chatDialog.performerId}
         performerName={chatDialog.performerName}
+      />
+
+      <RatingAdjustDialog
+        open={ratingDialog.open}
+        onOpenChange={(open) => setRatingDialog({ ...ratingDialog, open })}
+        performerId={ratingDialog.performerId}
+        performerName={ratingDialog.performerName}
+        currentRating={ratingDialog.currentRating}
+        onRatingUpdated={fetchPerformers}
       />
     </AdminLayout>
   );
