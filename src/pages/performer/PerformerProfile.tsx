@@ -55,8 +55,7 @@ export default function PerformerProfilePage() {
   const [selectedTypes, setSelectedTypes] = useState<PerformerType[]>([]);
   const [selectedFormats, setSelectedFormats] = useState<EventFormat[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
-  const [priceFrom, setPriceFrom] = useState('');
-  const [priceTo, setPriceTo] = useState('');
+  const [basePrice, setBasePrice] = useState('');
   const [experienceYears, setExperienceYears] = useState('');
   const [costumeStyle, setCostumeStyle] = useState('');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
@@ -85,8 +84,7 @@ export default function PerformerProfilePage() {
         setSelectedTypes(p.performer_types as PerformerType[]);
         setSelectedFormats(p.formats as EventFormat[]);
         setSelectedDistricts(p.district_slugs);
-        setPriceFrom(p.price_from?.toString() || p.base_price.toString());
-        setPriceTo(p.price_to?.toString() || '');
+        setBasePrice(p.base_price.toString());
         setExperienceYears(p.experience_years?.toString() || '');
         setCostumeStyle(p.costume_style || '');
         setPhotoUrls(p.photo_urls);
@@ -167,9 +165,7 @@ export default function PerformerProfilePage() {
         performer_types: selectedTypes,
         formats: selectedFormats,
         district_slugs: selectedDistricts,
-        price_from: parseInt(priceFrom) || null,
-        price_to: priceTo ? parseInt(priceTo) : null,
-        base_price: parseInt(priceFrom) || profile.base_price,
+        base_price: parseInt(basePrice) || profile.base_price,
         experience_years: experienceYears ? parseInt(experienceYears) : null,
         costume_style: costumeStyle || null,
         photo_urls: photoUrls,
@@ -411,26 +407,19 @@ export default function PerformerProfilePage() {
         {/* Pricing */}
         <Card>
           <CardHeader>
-            <CardTitle>Цены</CardTitle>
+            <CardTitle>Цена</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Цена от (сом)</Label>
-                <Input
-                  type="number"
-                  value={priceFrom}
-                  onChange={(e) => setPriceFrom(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Цена до (сом)</Label>
-                <Input
-                  type="number"
-                  value={priceTo}
-                  onChange={(e) => setPriceTo(e.target.value)}
-                />
-              </div>
+            <div className="space-y-2 max-w-xs">
+              <Label>Цена за 30 минут (сом)</Label>
+              <Input
+                type="number"
+                value={basePrice}
+                onChange={(e) => setBasePrice(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Это сумма, которую вы получите наличкой после мероприятия.
+              </p>
             </div>
           </CardContent>
         </Card>
