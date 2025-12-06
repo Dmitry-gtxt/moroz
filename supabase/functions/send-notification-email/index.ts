@@ -94,6 +94,12 @@ interface ProfileUnpublishedAdminRequest {
   changedFields?: string[];
 }
 
+interface WelcomeEmailRequest {
+  type: "welcome_email";
+  email: string;
+  fullName: string;
+}
+
 type NotificationRequest = 
   | BookingNotificationRequest 
   | BookingConfirmedRequest 
@@ -101,7 +107,8 @@ type NotificationRequest =
   | ReviewNotificationRequest 
   | BookingCancelledRequest
   | ProfilePendingVerificationRequest
-  | ProfileUnpublishedAdminRequest;
+  | ProfileUnpublishedAdminRequest
+  | WelcomeEmailRequest;
 
 const eventTypeLabels: Record<string, string> = {
   home: "На дом",
@@ -553,6 +560,67 @@ const handler = async (req: Request): Promise<Response> => {
 
       const data = await res.json();
       console.log("Admin notification email response:", data);
+
+      return new Response(JSON.stringify({ success: true, data }), {
+        status: res.ok ? 200 : 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Handle welcome email for new users
+    if (payload.type === "welcome_email") {
+      const { email, fullName } = payload as WelcomeEmailRequest;
+
+      if (!email) {
+        console.log("No email provided for welcome message, skipping");
+        return new Response(JSON.stringify({ success: true, skipped: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      console.log("Sending welcome email to:", email);
+
+      const res = await sendEmail(
+        [email],
+        "🎄 Добро пожаловать на ДедМороз.kg!",
+        `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 32px;">
+              <h1 style="color: #c41e3a; margin-bottom: 8px;">🎅 Добро пожаловать!</h1>
+              <p style="font-size: 18px; color: #333;">на ДедМороз.kg</p>
+            </div>
+            
+            <p style="font-size: 16px; color: #333;">Здравствуйте${fullName ? `, <strong>${escapeHtml(fullName)}</strong>` : ''}!</p>
+            
+            <p style="font-size: 16px; color: #333;">Благодарим вас за регистрацию на нашей платформе! Теперь вы можете заказать настоящего Деда Мороза для своих детей или близких.</p>
+            
+            <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 16px; padding: 24px; margin: 24px 0; text-align: center;">
+              <h2 style="margin: 0 0 16px 0; color: #2e7d32;">🎁 Что вас ждёт?</h2>
+              <ul style="text-align: left; color: #333; margin: 0; padding-left: 20px;">
+                <li style="margin: 8px 0;">Выбор из проверенных Дедов Морозов и Снегурочек</li>
+                <li style="margin: 8px 0;">Удобное онлайн-бронирование</li>
+                <li style="margin: 8px 0;">Реальные отзывы от других родителей</li>
+                <li style="margin: 8px 0;">Гарантия качества и возврат средств</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="https://dedmoroz.kg/catalog" style="display: inline-block; background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 16px;">🎄 Выбрать Деда Мороза</a>
+            </div>
+            
+            <div style="background: #fff3e0; border-radius: 12px; padding: 16px; margin: 24px 0;">
+              <p style="margin: 0; color: #e65100; text-align: center;">💡 <strong>Совет:</strong> Бронируйте заранее! В предновогодние дни самые популярные исполнители быстро разбираются.</p>
+            </div>
+            
+            <p style="font-size: 14px; color: #666; text-align: center;">С наступающим Новым годом! 🎄✨</p>
+            <p style="font-size: 14px; color: #666; text-align: center;">Команда ДедМороз.kg</p>
+          </div>
+        `
+      );
+
+      const data = await res.json();
+      console.log("Welcome email response:", data);
 
       return new Response(JSON.stringify({ success: true, data }), {
         status: res.ok ? 200 : 500,
