@@ -11,7 +11,7 @@ import { CancelBookingDialog } from '@/components/bookings/CancelBookingDialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Loader2, Check, X, MapPin, Phone, User, Calendar } from 'lucide-react';
+import { Loader2, Check, X, MapPin, Phone, User, Calendar, Lock, Mail, CreditCard } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type Booking = Database['public']['Tables']['bookings']['Row'];
@@ -290,20 +290,60 @@ export default function PerformerBookings() {
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <User className="h-4 w-4" />
-                            <span>{booking.customer_name}</span>
+                        {/* Contact info hidden until prepayment */}
+                        {booking.payment_status === 'prepayment_paid' || booking.payment_status === 'fully_paid' ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <User className="h-4 w-4" />
+                              <span>{booking.customer_name}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Phone className="h-4 w-4" />
+                              <span>{booking.customer_phone}</span>
+                            </div>
+                            {booking.customer_email && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Mail className="h-4 w-4" />
+                                <span>{booking.customer_email}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 text-muted-foreground md:col-span-2">
+                              <MapPin className="h-4 w-4" />
+                              <span>{booking.address}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Phone className="h-4 w-4" />
-                            <span>{booking.customer_phone}</span>
+                        ) : (
+                          <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 mb-2">
+                              <Lock className="h-4 w-4" />
+                              <span className="font-medium">Контактные данные скрыты</span>
+                            </div>
+                            <p className="text-sm text-amber-600 dark:text-amber-400">
+                              Контактные данные клиента станут доступны после оплаты предоплаты.
+                              {booking.status === 'pending' && ' Сначала подтвердите заказ.'}
+                            </p>
+                            <div className="flex items-center gap-2 text-muted-foreground mt-3">
+                              <User className="h-4 w-4" />
+                              <span>{booking.customer_name}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 text-muted-foreground md:col-span-2">
-                            <MapPin className="h-4 w-4" />
-                            <span>{booking.address}</span>
+                        )}
+
+                        {/* Payment status indicator for performer */}
+                        {booking.status === 'confirmed' && (
+                          <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${
+                            booking.payment_status === 'prepayment_paid' || booking.payment_status === 'fully_paid'
+                              ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300'
+                              : 'bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300'
+                          }`}>
+                            <CreditCard className="h-4 w-4" />
+                            {booking.payment_status === 'prepayment_paid' || booking.payment_status === 'fully_paid' ? (
+                              <span>Предоплата получена. Клиент заплатит вам наличкой после мероприятия.</span>
+                            ) : (
+                              <span>Ожидает оплаты предоплаты от клиента</span>
+                            )}
                           </div>
-                        </div>
+                        )}
 
                         {booking.children_info && (
                           <div className="p-3 bg-muted rounded-lg text-sm">

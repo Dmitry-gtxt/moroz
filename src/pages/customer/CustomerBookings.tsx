@@ -13,8 +13,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   Calendar, Clock, MapPin, Star, Loader2, 
-  Package, User, X, CheckCircle
+  Package, User, X, CheckCircle, CreditCard, Lock
 } from 'lucide-react';
+import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment } from '@/lib/pricing';
 import { format, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import type { Database } from '@/integrations/supabase/types';
@@ -269,11 +270,53 @@ export default function CustomerBookings() {
                         <Clock className="h-4 w-4" />
                         {booking.booking_time}
                       </div>
+                      {/* Address hidden until prepayment */}
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="h-4 w-4" />
-                        {booking.address}
+                        {booking.payment_status === 'prepayment_paid' || booking.payment_status === 'fully_paid' ? (
+                          <span>{booking.address}</span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-amber-600">
+                            <Lock className="h-3 w-3" />
+                            Доступно после оплаты
+                          </span>
+                        )}
                       </div>
                     </div>
+
+                    {/* Payment status and button */}
+                    {booking.status === 'confirmed' && booking.payment_status === 'not_paid' && (
+                      <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="font-medium text-amber-800 dark:text-amber-200">
+                              Ожидает оплаты предоплаты
+                            </p>
+                            <p className="text-sm text-amber-600 dark:text-amber-400">
+                              Оплатите {booking.prepayment_amount.toLocaleString()} сом для подтверждения
+                            </p>
+                          </div>
+                          <Button variant="gold" size="sm">
+                            <CreditCard className="h-4 w-4 mr-2" />
+                            Оплатить
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {booking.payment_status === 'prepayment_paid' && (
+                      <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+                        <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="text-sm font-medium">
+                            Предоплата внесена: {booking.prepayment_amount.toLocaleString()} сом
+                          </span>
+                        </div>
+                        <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                          Оплатите исполнителю наличкой после мероприятия: {(booking.price_total - booking.prepayment_amount).toLocaleString()} сом
+                        </p>
+                      </div>
+                    )}
 
                     {booking.status === 'cancelled' && booking.cancellation_reason && (
                       <div className="p-3 bg-destructive/10 rounded-lg text-sm">
