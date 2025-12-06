@@ -23,7 +23,26 @@ interface ReviewNotification {
   reviewText?: string;
 }
 
-type NotificationPayload = BookingNotification | ReviewNotification;
+interface ProfilePendingVerificationNotification {
+  type: 'profile_pending_verification';
+  performerId: string;
+  performerName: string;
+  performerEmail?: string;
+  changedFields?: string[];
+}
+
+interface ProfileUnpublishedAdminNotification {
+  type: 'profile_unpublished_admin';
+  performerId: string;
+  performerName: string;
+  changedFields?: string[];
+}
+
+type NotificationPayload = 
+  | BookingNotification 
+  | ReviewNotification 
+  | ProfilePendingVerificationNotification
+  | ProfileUnpublishedAdminNotification;
 
 export async function sendNotificationEmail(payload: NotificationPayload): Promise<void> {
   try {
@@ -124,5 +143,29 @@ export async function sendReviewNotification(params: {
     customerName: params.customerName,
     rating: params.rating,
     reviewText: params.reviewText,
+  });
+}
+
+export async function sendProfileVerificationNotification(params: {
+  performerId: string;
+  performerName: string;
+  changedFields?: string[];
+}): Promise<void> {
+  console.log('Sending profile verification notifications for performer:', params.performerName);
+
+  // Send notification to performer
+  await sendNotificationEmail({
+    type: 'profile_pending_verification',
+    performerId: params.performerId,
+    performerName: params.performerName,
+    changedFields: params.changedFields,
+  });
+
+  // Send notification to admin
+  await sendNotificationEmail({
+    type: 'profile_unpublished_admin',
+    performerId: params.performerId,
+    performerName: params.performerName,
+    changedFields: params.changedFields,
   });
 }

@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { FloatingSaveButton } from '@/components/ui/floating-save-button';
 import { UploadProgress } from '@/components/ui/upload-progress';
 import { useVideoUpload } from '@/hooks/useVideoUpload';
+import { sendProfileVerificationNotification } from '@/lib/notifications';
 import { toast } from 'sonner';
 import { Loader2, Upload, X, Video, Trash2, AlertTriangle, Send } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -158,8 +159,24 @@ export default function PerformerProfilePage() {
   const handleSave = async () => {
     if (!profile) return;
 
+    // Track changed fields for notification
+    const changedFields: string[] = [];
+    if (displayName !== profile.display_name) changedFields.push('display_name');
+    if (description !== (profile.description || '')) changedFields.push('description');
+    if (JSON.stringify(selectedTypes) !== JSON.stringify(profile.performer_types)) changedFields.push('performer_types');
+    if (JSON.stringify(selectedFormats) !== JSON.stringify(profile.formats)) changedFields.push('formats');
+    if (JSON.stringify(selectedDistricts) !== JSON.stringify(profile.district_slugs)) changedFields.push('district_slugs');
+    if ((parseInt(basePrice) || profile.base_price) !== profile.base_price) changedFields.push('base_price');
+    if ((experienceYears ? parseInt(experienceYears) : null) !== profile.experience_years) changedFields.push('experience_years');
+    if ((costumeStyle || null) !== profile.costume_style) changedFields.push('costume_style');
+    if (JSON.stringify(photoUrls) !== JSON.stringify(profile.photo_urls)) changedFields.push('photo_urls');
+    if (videoUrl !== profile.video_greeting_url) changedFields.push('video_greeting_url');
+
+    // Check if any content fields changed (triggers re-verification by database trigger)
+    const contentChanged = changedFields.length > 0;
+
     setSaving(true);
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from('performer_profiles')
       .update({
         display_name: displayName,
@@ -173,7 +190,9 @@ export default function PerformerProfilePage() {
         photo_urls: photoUrls,
         video_greeting_url: videoUrl,
       })
-      .eq('id', profile.id);
+      .eq('id', profile.id)
+      .select()
+      .single();
 
     setSaving(false);
 
@@ -181,7 +200,24 @@ export default function PerformerProfilePage() {
       toast.error('Ошибка сохранения');
       console.error(error);
     } else {
-      toast.success('Профиль сохранён');
+      // Update local profile state with returned data (may have changed verification_status)
+      if (data) {
+        setProfile(data);
+      }
+
+      // If content changed and profile was verified/active, send notifications
+      if (contentChanged && (profile.verification_status === 'verified' || profile.is_active)) {
+        toast.success('Профиль сохранён и отправлен на проверку');
+        
+        // Send email notifications (to performer and admin)
+        sendProfileVerificationNotification({
+          performerId: profile.id,
+          performerName: displayName,
+          changedFields,
+        }).catch(console.error);
+      } else {
+        toast.success('Профиль сохранён');
+      }
     }
   };
 
