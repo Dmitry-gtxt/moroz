@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Обзор' },
   { to: '/admin/performers', icon: Users, label: 'Исполнители' },
-  { to: '/admin/moderation', icon: FileCheck, label: 'Модерация' },
+  { to: '/admin/verification', icon: FileCheck, label: 'Верификация' },
   { to: '/admin/reviews', icon: Star, label: 'Отзывы' },
   { to: '/admin/orders', icon: ShoppingCart, label: 'Заказы' },
   { to: '/admin/history', icon: History, label: 'История заказов' },
