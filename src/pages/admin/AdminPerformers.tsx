@@ -15,7 +15,11 @@ import { toast } from 'sonner';
 import { getCustomerPrice, getPrepaymentAmount, getCommissionRate } from '@/lib/pricing';
 import type { Database } from '@/integrations/supabase/types';
 
-type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
+type PerformerProfileDB = Database['public']['Tables']['performer_profiles']['Row'];
+type PerformerProfile = PerformerProfileDB & {
+  user_email?: string;
+  user_phone?: string;
+};
 
 const performerTypeLabels: Record<string, string> = {
   ded_moroz: 'Дед Мороз',
@@ -63,10 +67,48 @@ export default function AdminPerformers() {
     if (performersRes.error) {
       toast.error('Ошибка загрузки исполнителей');
       console.error(performersRes.error);
-    } else {
-      setPerformers(performersRes.data ?? []);
+      setLoading(false);
+      return;
     }
     
+    const performersData = performersRes.data ?? [];
+    
+    // Get user IDs that we need emails for
+    const userIds = performersData
+      .map(p => p.user_id)
+      .filter((id): id is string => !!id);
+    
+    // Fetch phones from profiles
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, phone')
+      .in('user_id', userIds);
+    
+    const phoneMap = new Map(profiles?.map(p => [p.user_id, p.phone]) ?? []);
+    
+    // Fetch emails via edge function
+    let emailMap = new Map<string, string>();
+    if (userIds.length > 0) {
+      try {
+        const { data: emailsData } = await supabase.functions.invoke('get-user-emails', {
+          body: { userIds },
+        });
+        if (emailsData?.emails) {
+          emailMap = new Map(Object.entries(emailsData.emails));
+        }
+      } catch (err) {
+        console.error('Failed to fetch emails:', err);
+      }
+    }
+    
+    // Combine data
+    const performersWithContacts: PerformerProfile[] = performersData.map(performer => ({
+      ...performer,
+      user_email: performer.user_id ? (emailMap.get(performer.user_id) || '') : '',
+      user_phone: performer.user_id ? (phoneMap.get(performer.user_id) || '') : '',
+    }));
+    
+    setPerformers(performersWithContacts);
     setCommissionRateState(commissionRes);
     setLoading(false);
   }
@@ -127,6 +169,7 @@ export default function AdminPerformers() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Имя</TableHead>
+                    <TableHead>Контакты</TableHead>
                     <TableHead>Тип</TableHead>
                     <TableHead>Рейтинг</TableHead>
                     <TableHead>Цена</TableHead>
@@ -145,6 +188,17 @@ export default function AdminPerformers() {
                     return (
                       <TableRow key={performer.id}>
                         <TableCell className="font-medium">{performer.display_name}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1 text-sm">
+                            {performer.user_email && (
+                              <div className="text-muted-foreground">{performer.user_email}</div>
+                            )}
+                            {performer.user_phone && (
+                              <div className="font-medium">{performer.user_phone}</div>
+                            )}
+                            {!performer.user_email && !performer.user_phone && '—'}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           {performer.performer_types?.map((type) => performerTypeLabels[type] ?? type).join(', ') || '—'}
                         </TableCell>

@@ -42,6 +42,7 @@ const Booking = () => {
   const [performer, setPerformer] = useState<PerformerProfile | null>(null);
   const [districts, setDistricts] = useState<District[]>([]);
   const [slot, setSlot] = useState<AvailabilitySlot | null>(null);
+  const [pendingBookingsCount, setPendingBookingsCount] = useState(0);
   const [commissionRate, setCommissionRate] = useState(40);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -81,7 +82,18 @@ const Booking = () => {
           .select('*')
           .eq('id', slotId)
           .maybeSingle();
-        if (slotData) setSlot(slotData);
+        if (slotData) {
+          setSlot(slotData);
+          
+          // Check for pending bookings on this slot
+          const { count } = await supabase
+            .from('bookings')
+            .select('*', { count: 'exact', head: true })
+            .eq('slot_id', slotId)
+            .eq('status', 'pending');
+          
+          setPendingBookingsCount(count || 0);
+        }
       }
 
       setLoading(false);
@@ -331,7 +343,20 @@ const Booking = () => {
               <div className="lg:col-span-2">
                 {step === 1 && (
                   <div className="bg-card rounded-2xl p-6 border border-border animate-fade-in">
-                    <h2 className="font-display text-xl font-semibold mb-6">Детали мероприятия</h2>
+                    <h2 className="font-display text-xl font-semibold mb-4">Детали мероприятия</h2>
+                    
+                    {pendingBookingsCount > 0 && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                        <p className="text-amber-800 text-sm font-medium flex items-start gap-2">
+                          <span className="text-amber-600">⚠️</span>
+                          <span>
+                            <strong>Внимание.</strong> У данного исполнителя есть другие заявки на это время. 
+                            Есть высокая вероятность отказа в бронировании. 
+                            Рекомендуем рассмотреть и другие слоты времени.
+                          </span>
+                        </p>
+                      </div>
+                    )}
                     
                     <div className="space-y-4">
                       <div>
@@ -490,7 +515,7 @@ const Booking = () => {
                         Назад
                       </Button>
                       <Button variant="gold" className="flex-1" onClick={handleSubmit}>
-                        Продолжить к оплате
+                        Я даю согласие на обработку моих персональных данных
                       </Button>
                     </div>
                   </div>

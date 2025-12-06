@@ -45,6 +45,7 @@ const PerformerProfile = () => {
   const [performer, setPerformer] = useState<PerformerProfileType | null>(null);
   const [districts, setDistricts] = useState<District[]>([]);
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
+  const [pendingSlotIds, setPendingSlotIds] = useState<Set<string>>(new Set());
   const [reviews, setReviews] = useState<Review[]>([]);
   const [commissionRate, setCommissionRate] = useState(40);
   const [loading, setLoading] = useState(true);
@@ -63,7 +64,23 @@ const PerformerProfile = () => {
 
       if (performerRes.data) setPerformer(performerRes.data);
       if (districtsRes.data) setDistricts(districtsRes.data);
-      if (slotsRes.data) setSlots(slotsRes.data);
+      if (slotsRes.data) {
+        setSlots(slotsRes.data);
+        
+        // Check which slots have pending bookings
+        const slotIds = slotsRes.data.map(s => s.id);
+        if (slotIds.length > 0) {
+          const { data: pendingBookings } = await supabase
+            .from('bookings')
+            .select('slot_id')
+            .in('slot_id', slotIds)
+            .eq('status', 'pending');
+          
+          if (pendingBookings) {
+            setPendingSlotIds(new Set(pendingBookings.map(b => b.slot_id).filter(Boolean) as string[]));
+          }
+        }
+      }
       if (reviewsRes.data) setReviews(reviewsRes.data);
       setCommissionRate(rate);
       
@@ -389,21 +406,29 @@ const PerformerProfile = () => {
                       </h3>
                       {availableSlotsForSelectedDate.length > 0 ? (
                         <div className="grid grid-cols-2 gap-2">
-                          {availableSlotsForSelectedDate.map((slot) => (
-                            <button
-                              key={slot.id}
-                              onClick={() => setSelectedSlot(slot.id)}
-                              className={`
-                                py-2 px-3 rounded-lg text-sm font-medium transition-colors
-                                ${selectedSlot === slot.id 
-                                  ? 'bg-accent text-white' 
-                                  : 'bg-secondary hover:bg-secondary/80'
-                                }
-                              `}
-                            >
-                              {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
-                            </button>
-                          ))}
+                          {availableSlotsForSelectedDate.map((slot) => {
+                            const hasPendingBooking = pendingSlotIds.has(slot.id);
+                            return (
+                              <button
+                                key={slot.id}
+                                onClick={() => setSelectedSlot(slot.id)}
+                                className={`
+                                  py-2 px-3 rounded-lg text-sm font-medium transition-colors relative
+                                  ${selectedSlot === slot.id 
+                                    ? 'bg-accent text-white' 
+                                    : hasPendingBooking
+                                      ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300'
+                                      : 'bg-secondary hover:bg-secondary/80'
+                                  }
+                                `}
+                              >
+                                {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                                {hasPendingBooking && selectedSlot !== slot.id && (
+                                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full" title="Есть другие заявки" />
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">Нет свободных слотов</p>
@@ -432,10 +457,15 @@ const PerformerProfile = () => {
                     )}
                   </Button>
 
-                  <Button variant="outline" className="w-full mt-3" disabled>
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Написать сообщение
-                  </Button>
+                  <div className="mt-3">
+                    <Button variant="outline" className="w-full" disabled>
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Написать сообщение
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center mt-2">
+                      Чат доступен после бронирования
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

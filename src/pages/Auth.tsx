@@ -74,7 +74,7 @@ const Auth = () => {
         if (error) throw error;
         toast.success('Добро пожаловать!');
       } else if (mode === 'register') {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
@@ -86,6 +86,16 @@ const Auth = () => {
           },
         });
         if (error) throw error;
+        
+        // Send welcome email notification (non-blocking)
+        supabase.functions.invoke('send-notification-email', {
+          body: {
+            type: 'welcome_email',
+            email: formData.email,
+            fullName: formData.fullName,
+          },
+        }).catch(err => console.error('Failed to send welcome email:', err));
+        
         toast.success('Регистрация успешна! Добро пожаловать!');
       } else if (mode === 'forgot-password') {
         const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
