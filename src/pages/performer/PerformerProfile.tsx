@@ -13,7 +13,8 @@ import { FloatingSaveButton } from '@/components/ui/floating-save-button';
 import { UploadProgress } from '@/components/ui/upload-progress';
 import { useVideoUpload } from '@/hooks/useVideoUpload';
 import { toast } from 'sonner';
-import { Loader2, Upload, X, Video, Trash2 } from 'lucide-react';
+import { Loader2, Upload, X, Video, Trash2, AlertTriangle, Send } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
@@ -48,6 +49,7 @@ export default function PerformerProfilePage() {
   const [districts, setDistricts] = useState<District[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
 
   // Form state
   const [displayName, setDisplayName] = useState('');
@@ -183,6 +185,26 @@ export default function PerformerProfilePage() {
     }
   };
 
+  const handleResubmitVerification = async () => {
+    if (!profile) return;
+
+    setResubmitting(true);
+    const { error } = await supabase
+      .from('performer_profiles')
+      .update({ verification_status: 'pending' })
+      .eq('id', profile.id);
+
+    setResubmitting(false);
+
+    if (error) {
+      toast.error('Ошибка отправки заявки');
+      console.error(error);
+    } else {
+      setProfile({ ...profile, verification_status: 'pending' });
+      toast.success('Заявка отправлена на повторную проверку');
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -206,6 +228,37 @@ export default function PerformerProfilePage() {
           <h1 className="text-3xl font-display font-bold text-foreground">Мой профиль</h1>
           <p className="text-muted-foreground mt-1">Редактирование информации</p>
         </div>
+
+        {/* Rejected verification alert */}
+        {profile.verification_status === 'rejected' && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>Ваша заявка была отклонена. Обновите данные и отправьте повторно.</span>
+              <Button 
+                size="sm" 
+                onClick={handleResubmitVerification}
+                disabled={resubmitting}
+              >
+                {resubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                Отправить на проверку
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {profile.verification_status === 'pending' && (
+          <Alert>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <AlertDescription>
+              Ваша заявка находится на рассмотрении. Мы уведомим вас о результате.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Photos */}
         <Card>
