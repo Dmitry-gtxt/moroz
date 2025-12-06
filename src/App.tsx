@@ -14,6 +14,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPerformers from "./pages/admin/AdminPerformers";
 import AdminModeration from "./pages/admin/AdminModeration";
 import AdminOrders from "./pages/admin/AdminOrders";
+import AdminPerformerView from "./pages/admin/AdminPerformerView";
+import AdminBookingHistory from "./pages/admin/AdminBookingHistory";
 import PerformerRegistration from "./pages/PerformerRegistration";
 import PerformerDashboard from "./pages/performer/PerformerDashboard";
 import PerformerProfilePage from "./pages/performer/PerformerProfile";
@@ -68,6 +70,8 @@ const App = () => (
             <Route path="/admin/moderation" element={<AdminModeration />} />
             <Route path="/admin/reviews" element={<AdminReviews />} />
             <Route path="/admin/orders" element={<AdminOrders />} />
+            <Route path="/admin/history" element={<AdminBookingHistory />} />
+            <Route path="/admin/performer/:id" element={<AdminPerformerView />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

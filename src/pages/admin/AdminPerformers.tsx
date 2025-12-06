@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, Star } from 'lucide-react';
+import { SupportChatDialog } from '@/components/admin/SupportChatDialog';
+import { Eye, Star, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -29,6 +32,11 @@ const verificationLabels: Record<string, { label: string; variant: 'default' | '
 export default function AdminPerformers() {
   const [performers, setPerformers] = useState<PerformerProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chatDialog, setChatDialog] = useState<{ open: boolean; performerId: string; performerName: string }>({
+    open: false,
+    performerId: '',
+    performerName: '',
+  });
 
   async function fetchPerformers() {
     setLoading(true);
@@ -60,6 +68,20 @@ export default function AdminPerformers() {
       toast.error('Ошибка обновления статуса');
     } else {
       toast.success(currentStatus ? 'Исполнитель деактивирован' : 'Исполнитель активирован');
+      fetchPerformers();
+    }
+  }
+
+  async function updateVerificationStatus(id: string, newStatus: string) {
+    const { error } = await supabase
+      .from('performer_profiles')
+      .update({ verification_status: newStatus as Database['public']['Enums']['verification_status'] })
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Ошибка обновления статуса');
+    } else {
+      toast.success('Статус верификации обновлён');
       fetchPerformers();
     }
   }
@@ -114,7 +136,20 @@ export default function AdminPerformers() {
                         </TableCell>
                         <TableCell>{performer.price_from ?? performer.base_price} сом</TableCell>
                         <TableCell>
-                          <Badge variant={verification.variant}>{verification.label}</Badge>
+                          <Select
+                            value={performer.verification_status}
+                            onValueChange={(value) => updateVerificationStatus(performer.id, value)}
+                          >
+                            <SelectTrigger className="w-40">
+                              <Badge variant={verification.variant}>{verification.label}</Badge>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="unverified">Не верифицирован</SelectItem>
+                              <SelectItem value="pending">На проверке</SelectItem>
+                              <SelectItem value="verified">Верифицирован</SelectItem>
+                              <SelectItem value="rejected">Отклонён</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>
                           <Switch
@@ -123,9 +158,25 @@ export default function AdminPerformers() {
                           />
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1 justify-end">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setChatDialog({
+                                open: true,
+                                performerId: performer.id,
+                                performerName: performer.display_name,
+                              })}
+                              title="Чат с исполнителем"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" asChild title="Открыть профиль">
+                              <Link to={`/admin/performer/${performer.id}`} target="_blank">
+                                <Eye className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -136,6 +187,13 @@ export default function AdminPerformers() {
           </CardContent>
         </Card>
       </div>
+
+      <SupportChatDialog
+        open={chatDialog.open}
+        onOpenChange={(open) => setChatDialog({ ...chatDialog, open })}
+        performerId={chatDialog.performerId}
+        performerName={chatDialog.performerName}
+      />
     </AdminLayout>
   );
 }
