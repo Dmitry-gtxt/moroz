@@ -195,6 +195,13 @@ export type Database = {
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "chat_messages_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "secure_bookings"
+            referencedColumns: ["id"]
+          },
         ]
       }
       districts: {
@@ -387,6 +394,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: true
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "secure_bookings"
             referencedColumns: ["id"]
           },
           {
@@ -668,6 +682,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "secure_bookings"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reviews_performer_id_fkey"
             columns: ["performer_id"]
             isOneToOne: false
@@ -679,6 +700,103 @@ export type Database = {
             columns: ["performer_id"]
             isOneToOne: false
             referencedRelation: "public_performers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      secure_bookings: {
+        Row: {
+          address: string | null
+          booking_date: string | null
+          booking_time: string | null
+          cancellation_reason: string | null
+          cancelled_by: string | null
+          children_info: string | null
+          comment: string | null
+          created_at: string | null
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          district_slug: string | null
+          event_type: Database["public"]["Enums"]["event_format"] | null
+          id: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"] | null
+          performer_id: string | null
+          prepayment_amount: number | null
+          price_total: number | null
+          slot_id: string | null
+          status: Database["public"]["Enums"]["booking_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: never
+          booking_date?: string | null
+          booking_time?: string | null
+          cancellation_reason?: string | null
+          cancelled_by?: string | null
+          children_info?: string | null
+          comment?: string | null
+          created_at?: string | null
+          customer_email?: never
+          customer_id?: string | null
+          customer_name?: never
+          customer_phone?: never
+          district_slug?: string | null
+          event_type?: Database["public"]["Enums"]["event_format"] | null
+          id?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          performer_id?: string | null
+          prepayment_amount?: number | null
+          price_total?: number | null
+          slot_id?: string | null
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: never
+          booking_date?: string | null
+          booking_time?: string | null
+          cancellation_reason?: string | null
+          cancelled_by?: string | null
+          children_info?: string | null
+          comment?: string | null
+          created_at?: string | null
+          customer_email?: never
+          customer_id?: string | null
+          customer_name?: never
+          customer_phone?: never
+          district_slug?: string | null
+          event_type?: Database["public"]["Enums"]["event_format"] | null
+          id?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          performer_id?: string | null
+          prepayment_amount?: number | null
+          price_total?: number | null
+          slot_id?: string | null
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_performer_id_fkey"
+            columns: ["performer_id"]
+            isOneToOne: false
+            referencedRelation: "performer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_performer_id_fkey"
+            columns: ["performer_id"]
+            isOneToOne: false
+            referencedRelation: "public_performers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "availability_slots"
             referencedColumns: ["id"]
           },
         ]
