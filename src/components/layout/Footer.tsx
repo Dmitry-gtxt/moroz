@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Snowflake, Phone, Mail, MapPin } from 'lucide-react';
+import { Phone, Mail, MapPin } from 'lucide-react';
+import santaHatLogo from '@/assets/santa-hat-logo.png';
 
 export function Footer() {
   return (
@@ -9,7 +10,7 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
-              <Snowflake className="h-8 w-8 text-accent" />
+              <img src={santaHatLogo} alt="ДедМороз.kg" className="h-8 w-8" />
               <span className="font-display text-xl font-bold">
                 ДедМороз<span className="text-accent">.kg</span>
               </span>

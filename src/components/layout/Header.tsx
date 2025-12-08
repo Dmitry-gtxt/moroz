@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Snowflake, User, LogIn, LogOut, Briefcase } from 'lucide-react';
+import { Menu, X, User, LogIn, LogOut, Briefcase } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import santaHatLogo from '@/assets/santa-hat-logo.png';
 import { supabase } from '@/integrations/supabase/client';
 import {
   DropdownMenu,
@@ -45,7 +46,7 @@ export function Header() {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
           <div className="relative">
-            <Snowflake className="h-8 w-8 text-accent transition-transform group-hover:rotate-45 duration-300" />
+            <img src={santaHatLogo} alt="ДедМороз.kg" className="h-8 w-8 transition-transform group-hover:scale-110 duration-300" />
             <div className="absolute inset-0 bg-accent/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <span className="font-display text-xl font-bold text-foreground">
