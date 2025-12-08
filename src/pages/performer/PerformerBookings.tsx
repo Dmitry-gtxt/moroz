@@ -14,6 +14,7 @@ import { ru } from 'date-fns/locale';
 import { Loader2, Check, X, MapPin, Phone, User, Calendar, Lock, Mail, CreditCard } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
+// Use the same type as bookings since secure_bookings has the same structure
 type Booking = Database['public']['Tables']['bookings']['Row'];
 type BookingStatus = Database['public']['Enums']['booking_status'];
 
@@ -66,7 +67,7 @@ export default function PerformerBookings() {
       setPerformerName(profile.display_name);
 
       const { data: bookingsData, error } = await supabase
-        .from('bookings')
+        .from('secure_bookings')
         .select('*')
         .eq('performer_id', profile.id)
         .order('booking_date', { ascending: true });
