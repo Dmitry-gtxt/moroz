@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const ADMIN_EMAIL = "admin@dedmoroz.kg"; // Admin notification email
+const ADMIN_EMAIL = "ded-morozy@gtxt.biz"; // Admin notification email
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -191,7 +191,7 @@ async function sendEmail(to: string[], subject: string, html: string): Promise<R
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "ДедМороз.kg <onboarding@resend.dev>",
+      from: "ДедМороз63 <onboarding@resend.dev>",
       to,
       subject,
       html,
@@ -230,7 +230,7 @@ const handler = async (req: Request): Promise<Response> => {
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h1 style="color: #c41e3a; margin-bottom: 24px;">🎅 Новая заявка!</h1>
             <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${escapeHtml(performerName)}</strong>!</p>
-            <p style="font-size: 16px; color: #333;">У вас новая заявка на бронирование на платформе ДедМороз.kg</p>
+            <p style="font-size: 16px; color: #333;">У вас новая заявка на бронирование на платформе ДедМороз63.рф</p>
             
             <div style="background: #fff3e0; border-radius: 12px; padding: 16px; margin: 16px 0;">
               <p style="margin: 0; color: #e65100;">⚠️ <strong>Важно:</strong> Подтвердите или отклоните заявку в личном кабинете. До подтверждения время остаётся доступным для других клиентов.</p>
@@ -354,7 +354,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p style="font-size: 14px; color: #666;">Не расстраивайтесь! Вы можете выбрать другого исполнителя в нашем каталоге. Предоплата будет возвращена.</p>
             
             <div style="text-align: center; margin-top: 24px;">
-              <a href="https://dedmoroz.kg/catalog" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">🎅 Найти другого исполнителя</a>
+              <a href="https://dedmoroz63.рф/catalog" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">🎅 Найти другого исполнителя</a>
             </div>
           </div>
         `
@@ -442,7 +442,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <p style="font-size: 14px; color: #666;">Вы можете выбрать другого исполнителя в нашем каталоге. Предоплата будет возвращена.</p>
                 
                 <div style="text-align: center; margin-top: 24px;">
-                  <a href="https://dedmoroz.kg/catalog" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">🎅 Найти другого исполнителя</a>
+                  <a href="https://dedmoroz63.рф/catalog" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">🎅 Найти другого исполнителя</a>
                 </div>
               </div>
             `
@@ -600,7 +600,7 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
             
             <div style="text-align: center; margin-top: 24px;">
-              <a href="https://dedmoroz.kg/admin/moderation" style="display: inline-block; background: #1976d2; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти к модерации</a>
+              <a href="https://dedmoroz63.рф/admin/moderation" style="display: inline-block; background: #1976d2; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти к модерации</a>
             </div>
           </div>
         `
@@ -631,12 +631,12 @@ const handler = async (req: Request): Promise<Response> => {
 
       const res = await sendEmail(
         [email],
-        "🎄 Добро пожаловать на ДедМороз.kg!",
+        "🎄 Добро пожаловать на ДедМороз63.рф!",
         `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="text-align: center; margin-bottom: 32px;">
               <h1 style="color: #c41e3a; margin-bottom: 8px;">🎅 Добро пожаловать!</h1>
-              <p style="font-size: 18px; color: #333;">на ДедМороз.kg</p>
+              <p style="font-size: 18px; color: #333;">на ДедМороз63.рф</p>
             </div>
             
             <p style="font-size: 16px; color: #333;">Здравствуйте${fullName ? `, <strong>${escapeHtml(fullName)}</strong>` : ''}!</p>
@@ -653,8 +653,20 @@ const handler = async (req: Request): Promise<Response> => {
               </ul>
             </div>
             
-            <div style="text-align: center; margin: 32px 0;">
-              <a href="https://dedmoroz.kg/catalog" style="display: inline-block; background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 16px;">🎄 Выбрать Деда Мороза</a>
+            <div style="background: #f3e5f5; border-radius: 16px; padding: 24px; margin: 24px 0;">
+              <h3 style="margin: 0 0 12px 0; color: #7b1fa2; text-align: center;">🎄 Каталог Дедов Морозов</h3>
+              <p style="color: #555; text-align: center; margin: 0 0 16px 0;">В нашем каталоге вы найдёте проверенных исполнителей с реальными отзывами. Выберите подходящего Деда Мороза и забронируйте визит онлайн!</p>
+              <div style="text-align: center;">
+                <a href="https://dedmoroz63.рф/catalog" style="display: inline-block; background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); color: white; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 15px;">🎅 Выбрать Деда Мороза</a>
+              </div>
+            </div>
+            
+            <div style="background: #e3f2fd; border-radius: 16px; padding: 24px; margin: 24px 0;">
+              <h3 style="margin: 0 0 12px 0; color: #1565c0; text-align: center;">🎭 Хотите стать Дедом Морозом?</h3>
+              <p style="color: #555; text-align: center; margin: 0 0 16px 0;">Если вы профессиональный аниматор или артист — присоединяйтесь к нашей команде и принимайте заказы на новогодние праздники!</p>
+              <div style="text-align: center;">
+                <a href="https://dedmoroz63.рф/become-performer" style="display: inline-block; background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%); color: white; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 15px;">🎅 Стать исполнителем</a>
+              </div>
             </div>
             
             <div style="background: #fff3e0; border-radius: 12px; padding: 16px; margin: 24px 0;">
@@ -662,7 +674,7 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
             
             <p style="font-size: 14px; color: #666; text-align: center;">С наступающим Новым годом! 🎄✨</p>
-            <p style="font-size: 14px; color: #666; text-align: center;">Команда ДедМороз.kg</p>
+            <p style="font-size: 14px; color: #666; text-align: center;">Команда ДедМороз63.рф</p>
           </div>
         `
       );
@@ -847,7 +859,7 @@ const handler = async (req: Request): Promise<Response> => {
             ` : ''}
             
             <div style="text-align: center; margin-top: 24px;">
-              <a href="https://dedmoroz.kg/performer/dashboard" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти в личный кабинет</a>
+              <a href="https://dedmoroz63.рф/performer/dashboard" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти в личный кабинет</a>
             </div>
             
             <p style="font-size: 14px; color: #666; margin-top: 24px;">Если у вас есть вопросы, свяжитесь с нами через чат поддержки.</p>
@@ -958,7 +970,7 @@ const handler = async (req: Request): Promise<Response> => {
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h1 style="color: #1976d2;">📋 Новая заявка на верификацию</h1>
           <p>Исполнитель <strong>${escapeHtml(performerName)}</strong> подал заявку на верификацию.</p>
-          <p><a href="https://dedmoroz.kg/admin/verification" style="background: #1976d2; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Перейти к верификации</a></p>
+          <p><a href="https://dedmoroz63.рф/admin/verification" style="background: #1976d2; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Перейти к верификации</a></p>
         </div>
       `);
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders } });
