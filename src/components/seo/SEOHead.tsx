@@ -10,11 +10,11 @@ interface SEOHeadProps {
 }
 
 const defaultMeta = {
-  title: 'ДедМороз.kg — Заказать Деда Мороза в Бишкеке',
-  description: 'Закажите проверенного Деда Мороза или Снегурочку на дом в Бишкеке. Более 100 исполнителей, честные отзывы, безопасная оплата. Подарите детям волшебство!',
-  keywords: 'дед мороз бишкек, заказать деда мороза, снегурочка на дом, новогоднее поздравление, дед мороз на дом кыргызстан',
+  title: 'ДедМороз63.рф — Заказать Деда Мороза в Самаре',
+  description: 'Закажите проверенного Деда Мороза или Снегурочку на дом в Самаре и Самарской области. Более 100 исполнителей, честные отзывы, безопасная оплата. Подарите детям волшебство!',
+  keywords: 'дед мороз самара, заказать деда мороза, снегурочка на дом, новогоднее поздравление, дед мороз самарская область, дед мороз тольятти',
   image: '/og-image.jpg',
-  url: 'https://dedmoroz.kg',
+  url: 'https://dedmoroz63.ru',
 };
 
 export function SEOHead({
@@ -26,7 +26,7 @@ export function SEOHead({
   type = 'website',
 }: SEOHeadProps) {
   const meta = {
-    title: title ? `${title} | ДедМороз.kg` : defaultMeta.title,
+    title: title ? `${title} | ДедМороз63.рф` : defaultMeta.title,
     description: description || defaultMeta.description,
     keywords: keywords || defaultMeta.keywords,
     image: image || defaultMeta.image,
@@ -60,7 +60,7 @@ export function SEOHead({
     setMetaTag('og:url', meta.url, true);
     setMetaTag('og:type', type, true);
     setMetaTag('og:locale', 'ru_RU', true);
-    setMetaTag('og:site_name', 'ДедМороз.kg', true);
+    setMetaTag('og:site_name', 'ДедМороз63.рф', true);
 
     // Twitter Card tags
     setMetaTag('twitter:card', 'summary_large_image');

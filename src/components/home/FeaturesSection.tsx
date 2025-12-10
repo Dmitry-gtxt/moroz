@@ -27,7 +27,7 @@ const performerFeatures = [
   {
     icon: Users,
     title: 'Больше клиентов',
-    description: 'Получайте заказы от родителей со всего Бишкека',
+    description: 'Получайте заказы от родителей со всей Самарской области',
   },
   {
     icon: Clock,

@@ -172,7 +172,7 @@ const PerformerProfile = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <SEOHead 
         title={performer.display_name}
-        description={`Закажите ${performer.display_name} в Бишкеке. Рейтинг ${Number(performer.rating_average).toFixed(1)}, ${performer.rating_count ?? 0} отзывов. Цена от ${customerPriceFrom.toLocaleString()} сом.`}
+        description={`Закажите ${performer.display_name} в Самаре. Рейтинг ${Number(performer.rating_average).toFixed(1)}, ${performer.rating_count ?? 0} отзывов. Цена от ${customerPriceFrom.toLocaleString()} ₽.`}
         type="profile"
       />
       <Header />

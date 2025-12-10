@@ -305,7 +305,7 @@ const Booking = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <SEOHead 
         title={`Бронирование — ${performer.display_name}`}
-        description={`Забронируйте ${performer.display_name} на новогоднее поздравление в Бишкеке.`}
+        description={`Забронируйте ${performer.display_name} на новогоднее поздравление в Самаре.`}
       />
       <Header />
       <main className="flex-1">
