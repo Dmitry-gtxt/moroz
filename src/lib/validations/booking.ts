@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-// Phone validation for Kyrgyzstan (+996) and common formats
-const phoneRegex = /^(\+?996|0)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}[\s-]?\d{2}$/;
+// Phone validation for Russia (+7) and common formats
+const phoneRegex = /^(\+?7|8)?[\s-]?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}$/;
 
 export const bookingStep1Schema = z.object({
   address: z

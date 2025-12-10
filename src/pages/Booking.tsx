@@ -490,7 +490,7 @@ const Booking = () => {
                           type="tel"
                           value={formData.customerPhone}
                           onChange={handleInputChange}
-                          placeholder="+996 555 123 456"
+                          placeholder="+7 (846) 123-45-67"
                           className={`mt-1 ${fieldErrors.customerPhone ? 'border-destructive' : ''}`}
                         />
                         {fieldErrors.customerPhone && <p className="text-destructive text-sm mt-1">{fieldErrors.customerPhone}</p>}

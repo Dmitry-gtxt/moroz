@@ -46,11 +46,11 @@ export function Header() {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
           <div className="relative">
-            <img src={santaHatLogo} alt="ДедМороз.kg" className="h-8 w-8 transition-transform group-hover:scale-110 duration-300" />
+            <img src={santaHatLogo} alt="Дед-Морозы.РФ" className="h-8 w-8 transition-transform group-hover:scale-110 duration-300" />
             <div className="absolute inset-0 bg-accent/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <span className="font-display text-xl font-bold text-foreground">
-            ДедМороз<span className="text-accent">.kg</span>
+            Дед-Морозы<span className="text-accent">.РФ</span>
           </span>
         </Link>
 
