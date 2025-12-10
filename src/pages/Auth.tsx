@@ -174,7 +174,7 @@ const Auth = () => {
                         type="tel"
                         value={formData.phone}
                         onChange={handleInputChange}
-                        placeholder="+996 555 123 456"
+                        placeholder="+7 (846) 123-45-67"
                         className="pl-10"
                       />
                     </div>

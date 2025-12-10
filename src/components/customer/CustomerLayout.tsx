@@ -69,7 +69,7 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
           <Link to="/" className="flex items-center gap-2">
             <Snowflake className="h-7 w-7 text-accent" />
             <span className="font-display font-bold text-lg text-foreground">
-              ДедМороз<span className="text-accent">.kg</span>
+              Дед-Морозы<span className="text-accent">.РФ</span>
             </span>
           </Link>
           <p className="text-xs text-muted-foreground mt-1">Личный кабинет</p>
