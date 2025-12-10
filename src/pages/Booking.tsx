@@ -476,7 +476,7 @@ const Booking = () => {
                           name="customerName"
                           value={formData.customerName}
                           onChange={handleInputChange}
-                          placeholder="Айгуль"
+                          placeholder="Анна"
                           className={`mt-1 ${fieldErrors.customerName ? 'border-destructive' : ''}`}
                         />
                         {fieldErrors.customerName && <p className="text-destructive text-sm mt-1">{fieldErrors.customerName}</p>}
