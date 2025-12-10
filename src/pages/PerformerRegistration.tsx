@@ -10,14 +10,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, X, Check, Loader2 } from 'lucide-react';
+import { Upload, X, Check, Loader2, Phone } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerType = Database['public']['Enums']['performer_type'];
 type EventFormat = Database['public']['Enums']['event_format'];
-type DocumentType = Database['public']['Enums']['document_type'];
 
 const performerTypes: { value: PerformerType; label: string }[] = [
   { value: 'ded_moroz', label: 'Дед Мороз' },
@@ -33,12 +31,6 @@ const eventFormats: { value: EventFormat; label: string }[] = [
   { value: 'office', label: 'Офис' },
   { value: 'corporate', label: 'Корпоратив' },
   { value: 'outdoor', label: 'Улица / Парк' },
-];
-
-const documentTypes: { value: DocumentType; label: string }[] = [
-  { value: 'passport', label: 'Паспорт' },
-  { value: 'id_card', label: 'ID-карта' },
-  { value: 'other', label: 'Другой документ' },
 ];
 
 interface District {
@@ -66,13 +58,13 @@ export default function PerformerRegistration() {
   const [basePrice, setBasePrice] = useState('');
   const [experienceYears, setExperienceYears] = useState('');
   const [costumeStyle, setCostumeStyle] = useState('');
+  const [verificationPhone, setVerificationPhone] = useState('');
   
   // Files
   const [photos, setPhotos] = useState<File[]>([]);
   const [photosPreviews, setPhotosPreviews] = useState<string[]>([]);
   const [video, setVideo] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [documents, setDocuments] = useState<{ type: DocumentType; file: File }[]>([]);
 
   // Check if user already has a performer profile
   useEffect(() => {
@@ -182,14 +174,6 @@ export default function PerformerRegistration() {
     setVideoPreview(null);
   };
 
-  const handleDocumentUpload = (type: DocumentType, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    // Remove existing document of this type
-    setDocuments(docs => [...docs.filter(d => d.type !== type), { type, file }]);
-  };
-
   const toggleType = (type: PerformerType) => {
     setSelectedTypes(prev => 
       prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
@@ -206,6 +190,14 @@ export default function PerformerRegistration() {
     setSelectedDistricts(prev => 
       prev.includes(slug) ? prev.filter(d => d !== slug) : [...prev, slug]
     );
+  };
+
+  // Group districts by slug prefix
+  const groupedDistricts = {
+    samara: districts.filter(d => d.slug.startsWith('samara-')),
+    tolyatti: districts.filter(d => d.slug.startsWith('tolyatti-')),
+    cities: districts.filter(d => !d.slug.startsWith('samara-') && !d.slug.startsWith('tolyatti-') && !d.slug.startsWith('rayon-')),
+    oblastRayons: districts.filter(d => d.slug.startsWith('rayon-')),
   };
 
   const validateStep = (currentStep: number): boolean => {
@@ -230,7 +222,7 @@ export default function PerformerRegistration() {
         return false;
       }
       if (!basePrice) {
-        toast.error('Укажите цену за 30 минут');
+        toast.error('Укажите минимальную цену');
         return false;
       }
       return true;
@@ -238,6 +230,13 @@ export default function PerformerRegistration() {
     if (currentStep === 3) {
       if (photos.length === 0) {
         toast.error('Загрузите хотя бы одну фотографию');
+        return false;
+      }
+      return true;
+    }
+    if (currentStep === 4) {
+      if (!verificationPhone.trim()) {
+        toast.error('Укажите номер телефона для верификации');
         return false;
       }
       return true;
@@ -254,7 +253,14 @@ export default function PerformerRegistration() {
   const prevStep = () => setStep(step - 1);
 
   const handleSubmit = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error('Необходимо авторизоваться');
+      return;
+    }
+    
+    if (!validateStep(4)) {
+      return;
+    }
     
     setLoading(true);
     try {
@@ -266,7 +272,10 @@ export default function PerformerRegistration() {
           .from('performer-photos')
           .upload(fileName, photo);
         
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('Photo upload error:', uploadError);
+          throw new Error(`Ошибка загрузки фото: ${uploadError.message}`);
+        }
         
         const { data: { publicUrl } } = supabase.storage
           .from('performer-photos')
@@ -275,7 +284,7 @@ export default function PerformerRegistration() {
         photoUrls.push(publicUrl);
       }
 
-      // 1.5 Upload video if present
+      // 2. Upload video if present
       let videoUrl: string | null = null;
       if (video) {
         const videoFileName = `${user.id}/${Date.now()}-${video.name}`;
@@ -283,7 +292,10 @@ export default function PerformerRegistration() {
           .from('performer-videos')
           .upload(videoFileName, video);
         
-        if (videoUploadError) throw videoUploadError;
+        if (videoUploadError) {
+          console.error('Video upload error:', videoUploadError);
+          throw new Error(`Ошибка загрузки видео: ${videoUploadError.message}`);
+        }
         
         const { data: { publicUrl } } = supabase.storage
           .from('performer-videos')
@@ -292,13 +304,17 @@ export default function PerformerRegistration() {
         videoUrl = publicUrl;
       }
 
-      // 2. Create performer profile
+      // 3. Create performer profile with verification phone in description
+      const descriptionWithPhone = description 
+        ? `${description}\n\n[Телефон для верификации: ${verificationPhone}]`
+        : `[Телефон для верификации: ${verificationPhone}]`;
+
       const { data: profile, error: profileError } = await supabase
         .from('performer_profiles')
         .insert({
           user_id: user.id,
           display_name: displayName,
-          description,
+          description: descriptionWithPhone,
           performer_types: selectedTypes,
           formats: selectedFormats,
           district_slugs: selectedDistricts,
@@ -313,40 +329,36 @@ export default function PerformerRegistration() {
         .select()
         .single();
 
-      if (profileError) throw profileError;
-
-      // 3. Upload documents
-      for (const doc of documents) {
-        const fileName = `${user.id}/${Date.now()}-${doc.file.name}`;
-        const { error: docUploadError } = await supabase.storage
-          .from('verification-docs')
-          .upload(fileName, doc.file);
-        
-        if (docUploadError) throw docUploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('verification-docs')
-          .getPublicUrl(fileName);
-
-        await supabase.from('verification_documents').insert({
-          performer_id: profile.id,
-          document_type: doc.type,
-          document_url: publicUrl,
-          status: 'pending',
-        });
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw new Error(`Ошибка создания профиля: ${profileError.message}`);
       }
 
       // 4. Add performer role
-      await supabase.from('user_roles').insert({
+      const { error: roleError } = await supabase.from('user_roles').insert({
         user_id: user.id,
         role: 'performer',
       });
 
-      toast.success('Анкета отправлена на модерацию!');
-      navigate('/');
-    } catch (error) {
+      if (roleError) {
+        console.error('Role assignment error:', roleError);
+        // Don't throw here, profile is created
+      }
+
+      // 5. Send notification to admin about new verification request
+      supabase.functions.invoke('send-notification-email', {
+        body: {
+          type: 'verification_submitted_admin',
+          performerId: profile.id,
+          performerName: displayName,
+        },
+      }).catch(err => console.error('Failed to send admin notification:', err));
+
+      toast.success('Анкета отправлена! Наш менеджер свяжется с вами для верификации в течение 24 часов.');
+      navigate('/performer');
+    } catch (error: any) {
       console.error('Registration error:', error);
-      toast.error('Ошибка при регистрации. Попробуйте снова.');
+      toast.error(error.message || 'Ошибка при регистрации. Попробуйте снова.');
     } finally {
       setLoading(false);
     }
@@ -514,23 +526,114 @@ export default function PerformerRegistration() {
                       Районы не найдены
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2 p-2 border rounded-lg">
-                      {districts.map((district) => (
-                        <div
-                          key={district.id}
-                          className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                            selectedDistricts.includes(district.slug)
-                              ? 'bg-primary/10 text-primary border border-primary'
-                              : 'hover:bg-muted border border-transparent'
-                          }`}
-                          onClick={() => toggleDistrict(district.slug)}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Checkbox checked={selectedDistricts.includes(district.slug)} />
-                            <span className="text-sm font-medium">{district.name}</span>
+                    <div className="space-y-4 p-4 border rounded-lg max-h-[400px] overflow-y-auto">
+                      {/* Самара */}
+                      {groupedDistricts.samara.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-sm text-foreground mb-2 sticky top-0 bg-background py-1">
+                            Самара
+                          </h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {groupedDistricts.samara.map((district) => (
+                              <div
+                                key={district.id}
+                                className={`p-2 rounded-lg cursor-pointer transition-colors text-sm ${
+                                  selectedDistricts.includes(district.slug)
+                                    ? 'bg-primary/10 text-primary border border-primary'
+                                    : 'hover:bg-muted border border-transparent'
+                                }`}
+                                onClick={() => toggleDistrict(district.slug)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Checkbox checked={selectedDistricts.includes(district.slug)} />
+                                  <span>{district.name.replace('Самара — ', '')}</span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      ))}
+                      )}
+
+                      {/* Тольятти */}
+                      {groupedDistricts.tolyatti.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-sm text-foreground mb-2 sticky top-0 bg-background py-1">
+                            Тольятти
+                          </h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {groupedDistricts.tolyatti.map((district) => (
+                              <div
+                                key={district.id}
+                                className={`p-2 rounded-lg cursor-pointer transition-colors text-sm ${
+                                  selectedDistricts.includes(district.slug)
+                                    ? 'bg-primary/10 text-primary border border-primary'
+                                    : 'hover:bg-muted border border-transparent'
+                                }`}
+                                onClick={() => toggleDistrict(district.slug)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Checkbox checked={selectedDistricts.includes(district.slug)} />
+                                  <span>{district.name.replace('Тольятти — ', '')}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Другие города */}
+                      {groupedDistricts.cities.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-sm text-foreground mb-2 sticky top-0 bg-background py-1">
+                            Другие города
+                          </h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {groupedDistricts.cities.map((district) => (
+                              <div
+                                key={district.id}
+                                className={`p-2 rounded-lg cursor-pointer transition-colors text-sm ${
+                                  selectedDistricts.includes(district.slug)
+                                    ? 'bg-primary/10 text-primary border border-primary'
+                                    : 'hover:bg-muted border border-transparent'
+                                }`}
+                                onClick={() => toggleDistrict(district.slug)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Checkbox checked={selectedDistricts.includes(district.slug)} />
+                                  <span>{district.name}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Районы области */}
+                      {groupedDistricts.oblastRayons.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-sm text-foreground mb-2 sticky top-0 bg-background py-1">
+                            Районы области
+                          </h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {groupedDistricts.oblastRayons.map((district) => (
+                              <div
+                                key={district.id}
+                                className={`p-2 rounded-lg cursor-pointer transition-colors text-sm ${
+                                  selectedDistricts.includes(district.slug)
+                                    ? 'bg-primary/10 text-primary border border-primary'
+                                    : 'hover:bg-muted border border-transparent'
+                                }`}
+                                onClick={() => toggleDistrict(district.slug)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Checkbox checked={selectedDistricts.includes(district.slug)} />
+                                  <span>{district.name}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   {selectedDistricts.length > 0 && (
@@ -541,7 +644,7 @@ export default function PerformerRegistration() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="basePrice">Цена за 30 минут (сом) *</Label>
+                  <Label htmlFor="basePrice">Минимальная цена за 30 минут (₽) *</Label>
                   <Input
                     id="basePrice"
                     type="number"
@@ -551,8 +654,8 @@ export default function PerformerRegistration() {
                     placeholder="3000"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Это сумма, которую вы получите наличкой после мероприятия. 
-                    Клиент увидит цену с учётом сервисного сбора.
+                    Укажите минимальную цену вашей работы за 30 минут. Эта информация будет отражена в профиле.
+                    Клиент увидит цену с учётом сервисного сбора платформы.
                   </p>
                 </div>
 
@@ -656,56 +759,52 @@ export default function PerformerRegistration() {
             </Card>
           )}
 
-          {/* Step 4: Documents */}
+          {/* Step 4: Phone Verification */}
           {step === 4 && (
             <Card>
               <CardHeader>
-                <CardTitle>Документы для верификации</CardTitle>
+                <CardTitle>Верификация</CardTitle>
                 <CardDescription>
-                  Загрузите документы для подтверждения личности (опционально, но ускорит модерацию)
+                  Укажите номер телефона для подтверждения личности
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  {documentTypes.map((docType) => {
-                    const uploadedDoc = documents.find(d => d.type === docType.value);
-                    return (
-                      <div
-                        key={docType.value}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div>
-                          <p className="font-medium">{docType.label}</p>
-                          {uploadedDoc && (
-                            <p className="text-sm text-muted-foreground">
-                              {uploadedDoc.file.name}
-                            </p>
-                          )}
-                        </div>
-                        <label className="cursor-pointer">
-                          <Button variant={uploadedDoc ? "secondary" : "outline"} asChild>
-                            <span>
-                              {uploadedDoc ? <Check className="h-4 w-4 mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-                              {uploadedDoc ? 'Загружено' : 'Загрузить'}
-                            </span>
-                          </Button>
-                          <input
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            onChange={(e) => handleDocumentUpload(docType.value, e)}
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
-                    );
-                  })}
+                <div className="p-4 bg-accent/10 border border-accent/20 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Phone className="h-5 w-5 text-accent mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-foreground">Верификация по телефону</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        После отправки анкеты наш менеджер свяжется с вами по указанному номеру 
+                        для подтверждения личности в течение 24 часов.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="verificationPhone">Номер телефона для связи *</Label>
+                  <Input
+                    id="verificationPhone"
+                    type="tel"
+                    value={verificationPhone}
+                    onChange={(e) => setVerificationPhone(e.target.value)}
+                    placeholder="+7 (XXX) XXX-XX-XX"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Убедитесь, что номер активен и вы можете принимать звонки
+                  </p>
                 </div>
 
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground">
-                    📋 После отправки анкеты наши модераторы проверят её в течение 24 часов.
-                    Вы получите уведомление о результате.
+                    📋 После отправки анкеты:
                   </p>
+                  <ul className="text-sm text-muted-foreground mt-2 space-y-1 list-disc list-inside">
+                    <li>Наш менеджер свяжется с вами в течение 24 часов</li>
+                    <li>После верификации ваш профиль будет опубликован</li>
+                    <li>Вы сможете начать принимать заказы</li>
+                  </ul>
                 </div>
 
                 <div className="flex gap-4">
