@@ -45,7 +45,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <Link to="/" className="flex items-center gap-2">
             <span className="text-2xl">🎅</span>
             <span className="font-display font-bold text-lg text-foreground">
-              DedMoroz<span className="text-accent">.kg</span>
+              Дед-Морозы<span className="text-accent">.РФ</span>
             </span>
           </Link>
           <p className="text-xs text-muted-foreground mt-1">Админ-панель</p>

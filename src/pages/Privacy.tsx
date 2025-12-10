@@ -7,7 +7,7 @@ export default function Privacy() {
     <div className="min-h-screen flex flex-col bg-background">
       <SEOHead 
         title="Политика конфиденциальности"
-        description="Политика конфиденциальности сервиса ДедМороз.kg. Узнайте как мы защищаем ваши персональные данные."
+        description="Политика конфиденциальности сервиса Дед-Морозы.РФ. Узнайте как мы защищаем ваши персональные данные."
       />
       <Header />
       <main className="flex-1 py-12">
@@ -25,7 +25,7 @@ export default function Privacy() {
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-4">1. Общие положения</h2>
               <p>
                 Настоящая Политика конфиденциальности определяет порядок обработки и защиты персональных данных 
-                пользователей платформы «ДедМороз63.рф» (далее — «Платформа»), действующей на территории 
+                пользователей платформы «Дед-Морозы.РФ» (далее — «Платформа»), действующей на территории 
                 Российской Федерации.
               </p>
               <p>
@@ -93,7 +93,7 @@ export default function Privacy() {
                 <li>Отозвать согласие на обработку данных</li>
               </ul>
               <p>
-                Для реализации своих прав свяжитесь с нами: <strong>privacy@dedmoroz.kg</strong>
+                Для реализации своих прав свяжитесь с нами: <strong>privacy@дед-морозы.рф</strong>
               </p>
             </section>
 
@@ -119,7 +119,7 @@ export default function Privacy() {
                 По вопросам обработки персональных данных:
               </p>
               <ul className="list-none space-y-1">
-                <li>Email: privacy@dedmoroz63.ru</li>
+                <li>Email: privacy@дед-морозы.рф</li>
                 <li>Телефон: +7 (846) 200-00-00</li>
                 <li>Адрес: г. Самара, Самарская область</li>
               </ul>

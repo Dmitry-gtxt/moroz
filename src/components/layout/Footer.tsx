@@ -10,9 +10,9 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
-              <img src={santaHatLogo} alt="ДедМороз63" className="h-8 w-8" />
+              <img src={santaHatLogo} alt="Дед-Морозы.РФ" className="h-8 w-8" />
               <span className="font-display text-xl font-bold">
-                ДедМороз<span className="text-accent">63</span>
+                Дед-Морозы<span className="text-accent">.РФ</span>
               </span>
             </Link>
             <p className="text-sm text-primary-foreground/70">
@@ -77,8 +77,8 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-accent" />
-                <a href="mailto:info@dedmoroz63.ru" className="hover:text-accent transition-colors">
-                  info@dedmoroz63.ru
+                <a href="mailto:info@дед-морозы.рф" className="hover:text-accent transition-colors">
+                  info@дед-морозы.рф
                 </a>
               </li>
               <li className="flex items-start gap-2">
@@ -90,7 +90,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-primary-foreground/20 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-primary-foreground/60">
-          <p>© 2025-2026 ДедМороз63.рф • Сезон Года Лошади 🐴</p>
+          <p>© 2025-2026 Дед-Морозы.РФ • Сезон Года Змеи 🐍</p>
           <div className="flex gap-6">
             <Link to="/privacy" className="hover:text-accent transition-colors">
               Политика конфиденциальности
