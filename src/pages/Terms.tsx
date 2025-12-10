@@ -7,7 +7,7 @@ export default function Terms() {
     <div className="min-h-screen flex flex-col bg-background">
       <SEOHead 
         title="Пользовательское соглашение"
-        description="Пользовательское соглашение сервиса ДедМороз.kg. Условия использования платформы для клиентов и исполнителей."
+        description="Пользовательское соглашение сервиса Дед-Морозы.РФ. Условия использования платформы для клиентов и исполнителей."
       />
       <Header />
       <main className="flex-1 py-12">
@@ -25,7 +25,7 @@ export default function Terms() {
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-4">1. Общие положения</h2>
               <p>
                 Настоящее Пользовательское соглашение (далее — «Соглашение») регулирует отношения между 
-                администрацией платформы «ДедМороз63.рф» (далее — «Платформа») и пользователями Платформы.
+                администрацией платформы «Дед-Морозы.РФ» (далее — «Платформа») и пользователями Платформы.
               </p>
               <p>
                 Платформа является информационным посредником между заказчиками услуг (клиентами) и 
@@ -147,7 +147,7 @@ export default function Terms() {
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-4">11. Контакты</h2>
               <ul className="list-none space-y-1">
-                <li>Email: support@dedmoroz63.ru</li>
+                <li>Email: support@дед-морозы.рф</li>
                 <li>Телефон: +7 (846) 200-00-00</li>
                 <li>Адрес: г. Самара, Самарская область</li>
               </ul>
