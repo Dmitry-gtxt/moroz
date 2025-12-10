@@ -71,14 +71,14 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-primary-foreground/70">
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-accent" />
-                <a href="tel:+78462000000" className="hover:text-accent transition-colors">
-                  +7 (846) 200-00-00
+                <a href="tel:+79953829736" className="hover:text-accent transition-colors">
+                  +7 (995) 382-97-36
                 </a>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-accent" />
-                <a href="mailto:info@дед-морозы.рф" className="hover:text-accent transition-colors">
-                  info@дед-морозы.рф
+                <a href="mailto:ded-morozy@gtxt.biz" className="hover:text-accent transition-colors">
+                  ded-morozy@gtxt.biz
                 </a>
               </li>
               <li className="flex items-start gap-2">

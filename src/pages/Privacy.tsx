@@ -93,7 +93,7 @@ export default function Privacy() {
                 <li>Отозвать согласие на обработку данных</li>
               </ul>
               <p>
-                Для реализации своих прав свяжитесь с нами: <strong>privacy@дед-морозы.рф</strong>
+                Для реализации своих прав свяжитесь с нами: <strong>ded-morozy@gtxt.biz</strong>
               </p>
             </section>
 
@@ -119,8 +119,8 @@ export default function Privacy() {
                 По вопросам обработки персональных данных:
               </p>
               <ul className="list-none space-y-1">
-                <li>Email: privacy@дед-морозы.рф</li>
-                <li>Телефон: +7 (846) 200-00-00</li>
+                <li>Email: ded-morozy@gtxt.biz</li>
+                <li>Телефон: +7 (995) 382-97-36</li>
                 <li>Адрес: г. Самара, Самарская область</li>
               </ul>
             </section>

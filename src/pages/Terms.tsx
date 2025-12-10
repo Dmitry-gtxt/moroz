@@ -147,8 +147,8 @@ export default function Terms() {
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-4">11. Контакты</h2>
               <ul className="list-none space-y-1">
-                <li>Email: support@дед-морозы.рф</li>
-                <li>Телефон: +7 (846) 200-00-00</li>
+                <li>Email: ded-morozy@gtxt.biz</li>
+                <li>Телефон: +7 (995) 382-97-36</li>
                 <li>Адрес: г. Самара, Самарская область</li>
               </ul>
             </section>
