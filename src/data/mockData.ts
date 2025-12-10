@@ -1,10 +1,76 @@
 import { PerformerProfile, District, Review, AvailabilitySlot } from '@/types';
 
+// District groups for UI filtering
+export const districtGroups = {
+  samara: {
+    label: 'Самара',
+    districts: [
+      { id: '1', name: 'Ленинский', slug: 'samara-leninsky' },
+      { id: '2', name: 'Самарский', slug: 'samara-samarsky' },
+      { id: '3', name: 'Октябрьский', slug: 'samara-oktyabrsky' },
+      { id: '4', name: 'Железнодорожный', slug: 'samara-zheleznodorozhny' },
+      { id: '5', name: 'Промышленный', slug: 'samara-promyshlenny' },
+      { id: '6', name: 'Советский', slug: 'samara-sovetsky' },
+      { id: '7', name: 'Кировский', slug: 'samara-kirovsky' },
+      { id: '8', name: 'Красноглинский', slug: 'samara-krasnoglinsky' },
+      { id: '9', name: 'Куйбышевский', slug: 'samara-kuibyshevsky' },
+    ],
+  },
+  tolyatti: {
+    label: 'Тольятти',
+    districts: [
+      { id: '10', name: 'Автозаводский', slug: 'tolyatti-avtozavodsky' },
+      { id: '11', name: 'Центральный', slug: 'tolyatti-centralny' },
+      { id: '12', name: 'Комсомольский', slug: 'tolyatti-komsomolsky' },
+    ],
+  },
+  cities: {
+    label: 'Другие города',
+    districts: [
+      { id: '13', name: 'Сызрань', slug: 'syzran' },
+      { id: '14', name: 'Новокуйбышевск', slug: 'novokuybyshevsk' },
+      { id: '15', name: 'Чапаевск', slug: 'chapaevsk' },
+      { id: '16', name: 'Жигулёвск', slug: 'zhigulyovsk' },
+      { id: '17', name: 'Отрадный', slug: 'otradny' },
+      { id: '18', name: 'Кинель', slug: 'kinel' },
+      { id: '19', name: 'Похвистнево', slug: 'pohvistnevo' },
+      { id: '20', name: 'Октябрьск', slug: 'oktyabrsk' },
+    ],
+  },
+  oblastRayons: {
+    label: 'Районы области',
+    districts: [
+      { id: '21', name: 'Волжский район', slug: 'rayon-volzhsky' },
+      { id: '22', name: 'Красноярский район', slug: 'rayon-krasnoyarsky' },
+      { id: '23', name: 'Ставропольский район', slug: 'rayon-stavropolsky' },
+      { id: '24', name: 'Кинельский район', slug: 'rayon-kinelsky' },
+      { id: '25', name: 'Безенчукский район', slug: 'rayon-bezenchuksky' },
+      { id: '26', name: 'Борский район', slug: 'rayon-borsky' },
+      { id: '27', name: 'Богатовский район', slug: 'rayon-bogatovsky' },
+      { id: '28', name: 'Большеглушицкий район', slug: 'rayon-bolsheglushitsky' },
+      { id: '29', name: 'Большечерниговский район', slug: 'rayon-bolshechernigovsky' },
+      { id: '30', name: 'Исаклинский район', slug: 'rayon-isaklinsky' },
+      { id: '31', name: 'Камышлинский район', slug: 'rayon-kamyshlinsky' },
+      { id: '32', name: 'Клявлинский район', slug: 'rayon-klyavlinsky' },
+      { id: '33', name: 'Кошкинский район', slug: 'rayon-koshkinsky' },
+      { id: '34', name: 'Нефтегорский район', slug: 'rayon-neftegorsky' },
+      { id: '35', name: 'Пестравский район', slug: 'rayon-pestravsky' },
+      { id: '36', name: 'Приволжский район', slug: 'rayon-privolzhsky' },
+      { id: '37', name: 'Сергиевский район', slug: 'rayon-sergievsky' },
+      { id: '38', name: 'Хворостянский район', slug: 'rayon-hvorostyansky' },
+      { id: '39', name: 'Шенталинский район', slug: 'rayon-shentalinsky' },
+      { id: '40', name: 'Шигонский район', slug: 'rayon-shigonsky' },
+      { id: '41', name: 'Алексеевский район', slug: 'rayon-alekseevsky' },
+    ],
+  },
+};
+
+// Flat array for backward compatibility
 export const districts: District[] = [
-  { id: '1', name: 'Октябрьский', slug: 'october' },
-  { id: '2', name: 'Первомайский', slug: 'pervomay' },
-  { id: '3', name: 'Ленинский', slug: 'lenin' },
-  { id: '4', name: 'Свердловский', slug: 'sverdlov' },
+  ...districtGroups.samara.districts,
+  ...districtGroups.tolyatti.districts,
+  ...districtGroups.cities.districts,
+  ...districtGroups.oblastRayons.districts,
 ];
 
 export const mockPerformers: PerformerProfile[] = [
@@ -22,7 +88,7 @@ export const mockPerformers: PerformerProfile[] = [
     description: 'Профессиональный Дед Мороз с 8-летним опытом. Классический образ, богатый костюм, настоящая борода. Работаю с детьми всех возрастов. Привожу подарки, провожу игры и конкурсы.',
     costumeStyle: 'Классический русский',
     formats: ['home', 'kindergarten', 'school', 'corporate'],
-    districts: ['october', 'pervomay'],
+    districts: ['samara-leninsky', 'samara-oktyabrsky'],
     videoGreetingUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     verificationStatus: 'verified',
     ratingAverage: 4.9,
@@ -46,7 +112,7 @@ export const mockPerformers: PerformerProfile[] = [
     description: 'Добрая и весёлая Снегурочка! Люблю детей и праздники. Пою песни, танцую, провожу новогодние игры. Красивый костюм с блёстками.',
     costumeStyle: 'Сказочный с блёстками',
     formats: ['home', 'kindergarten', 'school'],
-    districts: ['lenin', 'sverdlov'],
+    districts: ['samara-promyshlenny', 'samara-sovetsky'],
     verificationStatus: 'verified',
     ratingAverage: 4.8,
     ratingCount: 89,
@@ -68,7 +134,7 @@ export const mockPerformers: PerformerProfile[] = [
     description: 'Профессиональный дуэт: Дед Мороз и Снегурочка. 10 лет работаем вместе. Полная программа с играми, песнями, хороводом вокруг ёлки. Идеально для больших компаний и корпоративов.',
     costumeStyle: 'Премиум-класс',
     formats: ['home', 'kindergarten', 'school', 'office', 'corporate', 'outdoor'],
-    districts: ['october', 'pervomay', 'lenin', 'sverdlov'],
+    districts: ['samara-leninsky', 'samara-oktyabrsky', 'samara-promyshlenny', 'tolyatti-avtozavodsky'],
     videoGreetingUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     verificationStatus: 'verified',
     ratingAverage: 5.0,
@@ -92,7 +158,7 @@ export const mockPerformers: PerformerProfile[] = [
     description: 'Настоящий американский Санта-Клаус! Программа на русском и английском языках. Идеально для семей, где дети учат английский. Ho-ho-ho!',
     costumeStyle: 'Американский Санта',
     formats: ['home', 'school', 'corporate'],
-    districts: ['october', 'lenin'],
+    districts: ['tolyatti-centralny', 'tolyatti-komsomolsky'],
     verificationStatus: 'verified',
     ratingAverage: 4.7,
     ratingCount: 56,
@@ -115,7 +181,7 @@ export const mockPerformers: PerformerProfile[] = [
     description: 'Молодой и энергичный Дед Мороз. Современная программа с любимыми песнями детей. Доступные цены!',
     costumeStyle: 'Современный',
     formats: ['home', 'kindergarten'],
-    districts: ['pervomay', 'sverdlov'],
+    districts: ['syzran', 'novokuybyshevsk'],
     verificationStatus: 'verified',
     ratingAverage: 4.5,
     ratingCount: 34,
@@ -138,7 +204,7 @@ export const mockPerformers: PerformerProfile[] = [
     description: 'Снегурочка с музыкальным образованием. Пою живым голосом, играю на гитаре. Авторская программа с новогодними песнями.',
     costumeStyle: 'Элегантный голубой',
     formats: ['home', 'kindergarten', 'school', 'corporate'],
-    districts: ['october', 'pervomay', 'lenin'],
+    districts: ['samara-kirovsky', 'samara-krasnoglinsky', 'samara-kuibyshevsky'],
     videoGreetingUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     verificationStatus: 'verified',
     ratingAverage: 4.9,
@@ -160,7 +226,7 @@ export const mockReviews: Review[] = [
     text: 'Замечательный Дед Мороз! Дети были в восторге, не хотели отпускать. Обязательно закажем снова!',
     createdAt: '2024-01-05',
     isVisible: true,
-    customerName: 'Айгуль М.',
+    customerName: 'Анна М.',
   },
   {
     id: 'r2',
@@ -171,7 +237,7 @@ export const mockReviews: Review[] = [
     text: 'Профессионал своего дела. Пришёл вовремя, программа была продумана до мелочей.',
     createdAt: '2024-01-10',
     isVisible: true,
-    customerName: 'Бакыт К.',
+    customerName: 'Сергей К.',
   },
   {
     id: 'r3',
@@ -182,7 +248,7 @@ export const mockReviews: Review[] = [
     text: 'Снегурочка Алина — просто чудо! Дочка до сих пор вспоминает и просит позвать её снова.',
     createdAt: '2024-01-08',
     isVisible: true,
-    customerName: 'Нурлан Т.',
+    customerName: 'Дмитрий Т.',
   },
   {
     id: 'r4',

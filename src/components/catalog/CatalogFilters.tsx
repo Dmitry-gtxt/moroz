@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar, MapPin, Star, Video, Trash2, Check } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
+import { districtGroups } from '@/data/mockData';
 
 type PerformerType = Database['public']['Enums']['performer_type'];
 type EventFormat = Database['public']['Enums']['event_format'];
@@ -62,13 +63,21 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
     onFiltersChange({ ...filters, eventFormat: newFormats.length > 0 ? newFormats : undefined });
   };
 
+  // Group districts from database by slug prefix
+  const groupedDistricts = {
+    samara: districts.filter(d => d.slug.startsWith('samara-')),
+    tolyatti: districts.filter(d => d.slug.startsWith('tolyatti-')),
+    cities: districts.filter(d => !d.slug.startsWith('samara-') && !d.slug.startsWith('tolyatti-') && !d.slug.startsWith('rayon-')),
+    oblastRayons: districts.filter(d => d.slug.startsWith('rayon-')),
+  };
+
   return (
     <div className="space-y-6 p-6 bg-card rounded-2xl border border-border">
       {/* District */}
       <div className="space-y-3">
         <Label className="flex items-center gap-2 text-sm font-semibold">
           <MapPin className="h-4 w-4 text-muted-foreground" />
-          Район
+          Район / Город
         </Label>
         <select
           value={filters.district || ''}
@@ -76,11 +85,42 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
           className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
         >
           <option value="">Все районы</option>
-          {districts.map((d) => (
-            <option key={d.id} value={d.slug}>
-              {d.name}
-            </option>
-          ))}
+          {groupedDistricts.samara.length > 0 && (
+            <optgroup label="Самара">
+              {groupedDistricts.samara.map((d) => (
+                <option key={d.id} value={d.slug}>
+                  {d.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {groupedDistricts.tolyatti.length > 0 && (
+            <optgroup label="Тольятти">
+              {groupedDistricts.tolyatti.map((d) => (
+                <option key={d.id} value={d.slug}>
+                  {d.name.replace('Тольятти — ', '')}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {groupedDistricts.cities.length > 0 && (
+            <optgroup label="Другие города">
+              {groupedDistricts.cities.map((d) => (
+                <option key={d.id} value={d.slug}>
+                  {d.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {groupedDistricts.oblastRayons.length > 0 && (
+            <optgroup label="Районы области">
+              {groupedDistricts.oblastRayons.map((d) => (
+                <option key={d.id} value={d.slug}>
+                  {d.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
       </div>
 
@@ -197,7 +237,7 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
       {/* Price Range */}
       <div className="space-y-3">
         <Label className="text-sm font-semibold">
-          Цена: {filters.priceFrom || 0} - {filters.priceTo || 15000} сом
+          Цена: {filters.priceFrom || 0} - {filters.priceTo || 15000} ₽
         </Label>
         <div className="flex gap-2">
           <input

@@ -7,7 +7,7 @@ export default function CustomerCatalog() {
     <CustomerLayout>
       <SEOHead 
         title="Каталог исполнителей"
-        description="Выберите проверенного Деда Мороза или Снегурочку в Бишкеке"
+        description="Выберите проверенного Деда Мороза или Снегурочку в Самаре и области"
       />
       <CatalogContent showHeader={true} />
     </CustomerLayout>

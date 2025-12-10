@@ -10,13 +10,13 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
-              <img src={santaHatLogo} alt="ДедМороз.kg" className="h-8 w-8" />
+              <img src={santaHatLogo} alt="ДедМороз63" className="h-8 w-8" />
               <span className="font-display text-xl font-bold">
-                ДедМороз<span className="text-accent">.kg</span>
+                ДедМороз<span className="text-accent">63</span>
               </span>
             </Link>
             <p className="text-sm text-primary-foreground/70">
-              Лучший сервис для заказа Деда Мороза и Снегурочки в Бишкеке. 
+              Лучший сервис для заказа Деда Мороза и Снегурочки в Самаре и Самарской области. 
               Проверенные исполнители, честные отзывы.
             </p>
           </div>
@@ -71,26 +71,26 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-primary-foreground/70">
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-accent" />
-                <a href="tel:+996555123456" className="hover:text-accent transition-colors">
-                  +996 555 123 456
+                <a href="tel:+78462000000" className="hover:text-accent transition-colors">
+                  +7 (846) 200-00-00
                 </a>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-accent" />
-                <a href="mailto:info@dedmoroz.kg" className="hover:text-accent transition-colors">
-                  info@dedmoroz.kg
+                <a href="mailto:info@dedmoroz63.ru" className="hover:text-accent transition-colors">
+                  info@dedmoroz63.ru
                 </a>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-accent mt-0.5" />
-                <span>г. Бишкек, Кыргызстан</span>
+                <span>г. Самара, Самарская область</span>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-primary-foreground/20 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-primary-foreground/60">
-          <p>© 2025-2026 ДедМороз.kg • Сезон Года Лошади 🐴</p>
+          <p>© 2025-2026 ДедМороз63.рф • Сезон Года Лошади 🐴</p>
           <div className="flex gap-6">
             <Link to="/privacy" className="hover:text-accent transition-colors">
               Политика конфиденциальности

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, MapPin, Search, Sparkles } from 'lucide-react';
-import { districts } from '@/data/mockData';
+import { districtGroups } from '@/data/mockData';
 
 export function HeroSection() {
   const navigate = useNavigate();
@@ -87,12 +87,12 @@ export function HeroSection() {
           <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             🎅 Дед Мороз на дом
             <br />
-            <span className="text-accent">в Бишкеке</span>
+            <span className="text-accent">в Самаре</span>
           </h1>
 
           {/* Subtitle */}
           <p className="text-lg md:text-xl text-white/80 max-w-xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Быстрый поиск проверенных Дедов Морозов и Снегурочек. 
+            Быстрый поиск проверенных Дедов Морозов и Снегурочек в Самаре и Самарской области. 
             Честные отзывы, безопасная предоплата.
           </p>
 
@@ -151,11 +151,34 @@ export function HeroSection() {
                     className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-accent/50"
                   >
                     <option value="" className="text-foreground">Все районы</option>
-                    {districts.map((d) => (
-                      <option key={d.id} value={d.slug} className="text-foreground">
-                        {d.name}
-                      </option>
-                    ))}
+                    <optgroup label="Самара" className="text-foreground">
+                      {districtGroups.samara.districts.map((d) => (
+                        <option key={d.id} value={d.slug} className="text-foreground">
+                          {d.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Тольятти" className="text-foreground">
+                      {districtGroups.tolyatti.districts.map((d) => (
+                        <option key={d.id} value={d.slug} className="text-foreground">
+                          {d.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Другие города" className="text-foreground">
+                      {districtGroups.cities.districts.map((d) => (
+                        <option key={d.id} value={d.slug} className="text-foreground">
+                          {d.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Районы области" className="text-foreground">
+                      {districtGroups.oblastRayons.districts.map((d) => (
+                        <option key={d.id} value={d.slug} className="text-foreground">
+                          {d.name}
+                        </option>
+                      ))}
+                    </optgroup>
                   </select>
                 </div>
               </div>
