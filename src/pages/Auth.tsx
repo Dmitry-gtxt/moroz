@@ -158,7 +158,7 @@ const Auth = () => {
                         type="text"
                         value={formData.fullName}
                         onChange={handleInputChange}
-                        placeholder="Айгуль"
+                        placeholder="Анна"
                         className="pl-10"
                         required
                       />
