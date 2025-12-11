@@ -62,7 +62,7 @@ const faq = [
 ];
 
 export default function HowItWorks() {
-  const [prepaymentPercent, setPrepaymentPercent] = useState(40); // Default = commission rate
+  const [prepaymentPercent, setPrepaymentPercent] = useState<number | null>(null);
 
   useEffect(() => {
     async function loadCommissionRate() {
@@ -90,7 +90,7 @@ export default function HowItWorks() {
     {
       icon: CreditCard,
       title: 'Внесите предоплату',
-      description: `Внесите ${prepaymentPercent}% предоплаты для подтверждения брони. Остаток оплатите исполнителю после визита.`,
+      description: `Внесите ${prepaymentPercent ?? '...'}% предоплаты для подтверждения брони. Остаток оплатите исполнителю после визита.`,
       tips: ['Безопасная онлайн-оплата', 'Деньги хранятся на сервисе', 'Возврат при отмене исполнителем'],
       image: howItWorks3,
     },
