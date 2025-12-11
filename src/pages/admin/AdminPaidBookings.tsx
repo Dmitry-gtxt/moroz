@@ -147,10 +147,10 @@ export default function AdminPaidBookings() {
                         {booking.address}
                       </TableCell>
                       <TableCell className="text-right font-medium text-accent">
-                        {booking.prepayment_amount.toLocaleString()} сом
+                        {booking.prepayment_amount.toLocaleString()} ₽
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {(booking.price_total - booking.prepayment_amount).toLocaleString()} сом
+                        {(booking.price_total - booking.prepayment_amount).toLocaleString()} ₽
                       </TableCell>
                       <TableCell>
                         {isCancelledAfterPayment(booking) ? (

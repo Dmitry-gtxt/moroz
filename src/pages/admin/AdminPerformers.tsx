@@ -221,7 +221,7 @@ export default function AdminPerformers() {
                         <TableCell>
                           <div className="space-y-0.5">
                             <div className="font-semibold text-accent">
-                              {customerPrice.toLocaleString()} сом
+                              {customerPrice.toLocaleString()} ₽
                             </div>
                             <div className="text-xs text-muted-foreground">
                               исп: {performerPrice.toLocaleString()} + бронь: {prepayment.toLocaleString()}

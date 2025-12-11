@@ -8,10 +8,10 @@
  * - Remaining 100% is paid directly to performer in cash after the event
  * 
  * Example with 40% commission:
- * - Performer price: 5000 сом
- * - Customer sees: 7000 сом (5000 * 1.4)
- * - Prepayment: 2000 сом (5000 * 0.4) - goes to platform
- * - Cash to performer: 5000 сом
+ * - Performer price: 5000 ₽
+ * - Customer sees: 7000 ₽ (5000 * 1.4)
+ * - Prepayment: 2000 ₽ (5000 * 0.4) - goes to platform
+ * - Cash to performer: 5000 ₽
  */
 
 import { supabase } from '@/integrations/supabase/client';
@@ -98,5 +98,5 @@ export function getBookingPricing(performerPrice: number, commissionRate: number
  * Format price for display
  */
 export function formatPrice(price: number): string {
-  return `${price.toLocaleString()} сом`;
+  return `${price.toLocaleString()} ₽`;
 }

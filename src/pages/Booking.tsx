@@ -552,15 +552,15 @@ const Booking = () => {
                     <div className="space-y-4 mb-6">
                       <div className="flex justify-between py-3 border-b border-border">
                         <span className="text-muted-foreground">Стоимость визита</span>
-                        <span className="font-semibold">{customerPrice.toLocaleString()} сом</span>
+                        <span className="font-semibold">{customerPrice.toLocaleString()} ₽</span>
                       </div>
                       <div className="flex justify-between py-3 border-b border-border">
                         <span className="text-muted-foreground">Предоплата (после подтверждения)</span>
-                        <span className="font-bold text-lg text-accent">{prepaymentAmount.toLocaleString()} сом</span>
+                        <span className="font-bold text-lg text-accent">{prepaymentAmount.toLocaleString()} ₽</span>
                       </div>
                       <div className="flex justify-between py-3">
                         <span className="text-muted-foreground">Оплата исполнителю наличкой</span>
-                        <span>{performerPayment.toLocaleString()} сом</span>
+                        <span>{performerPayment.toLocaleString()} ₽</span>
                       </div>
                     </div>
 
@@ -661,11 +661,11 @@ const Booking = () => {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Стоимость:</span>
-                          <span className="font-semibold">{customerPrice.toLocaleString()} сом</span>
+                          <span className="font-semibold">{customerPrice.toLocaleString()} ₽</span>
                         </div>
                         <div className="flex justify-between text-accent">
                           <span>Предоплата (после подтверждения):</span>
-                          <span className="font-bold">{prepaymentAmount.toLocaleString()} сом</span>
+                          <span className="font-bold">{prepaymentAmount.toLocaleString()} ₽</span>
                         </div>
                       </div>
                     </div>
@@ -731,15 +731,15 @@ const Booking = () => {
                   <div className="mt-4 pt-4 border-t border-border">
                     <div className="flex justify-between mb-2">
                       <span className="text-muted-foreground">Итого:</span>
-                      <span className="font-bold">{customerPrice.toLocaleString()} сом</span>
+                      <span className="font-bold">{customerPrice.toLocaleString()} ₽</span>
                     </div>
                     <div className="flex justify-between text-accent">
                       <span>Предоплата:</span>
-                      <span className="font-bold">{prepaymentAmount.toLocaleString()} сом</span>
+                      <span className="font-bold">{prepaymentAmount.toLocaleString()} ₽</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground text-sm mt-2">
                       <span>Наличкой исполнителю:</span>
-                      <span>{performerPayment.toLocaleString()} сом</span>
+                      <span>{performerPayment.toLocaleString()} ₽</span>
                     </div>
                   </div>
                 </div>

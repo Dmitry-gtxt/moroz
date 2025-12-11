@@ -293,7 +293,7 @@ export default function CustomerBookings() {
                               Ожидает оплаты предоплаты
                             </p>
                             <p className="text-sm text-amber-600 dark:text-amber-400">
-                              Оплатите {booking.prepayment_amount.toLocaleString()} сом для подтверждения
+                              Оплатите {booking.prepayment_amount.toLocaleString()} ₽ для подтверждения
                             </p>
                           </div>
                           <Button variant="gold" size="sm">
@@ -309,11 +309,11 @@ export default function CustomerBookings() {
                         <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
                           <CheckCircle className="h-4 w-4" />
                           <span className="text-sm font-medium">
-                            Предоплата внесена: {booking.prepayment_amount.toLocaleString()} сом
+                            Предоплата внесена: {booking.prepayment_amount.toLocaleString()} ₽
                           </span>
                         </div>
                         <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                          Оплатите исполнителю наличкой после мероприятия: {(booking.price_total - booking.prepayment_amount).toLocaleString()} сом
+                          Оплатите исполнителю наличкой после мероприятия: {(booking.price_total - booking.prepayment_amount).toLocaleString()} ₽
                         </p>
                       </div>
                     )}
@@ -329,7 +329,7 @@ export default function CustomerBookings() {
 
                       <div className="flex items-center justify-between pt-4 border-t border-border">
                       <div className="text-lg font-semibold">
-                        {booking.price_total.toLocaleString()} сом
+                        {booking.price_total.toLocaleString()} ₽
                       </div>
                       
                       <div className="flex gap-2">
