@@ -188,3 +188,17 @@ export async function notifyWelcome(userId: string, userName: string): Promise<v
     tag: 'welcome'
   });
 }
+
+// Notify admin when performer edits profile and needs moderation
+export async function notifyAdminProfileEdited(
+  adminUserId: string,
+  performerName: string
+): Promise<void> {
+  await sendPushNotification({
+    userId: adminUserId,
+    title: '🔔 Профиль изменён',
+    body: `${performerName} обновил профиль. Требуется модерация.`,
+    url: '/admin/moderation',
+    tag: 'moderation-needed'
+  });
+}

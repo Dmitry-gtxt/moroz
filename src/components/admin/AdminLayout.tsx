@@ -18,6 +18,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   
   const [verificationCount, setVerificationCount] = useState(0);
   const [moderationCount, setModerationCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   useEffect(() => {
     async function fetchCounts() {
@@ -38,6 +39,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         setModerationCount(modProfiles.length);
         setVerificationCount(pendingProfiles.length - modProfiles.length);
       }
+
+      // Fetch unread support messages from performers
+      const { count } = await supabase
+        .from('support_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('sender_type', 'performer')
+        .is('read_at', null);
+
+      setUnreadMessagesCount(count || 0);
     }
 
     fetchCounts();
@@ -45,6 +55,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     const channel = supabase
       .channel('admin-layout-counts')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'performer_profiles' }, fetchCounts)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_messages' }, fetchCounts)
       .subscribe();
 
     return () => {
@@ -61,7 +72,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { to: '/admin/orders', icon: ShoppingCart, label: 'Заказы' },
     { to: '/admin/history', icon: History, label: 'История заказов' },
     { to: '/admin/paid', icon: CreditCard, label: 'Оплаченные' },
-    { to: '/messages', icon: MessageCircle, label: 'Сообщения' },
+    { to: '/admin/messages', icon: MessageCircle, label: 'Сообщения', badge: unreadMessagesCount },
     { to: '/admin/audit', icon: Shield, label: 'Аудит-лог' },
   ];
 
