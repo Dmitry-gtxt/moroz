@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Snowflake, Mail, Lock, User, Phone, ArrowLeft } from 'lucide-react';
 
@@ -25,6 +26,8 @@ const Auth = () => {
     fullName: '',
     phone: '',
   });
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
 
   // Sync mode with URL changes
   useEffect(() => {
@@ -74,6 +77,11 @@ const Auth = () => {
         if (error) throw error;
         toast.success('Добро пожаловать!');
       } else if (mode === 'register') {
+        if (!acceptTerms || !acceptPrivacy) {
+          toast.error('Необходимо принять Пользовательское соглашение и Политику конфиденциальности');
+          setLoading(false);
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -228,6 +236,37 @@ const Auth = () => {
                   >
                     Забыли пароль?
                   </button>
+                </div>
+              )}
+
+              {mode === 'register' && (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-start space-x-2">
+                    <Checkbox 
+                      id="acceptTerms" 
+                      checked={acceptTerms} 
+                      onCheckedChange={(checked) => setAcceptTerms(checked === true)}
+                    />
+                    <label htmlFor="acceptTerms" className="text-sm text-muted-foreground leading-tight cursor-pointer">
+                      Я принимаю{' '}
+                      <Link to="/terms" target="_blank" className="text-accent hover:underline">
+                        Пользовательское соглашение
+                      </Link>
+                    </label>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <Checkbox 
+                      id="acceptPrivacy" 
+                      checked={acceptPrivacy} 
+                      onCheckedChange={(checked) => setAcceptPrivacy(checked === true)}
+                    />
+                    <label htmlFor="acceptPrivacy" className="text-sm text-muted-foreground leading-tight cursor-pointer">
+                      Я согласен с{' '}
+                      <Link to="/privacy" target="_blank" className="text-accent hover:underline">
+                        Политикой конфиденциальности
+                      </Link>
+                    </label>
+                  </div>
                 </div>
               )}
 
