@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { FloatingSaveButton } from '@/components/ui/floating-save-button';
+import { PushNotificationToggle } from '@/components/notifications/PushNotificationToggle';
 import { toast } from 'sonner';
-import { User, Mail, Phone } from 'lucide-react';
+import { User, Mail, Phone, Bell } from 'lucide-react';
 
 export default function CustomerProfile() {
   const { user } = useAuth();
@@ -137,7 +138,19 @@ export default function CustomerProfile() {
             </Card>
           </div>
 
-          <div>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Уведомления
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PushNotificationToggle />
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Аккаунт</CardTitle>

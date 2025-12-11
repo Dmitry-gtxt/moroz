@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { sendBookingNotification } from '@/lib/notifications';
+import { notifyNewBookingRequest } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { 
   Calendar, Clock, MapPin, Users, 
@@ -266,6 +267,16 @@ const Booking = () => {
           eventType: formData.eventType,
           priceTotal: customerPrice,
         });
+
+        // Send push notification to performer
+        if (performer.user_id) {
+          notifyNewBookingRequest(
+            performer.user_id,
+            formData.customerName,
+            slotDate,
+            slotTime
+          );
+        }
 
         toast.success('Бронирование успешно создано!');
         setStep(4);

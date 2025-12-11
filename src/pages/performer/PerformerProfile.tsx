@@ -13,8 +13,9 @@ import { FloatingSaveButton } from '@/components/ui/floating-save-button';
 import { UploadProgress } from '@/components/ui/upload-progress';
 import { useVideoUpload } from '@/hooks/useVideoUpload';
 import { sendProfileVerificationNotification } from '@/lib/notifications';
+import { PushNotificationToggle } from '@/components/notifications/PushNotificationToggle';
 import { toast } from 'sonner';
-import { Loader2, Upload, X, Video, Trash2, AlertTriangle, Send } from 'lucide-react';
+import { Loader2, Upload, X, Video, Trash2, AlertTriangle, Send, Bell } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -585,6 +586,20 @@ export default function PerformerProfilePage() {
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Notifications */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Уведомления
+            </CardTitle>
+            <CardDescription>Настройки push-уведомлений</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PushNotificationToggle />
           </CardContent>
         </Card>
       </div>

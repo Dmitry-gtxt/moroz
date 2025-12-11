@@ -191,7 +191,7 @@ async function sendEmail(to: string[], subject: string, html: string): Promise<R
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "ДедМороз63 <onboarding@resend.dev>",
+      from: "Дед-Морозы.РФ <noreply@moroz.lovable.app>",
       to,
       subject,
       html,
