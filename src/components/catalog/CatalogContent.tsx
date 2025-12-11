@@ -134,6 +134,7 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
     }
 
     // Price filtering - use slot prices if date is selected, otherwise base price
+    // Customer pays performer's price directly (no markup added)
     if (filters.priceFrom || filters.priceTo) {
       result = result.filter((p) => {
         let minPrice = p.base_price;
@@ -146,14 +147,11 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
           maxPrice = Math.max(...slotPrices);
         }
         
-        // Apply commission to get customer-facing price
-        const customerMinPrice = Math.round(minPrice * (1 + commissionRate / 100));
-        const customerMaxPrice = Math.round(maxPrice * (1 + commissionRate / 100));
-        
-        if (filters.priceFrom && customerMaxPrice < filters.priceFrom) {
+        // Customer pays performer's price directly
+        if (filters.priceFrom && maxPrice < filters.priceFrom) {
           return false;
         }
-        if (filters.priceTo && customerMinPrice > filters.priceTo) {
+        if (filters.priceTo && minPrice > filters.priceTo) {
           return false;
         }
         return true;

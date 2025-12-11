@@ -4,7 +4,8 @@ import { Star, MapPin, Video, CheckCircle, Clock, Calendar, Play, X, Timer } fro
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { getCustomerPrice } from '@/lib/pricing';
+import { getCustomerPrice, getPerformerNetAmount } from '@/lib/pricing';
+import { useAuth } from '@/hooks/useAuth';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'] & {
@@ -41,6 +42,11 @@ export function PerformerCard({
   commissionRate = 40,
 }: PerformerCardProps) {
   const [showVideo, setShowVideo] = useState(false);
+  const { user } = useAuth();
+  
+  // Check if current user is viewing their own performer card
+  const isOwnProfile = user && performer.user_id === user.id;
+  
   const getDistrictNames = (slugs: string[]) => {
     return slugs
       .map((slug) => districts.find((d) => d.slug === slug)?.name)
@@ -83,6 +89,7 @@ export function PerformerCard({
   const photoUrl = performer.photo_urls?.[0] || 'https://images.unsplash.com/photo-1576919228236-a097c32a5cd4?w=400&h=400&fit=crop';
   const minPerformerPrice = getMinPrice();
   const customerPrice = getCustomerPrice(minPerformerPrice, commissionRate);
+  const netAmount = getPerformerNetAmount(minPerformerPrice, commissionRate);
 
   return (
     <div className="group bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">
@@ -220,6 +227,11 @@ export function PerformerCard({
               {customerPrice.toLocaleString()}
             </span>
             <span className="text-sm text-muted-foreground"> ₽</span>
+            {isOwnProfile && (
+              <div className="text-xs text-green-600 mt-0.5">
+                На руки: {netAmount.toLocaleString()} ₽
+              </div>
+            )}
           </div>
           <Button variant="gold" size="sm" className="min-h-[44px] min-w-[100px]" asChild>
             <Link to={`/performer/${performer.id}${selectedDate ? `?date=${selectedDate}` : ''}`}>
