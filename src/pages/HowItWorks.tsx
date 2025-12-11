@@ -8,30 +8,39 @@ import {
   Shield, Clock, MessageCircle, Gift, Users, Sparkles, Snowflake
 } from 'lucide-react';
 
+import howItWorks1 from '@/assets/how-it-works-1.jpg';
+import howItWorks2 from '@/assets/how-it-works-2.jpg';
+import howItWorks3 from '@/assets/how-it-works-3.jpg';
+import howItWorks4 from '@/assets/how-it-works-4.jpg';
+
 const steps = [
   {
     icon: Search,
     title: 'Выберите исполнителя',
     description: 'Просмотрите каталог проверенных Дедов Морозов и Снегурочек. Используйте фильтры по району, цене и типу мероприятия.',
     tips: ['Смотрите видео-приветствия', 'Читайте отзывы клиентов', 'Сравнивайте цены и программы'],
+    image: howItWorks1,
   },
   {
     icon: Calendar,
     title: 'Забронируйте дату',
     description: 'Выберите удобную дату и время в календаре исполнителя. Заполните форму с деталями мероприятия.',
     tips: ['Укажите количество детей', 'Напишите особые пожелания', 'Выберите формат визита'],
+    image: howItWorks2,
   },
   {
     icon: CreditCard,
     title: 'Внесите предоплату',
     description: 'Внесите 30% предоплаты для подтверждения брони. Остаток оплатите исполнителю после визита.',
     tips: ['Безопасная онлайн-оплата', 'Деньги хранятся на сервисе', 'Возврат при отмене исполнителем'],
+    image: howItWorks3,
   },
   {
     icon: Star,
     title: 'Наслаждайтесь праздником',
     description: 'Встречайте Деда Мороза! После визита оставьте отзыв и помогите другим родителям с выбором.',
     tips: ['Подготовьте подарки заранее', 'Снимайте видео на память', 'Поделитесь впечатлениями'],
+    image: howItWorks4,
   },
 ];
 
@@ -162,8 +171,12 @@ export default function HowItWorks() {
                     </ul>
                   </div>
                   <div className="flex-1 w-full">
-                    <div className="glass-card rounded-3xl p-10 md:p-16 aspect-video flex items-center justify-center border border-magic-gold/10">
-                      <step.icon className="h-28 w-28 text-magic-gold/20" />
+                    <div className="rounded-3xl overflow-hidden shadow-xl border border-magic-gold/10">
+                      <img 
+                        src={step.image} 
+                        alt={step.title}
+                        className="w-full h-auto aspect-[4/3] object-cover"
+                      />
                     </div>
                   </div>
                 </div>
