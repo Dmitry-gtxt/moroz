@@ -110,7 +110,15 @@ export function HeroSection() {
       <div className="container relative z-10 py-20">
         <div className="max-w-4xl mx-auto text-center space-y-8">
           {/* Magical badge */}
-          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full glass border-gold/30 animate-fade-in">
+          <div 
+            className="inline-flex items-center gap-3 px-6 py-3 rounded-full animate-fade-in"
+            style={{
+              background: 'rgba(15, 25, 50, 0.6)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(234, 179, 8, 0.3)'
+            }}
+          >
             <Sparkles className="h-5 w-5 text-gold animate-pulse" />
             <span className="text-base text-white/90 font-medium tracking-wide">Волшебство уже близко!</span>
             <Star className="h-5 w-5 text-gold animate-pulse" style={{ animationDelay: '0.5s' }} />
@@ -135,8 +143,15 @@ export function HeroSection() {
 
           {/* Search Form with glass effect */}
           <div 
-            className="mt-10 p-6 md:p-8 rounded-3xl glass border-white/20 shadow-magic animate-fade-in-up"
-            style={{ animationDelay: '0.3s' }}
+            className="mt-10 p-6 md:p-8 rounded-3xl shadow-2xl animate-fade-in-up"
+            style={{ 
+              animationDelay: '0.3s',
+              background: 'rgba(15, 25, 50, 0.7)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 0 60px rgba(139, 92, 246, 0.2), 0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+            }}
           >
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
               {/* Date */}
@@ -245,7 +260,13 @@ export function HeroSection() {
             ].map((badge, i) => (
               <div 
                 key={i}
-                className="flex items-center gap-2 px-4 py-2 rounded-full glass border-white/10 hover:border-gold/30 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 hover:scale-105"
+                style={{
+                  background: 'rgba(15, 25, 50, 0.5)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}
               >
                 <span className="text-xl">{badge.icon}</span>
                 <span className="text-white/80">{badge.text}</span>
