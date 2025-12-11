@@ -30,7 +30,7 @@ export function Footer() {
       {/* Top decorative border */}
       <div className="h-px bg-gradient-to-r from-transparent via-magic-gold/30 to-transparent" />
       
-      <div className="container relative z-10 py-16">
+      <div className="container relative z-10 pt-16 pb-5">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="space-y-5">
@@ -154,7 +154,7 @@ export function Footer() {
         </div>
 
         {/* Legal links & Copyright */}
-        <div className="border-t border-magic-gold/10 mt-12 pt-6">
+        <div className="border-t border-magic-gold/10 mt-12 pt-2">
           <div className="flex flex-wrap justify-center gap-x-3 gap-y-2 text-xs text-snow-500 mb-1">
             {[
               { to: '/terms', label: 'Пользовательское соглашение' },
