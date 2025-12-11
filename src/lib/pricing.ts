@@ -61,6 +61,16 @@ export function getMarkupDecimal(commissionRate: number): number {
 }
 
 /**
+ * Calculate prepayment percentage for display to customers
+ * Formula: x / (x + 100) where x is commission rate
+ * Example: 40% commission → 40/(40+100) = 28.57% ≈ 29%
+ */
+export function getPrepaymentPercentage(commissionRate: number): number {
+  if (commissionRate <= 0) return 0;
+  return Math.round((commissionRate / (commissionRate + 100)) * 100);
+}
+
+/**
  * Calculate the price shown to customers (with platform markup)
  */
 export function getCustomerPrice(performerPrice: number, commissionRate: number = DEFAULT_COMMISSION_RATE): number {

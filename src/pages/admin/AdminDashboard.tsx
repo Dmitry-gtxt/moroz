@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Users, FileCheck, ShoppingCart, TrendingUp, Settings, Loader2, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { clearCommissionCache } from '@/lib/pricing';
+import { clearCommissionCache, getPrepaymentPercentage } from '@/lib/pricing';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -128,21 +128,29 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="max-w-sm space-y-2">
+                <div className="max-w-md space-y-2">
                   <Label htmlFor="commissionRate">
                     Процент наценки на цену исполнителя (%)
                   </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="commissionRate"
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={commissionRate}
-                      onChange={(e) => setCommissionRate(e.target.value)}
-                      className="max-w-24"
-                    />
-                    <span className="flex items-center text-muted-foreground">%</span>
+                  <div className="flex gap-4 items-center">
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        id="commissionRate"
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={commissionRate}
+                        onChange={(e) => setCommissionRate(e.target.value)}
+                        className="max-w-24"
+                      />
+                      <span className="text-muted-foreground">%</span>
+                    </div>
+                    <div className="px-4 py-2 bg-secondary rounded-lg">
+                      <span className="text-sm text-muted-foreground">Размер предоплаты: </span>
+                      <span className="font-semibold text-foreground">
+                        {getPrepaymentPercentage(parseInt(commissionRate || '0', 10))}%
+                      </span>
+                    </div>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Этот процент добавляется к цене исполнителя и становится предоплатой (комиссией платформы).

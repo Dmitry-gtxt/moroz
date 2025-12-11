@@ -1,27 +1,38 @@
+import { useEffect, useState } from 'react';
 import { Search, Calendar, PartyPopper, Sparkles } from 'lucide-react';
-
-const steps = [
-  {
-    icon: Search,
-    emoji: '🔍',
-    title: 'Выберите волшебника',
-    description: 'Просмотрите каталог проверенных Дедов Морозов и Снегурочек. Посмотрите видео-приветствия и отзывы.',
-  },
-  {
-    icon: Calendar,
-    emoji: '📅',
-    title: 'Забронируйте визит',
-    description: 'Выберите удобную дату и время из календаря исполнителя. Внесите небольшую предоплату онлайн.',
-  },
-  {
-    icon: PartyPopper,
-    emoji: '🎉',
-    title: 'Встречайте чудо!',
-    description: 'Дед Мороз приедет к вам домой и подарит детям незабываемые эмоции и веру в волшебство!',
-  },
-];
+import { getCommissionRate, getPrepaymentPercentage } from '@/lib/pricing';
 
 export function HowItWorks() {
+  const [prepaymentPercent, setPrepaymentPercent] = useState(29);
+
+  useEffect(() => {
+    async function loadCommissionRate() {
+      const rate = await getCommissionRate();
+      setPrepaymentPercent(getPrepaymentPercentage(rate));
+    }
+    loadCommissionRate();
+  }, []);
+
+  const steps = [
+    {
+      icon: Search,
+      emoji: '🔍',
+      title: 'Выберите волшебника',
+      description: 'Просмотрите каталог проверенных Дедов Морозов и Снегурочек. Посмотрите видео-приветствия и отзывы.',
+    },
+    {
+      icon: Calendar,
+      emoji: '📅',
+      title: 'Забронируйте визит',
+      description: `Выберите удобную дату и время из календаря исполнителя. Внесите ${prepaymentPercent}% предоплаты онлайн.`,
+    },
+    {
+      icon: PartyPopper,
+      emoji: '🎉',
+      title: 'Встречайте чудо!',
+      description: 'Дед Мороз приедет к вам домой и подарит детям незабываемые эмоции и веру в волшебство!',
+    },
+  ];
   return (
     <section className="py-24 bg-gradient-frost relative overflow-hidden">
       {/* Decorative elements */}
