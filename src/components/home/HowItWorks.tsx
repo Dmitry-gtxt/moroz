@@ -3,7 +3,7 @@ import { Search, Calendar, PartyPopper, Sparkles } from 'lucide-react';
 import { getCommissionRate, getPrepaymentPercentage } from '@/lib/pricing';
 
 export function HowItWorks() {
-  const [prepaymentPercent, setPrepaymentPercent] = useState(40); // Default = commission rate
+  const [prepaymentPercent, setPrepaymentPercent] = useState<number | null>(null);
 
   useEffect(() => {
     async function loadCommissionRate() {
@@ -24,7 +24,7 @@ export function HowItWorks() {
       icon: Calendar,
       emoji: '📅',
       title: 'Забронируйте визит',
-      description: `Выберите удобную дату и время из календаря исполнителя. Внесите ${prepaymentPercent}% предоплаты онлайн.`,
+      description: `Выберите удобную дату и время из календаря исполнителя. Внесите ${prepaymentPercent ?? '...'}% предоплаты онлайн.`,
     },
     {
       icon: PartyPopper,

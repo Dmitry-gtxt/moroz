@@ -33,7 +33,7 @@ export default function PerformerCalendar() {
   const { user, loading: authLoading } = useAuth();
   const [performerId, setPerformerId] = useState<string | null>(null);
   const [basePrice, setBasePrice] = useState<number>(3000);
-  const [commissionRate, setCommissionRate] = useState<number>(40);
+  const [commissionRate, setCommissionRate] = useState<number | null>(null);
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
@@ -227,7 +227,7 @@ export default function PerformerCalendar() {
 
   // Get display price for slot
   const getSlotPrice = (slot: AvailabilitySlot) => slot.price ?? basePrice;
-  const getSlotNetAmount = (slot: AvailabilitySlot) => getPerformerNetAmount(getSlotPrice(slot), commissionRate);
+  const getSlotNetAmount = (slot: AvailabilitySlot) => commissionRate !== null ? getPerformerNetAmount(getSlotPrice(slot), commissionRate) : null;
 
   // Delete single slot
   const handleDeleteSlot = async (slot: AvailabilitySlot) => {
@@ -463,7 +463,7 @@ export default function PerformerCalendar() {
                           <div className="p-2 rounded-lg bg-green-50 border border-green-200 min-w-[120px]">
                             <p className="text-xs text-muted-foreground">Вы получите на руки:</p>
                             <p className="text-lg font-bold text-green-700">
-                              {formatPrice(getPerformerNetAmount(rangePrice ? parseInt(rangePrice) : basePrice, commissionRate))}
+                              {commissionRate !== null ? formatPrice(getPerformerNetAmount(rangePrice ? parseInt(rangePrice) : basePrice, commissionRate)) : '...'}
                             </p>
                           </div>
                         </div>
@@ -616,7 +616,7 @@ export default function PerformerCalendar() {
               {/* Price legend */}
               <div className="mt-4 p-3 bg-muted/50 rounded-lg">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Цена:</strong> {formatPrice(basePrice)} → <strong>На руки:</strong> {formatPrice(getPerformerNetAmount(basePrice, commissionRate))} (после {commissionRate}% комиссии)
+                  <strong>Цена:</strong> {formatPrice(basePrice)} → <strong>На руки:</strong> {commissionRate !== null ? formatPrice(getPerformerNetAmount(basePrice, commissionRate)) : '...'} (после {commissionRate ?? '...'}% комиссии)
                 </p>
               </div>
             </CardContent>
@@ -677,7 +677,7 @@ export default function PerformerCalendar() {
                   <div className="p-2 rounded-lg bg-green-50 border border-green-200 min-w-[120px]">
                     <p className="text-xs text-muted-foreground">Вы получите на руки:</p>
                     <p className="text-lg font-bold text-green-700">
-                      {formatPrice(getPerformerNetAmount(editingPrice ? parseInt(editingPrice) : basePrice, commissionRate))}
+                      {commissionRate !== null ? formatPrice(getPerformerNetAmount(editingPrice ? parseInt(editingPrice) : basePrice, commissionRate)) : '...'}
                     </p>
                   </div>
                 </div>
@@ -730,7 +730,7 @@ export default function PerformerCalendar() {
                 <div className="p-2 rounded-lg bg-green-50 border border-green-200 min-w-[120px]">
                   <p className="text-xs text-muted-foreground">Вы получите на руки:</p>
                   <p className="text-lg font-bold text-green-700">
-                    {formatPrice(getPerformerNetAmount(dayPrice ? parseInt(dayPrice) : basePrice, commissionRate))}
+                    {commissionRate !== null ? formatPrice(getPerformerNetAmount(dayPrice ? parseInt(dayPrice) : basePrice, commissionRate)) : '...'}
                   </p>
                 </div>
               </div>

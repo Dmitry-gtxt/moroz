@@ -66,7 +66,7 @@ export default function PerformerProfilePage() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [programDuration, setProgramDuration] = useState('30');
   const [programDescription, setProgramDescription] = useState('');
-  const [commissionRate, setCommissionRate] = useState(40);
+  const [commissionRate, setCommissionRate] = useState<number | null>(null);
 
   // Video upload with progress
   const { uploadVideo, uploading: uploadingVideo, progress: uploadProgress, fileName: uploadFileName } = useVideoUpload({
@@ -493,10 +493,10 @@ export default function PerformerProfilePage() {
               <div className="flex-1 p-3 rounded-lg bg-green-50 border border-green-200">
                 <p className="text-xs text-muted-foreground mb-1">Вы получите на руки:</p>
                 <p className="text-xl font-bold text-green-700">
-                  {basePrice ? Math.round(parseInt(basePrice) * (1 - commissionRate / 100)).toLocaleString() : '0'} ₽
+                  {basePrice && commissionRate !== null ? Math.round(parseInt(basePrice) * (1 - commissionRate / 100)).toLocaleString() : '...'} ₽
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  (после удержания {commissionRate}% комиссии/предоплаты)
+                  (после удержания {commissionRate ?? '...'}% комиссии/предоплаты)
                 </p>
               </div>
             </div>
