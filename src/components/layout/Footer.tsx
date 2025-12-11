@@ -153,9 +153,9 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Legal links */}
-        <div className="border-t border-magic-gold/10 mt-12 pt-8">
-          <div className="flex flex-wrap justify-center gap-x-4 gap-y-3 text-xs text-snow-500 mb-6">
+        {/* Legal links & Copyright */}
+        <div className="border-t border-magic-gold/10 mt-12 pt-6">
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-2 text-xs text-snow-500 mb-4">
             {[
               { to: '/terms', label: 'Пользовательское соглашение' },
               { to: '/privacy', label: 'Политика конфиденциальности' },
@@ -168,22 +168,20 @@ export function Footer() {
               <Link 
                 key={link.to}
                 to={link.to} 
-                className="hover:text-magic-gold transition-colors py-2 min-h-[44px] flex items-center"
+                className="hover:text-magic-gold transition-colors"
               >
                 {link.label}
               </Link>
             ))}
           </div>
           
-          {/* Copyright */}
-          <div className="text-center space-y-2">
+          {/* Copyright & Requisites */}
+          <div className="text-center space-y-1">
             <p className="text-sm text-snow-500">
-              <span>© 2025-2026</span>
-              {' '}
-              <span className="text-gradient-gold font-semibold">Дед-Морозы.РФ</span>
+              © 2025-2026 <span className="text-gradient-gold font-semibold">Дед-Морозы.РФ</span>
             </p>
-            <p className="text-sm text-snow-500">
-              ИП Шевчук Д.С. • Сезон Года Змеи 🐍
+            <p className="text-xs text-snow-600">
+              ИП Шевчук Д.С. • ИНН: 631803547498 • ОГРНИП: 324631300031498
             </p>
             <p className="text-xs text-snow-600 flex items-center justify-center gap-1">
               Сделано с <Heart className="w-3 h-3 text-santa-400 fill-santa-400" /> для волшебных праздников
