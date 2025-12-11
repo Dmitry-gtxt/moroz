@@ -371,7 +371,7 @@ export default function PerformerBookings() {
 
                         <div className="flex items-center justify-between pt-2 border-t">
                           <div className="text-lg font-bold">
-                            {booking.price_total.toLocaleString()} сом
+                            {booking.price_total?.toLocaleString()} ₽
                           </div>
                           
                           {booking.status === 'pending' && (
