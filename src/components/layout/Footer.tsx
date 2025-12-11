@@ -40,6 +40,11 @@ export function Footer() {
                   Личный кабинет
                 </Link>
               </li>
+              <li>
+                <Link to="/customer-rules" className="hover:text-accent transition-colors">
+                  Правила для заказчиков
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -58,8 +63,13 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/terms" className="hover:text-accent transition-colors">
-                  Условия работы
+                <Link to="/performer-code" className="hover:text-accent transition-colors">
+                  Кодекс исполнителя
+                </Link>
+              </li>
+              <li>
+                <Link to="/performer-agreement" className="hover:text-accent transition-colors">
+                  Договор оказания услуг
                 </Link>
               </li>
             </ul>
@@ -89,16 +99,19 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-primary-foreground/20 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-primary-foreground/60">
-          <p>© 2025-2026 Дед-Морозы.РФ • Сезон Года Змеи 🐍</p>
-          <div className="flex gap-6">
-            <Link to="/privacy" className="hover:text-accent transition-colors">
-              Политика конфиденциальности
-            </Link>
-            <Link to="/terms" className="hover:text-accent transition-colors">
-              Пользовательское соглашение
-            </Link>
+        {/* Legal links */}
+        <div className="border-t border-primary-foreground/20 mt-8 pt-8">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-primary-foreground/60 mb-4">
+            <Link to="/terms" className="hover:text-accent transition-colors">Пользовательское соглашение</Link>
+            <Link to="/privacy" className="hover:text-accent transition-colors">Политика конфиденциальности</Link>
+            <Link to="/offer" className="hover:text-accent transition-colors">Публичная оферта</Link>
+            <Link to="/refund-policy" className="hover:text-accent transition-colors">Правила возврата</Link>
+            <Link to="/cookies" className="hover:text-accent transition-colors">Cookie</Link>
+            <Link to="/image-usage" className="hover:text-accent transition-colors">Использование изображений</Link>
           </div>
+          <p className="text-center text-sm text-primary-foreground/60">
+            © 2025-2026 Дед-Морозы.РФ • ИП Шевчук Д.С. • Сезон Года Змеи 🐍
+          </p>
         </div>
       </div>
     </footer>
