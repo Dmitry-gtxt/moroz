@@ -53,7 +53,7 @@ export function Footer() {
             
             {/* Social proof */}
             <div className="flex items-center gap-2 text-sm text-snow-400">
-              <div className="flex -space-x-1">
+              <div className="flex -space-x-0.5">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 text-magic-gold fill-magic-gold" />
                 ))}

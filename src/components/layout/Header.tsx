@@ -52,8 +52,8 @@ export function Header() {
   return (
     <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${
       scrolled 
-        ? 'bg-winter-950/95 backdrop-blur-xl border-b border-magic-gold/10 shadow-lg shadow-magic-purple/5' 
-        : 'bg-transparent'
+        ? 'bg-winter-950/98 backdrop-blur-xl border-b border-magic-gold/10 shadow-lg shadow-magic-purple/5' 
+        : 'bg-winter-950/90 backdrop-blur-md border-b border-magic-gold/5'
     }`}>
       {/* Decorative top border */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-magic-gold/50 to-transparent" />
