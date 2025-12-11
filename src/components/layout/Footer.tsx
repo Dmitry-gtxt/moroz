@@ -163,6 +163,7 @@ export function Footer() {
               { to: '/refund-policy', label: 'Правила возврата' },
               { to: '/cookies', label: 'Cookie' },
               { to: '/image-usage', label: 'Использование изображений' },
+              { to: '/bank-info', label: 'Информация для банка' },
             ].map((link) => (
               <Link 
                 key={link.to}
