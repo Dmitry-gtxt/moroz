@@ -4,8 +4,9 @@ import { Footer } from '@/components/layout/Footer';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Sparkles, Users, Calendar, Wallet, CheckCircle, ArrowRight, Calculator } from 'lucide-react';
+import { Sparkles, Users, Calendar, Wallet, CheckCircle, ArrowRight, Calculator, HelpCircle } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const Students = () => {
   const [ordersPerDay, setOrdersPerDay] = useState(3);
@@ -242,6 +243,59 @@ const Students = () => {
                 </div>
               ))}
             </div>
+          </section>
+
+          {/* FAQ */}
+          <section className="mb-12">
+            <h2 className="font-display text-2xl font-semibold text-foreground mb-6 flex items-center gap-3">
+              <HelpCircle className="w-6 h-6 text-magic-gold" />
+              Частые вопросы
+            </h2>
+            <Accordion type="single" collapsible className="space-y-3">
+              {[
+                {
+                  q: 'Нужен ли опыт работы?',
+                  a: 'Нет, опыт не обязателен. Главное — желание дарить радость детям, артистичность и ответственность. Мы поможем с подготовкой сценария и дадим рекомендации по проведению поздравлений.'
+                },
+                {
+                  q: 'Где взять костюм?',
+                  a: 'Костюм — обязательное условие. Его можно купить (от 3 000 ₽), взять в аренду или сшить на заказ. Костюм должен выглядеть качественно и празднично.'
+                },
+                {
+                  q: 'Как быстро я начну получать заказы?',
+                  a: 'После успешной верификации по телефону ваш профиль появится в каталоге. В декабре спрос очень высокий, заказы начнут поступать в течение 1–3 дней.'
+                },
+                {
+                  q: 'Можно ли работать в паре (Дед Мороз + Снегурочка)?',
+                  a: 'Да! Вы можете зарегистрироваться как дуэт. Поздравления в паре стоят дороже, и многие семьи предпочитают именно такой формат.'
+                },
+                {
+                  q: 'Как происходит оплата?',
+                  a: 'Клиент вносит предоплату через наш сервис (это комиссия платформы). Остальную сумму вы получаете наличными от клиента сразу после поздравления.'
+                },
+                {
+                  q: 'Могу ли я выбирать районы для работы?',
+                  a: 'Да, при регистрации вы указываете районы, где готовы работать. Заказы будут приходить только из выбранных вами локаций.'
+                },
+                {
+                  q: 'Что делать, если я заболел и не могу выйти на заказ?',
+                  a: 'Свяжитесь с поддержкой как можно раньше. Мы поможем найти замену и перенести заказ. Главное — предупредить заранее.'
+                },
+                {
+                  q: 'Безопасно ли это?',
+                  a: 'Да. Все заявки от клиентов проходят проверку. У вас всегда есть связь с поддержкой сервиса. Мы заботимся о безопасности наших исполнителей.'
+                }
+              ].map((item, i) => (
+                <AccordionItem key={i} value={`faq-${i}`} className="bg-card rounded-xl border border-border px-6">
+                  <AccordionTrigger className="text-left text-foreground hover:no-underline">
+                    {item.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    {item.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </section>
 
           {/* CTA */}
