@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { 
   Search, Calendar, CreditCard, Star, CheckCircle, 
-  Shield, Clock, MessageCircle, Gift, Users
+  Shield, Clock, MessageCircle, Gift, Users, Sparkles, Snowflake
 } from 'lucide-react';
 
 const steps = [
@@ -83,7 +83,7 @@ const faq = [
 
 export default function HowItWorks() {
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-winter-950">
       <SEOHead 
         title="Как это работает"
         description="Узнайте как заказать Деда Мороза в Самаре за 4 простых шага. Выбор исполнителя, бронирование, оплата и праздник!"
@@ -92,53 +92,78 @@ export default function HowItWorks() {
       <Header />
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-gradient-hero text-white py-16 md:py-24">
-          <div className="container text-center">
-            <h1 className="font-display text-3xl md:text-5xl font-bold mb-6">
-              Как заказать Деда Мороза?
+        <section className="relative py-20 md:py-28 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-winter-900 via-winter-950 to-winter-950" />
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-10 left-1/4 w-96 h-96 bg-magic-purple/20 rounded-full blur-3xl" />
+            <div className="absolute bottom-10 right-1/4 w-80 h-80 bg-magic-cyan/15 rounded-full blur-3xl" />
+            {[...Array(10)].map((_, i) => (
+              <Snowflake
+                key={i}
+                className="absolute text-magic-gold/10 animate-float-slow"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  width: `${20 + Math.random() * 30}px`,
+                  height: `${20 + Math.random() * 30}px`,
+                  animationDelay: `${Math.random() * 5}s`,
+                }}
+              />
+            ))}
+          </div>
+          
+          <div className="container relative z-10 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-magic-gold/10 border border-magic-gold/20 mb-6">
+              <Sparkles className="w-4 h-4 text-magic-gold animate-pulse" />
+              <span className="text-sm font-medium text-magic-gold">Простой процесс</span>
+            </div>
+            <h1 className="font-display text-4xl md:text-6xl font-bold text-snow-100 mb-6">
+              Как заказать <span className="text-gradient-gold">Деда Мороза?</span>
             </h1>
-            <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto">
+            <p className="text-lg md:text-xl text-snow-400 max-w-2xl mx-auto">
               Всего 4 простых шага от выбора до волшебного праздника для ваших детей
             </p>
           </div>
         </section>
 
         {/* Steps */}
-        <section className="py-16 md:py-24">
+        <section className="py-16 md:py-24 relative">
           <div className="container">
-            <div className="space-y-16">
+            <div className="space-y-20">
               {steps.map((step, index) => (
                 <div 
                   key={index}
                   className={`flex flex-col ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} gap-8 md:gap-16 items-center`}
                 >
                   <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center">
-                        <step.icon className="h-7 w-7 text-accent" />
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="w-16 h-16 rounded-2xl bg-magic-gold/10 border border-magic-gold/20 flex items-center justify-center">
+                        <step.icon className="h-8 w-8 text-magic-gold" />
                       </div>
-                      <span className="text-6xl font-display font-bold text-muted/20">
+                      <span className="text-7xl font-display font-bold text-gradient-gold opacity-30">
                         {index + 1}
                       </span>
                     </div>
-                    <h2 className="font-display text-2xl md:text-3xl font-bold mb-4">
+                    <h2 className="font-display text-2xl md:text-3xl font-bold text-snow-100 mb-4">
                       {step.title}
                     </h2>
-                    <p className="text-muted-foreground text-lg mb-6">
+                    <p className="text-snow-400 text-lg mb-6 leading-relaxed">
                       {step.description}
                     </p>
-                    <ul className="space-y-2">
+                    <ul className="space-y-3">
                       {step.tips.map((tip, i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm">
-                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <li key={i} className="flex items-center gap-3 text-sm text-snow-300">
+                          <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                            <CheckCircle className="h-3 w-3 text-green-400" />
+                          </div>
                           {tip}
                         </li>
                       ))}
                     </ul>
                   </div>
                   <div className="flex-1 w-full">
-                    <div className="bg-gradient-frost rounded-3xl p-8 md:p-12 aspect-video flex items-center justify-center">
-                      <step.icon className="h-24 w-24 text-accent/30" />
+                    <div className="glass-card rounded-3xl p-10 md:p-16 aspect-video flex items-center justify-center border border-magic-gold/10">
+                      <step.icon className="h-28 w-28 text-magic-gold/20" />
                     </div>
                   </div>
                 </div>
@@ -148,19 +173,20 @@ export default function HowItWorks() {
         </section>
 
         {/* Benefits */}
-        <section className="py-16 bg-secondary/50">
-          <div className="container">
-            <h2 className="font-display text-2xl md:text-3xl font-bold text-center mb-12">
-              Почему выбирают нас?
+        <section className="py-16 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-winter-900/50 to-winter-950" />
+          <div className="container relative z-10">
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-center text-snow-100 mb-12">
+              Почему выбирают <span className="text-gradient-gold">нас?</span>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {benefits.map((benefit, index) => (
-                <div key={index} className="bg-card rounded-2xl p-6 border border-border">
-                  <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4">
-                    <benefit.icon className="h-6 w-6 text-accent" />
+                <div key={index} className="glass-card rounded-2xl p-6 border border-magic-gold/10 hover:border-magic-gold/30 transition-colors">
+                  <div className="w-14 h-14 rounded-xl bg-magic-gold/10 border border-magic-gold/20 flex items-center justify-center mb-4">
+                    <benefit.icon className="h-7 w-7 text-magic-gold" />
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">{benefit.title}</h3>
-                  <p className="text-muted-foreground text-sm">{benefit.description}</p>
+                  <h3 className="font-semibold text-lg text-snow-100 mb-2">{benefit.title}</h3>
+                  <p className="text-snow-400 text-sm">{benefit.description}</p>
                 </div>
               ))}
             </div>
@@ -170,14 +196,14 @@ export default function HowItWorks() {
         {/* FAQ */}
         <section className="py-16 md:py-24">
           <div className="container max-w-3xl">
-            <h2 className="font-display text-2xl md:text-3xl font-bold text-center mb-12">
-              Частые вопросы
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-center text-snow-100 mb-12">
+              Частые <span className="text-gradient-gold">вопросы</span>
             </h2>
             <div className="space-y-4">
               {faq.map((item, index) => (
-                <div key={index} className="bg-card rounded-xl p-6 border border-border">
-                  <h3 className="font-semibold mb-2">{item.question}</h3>
-                  <p className="text-muted-foreground text-sm">{item.answer}</p>
+                <div key={index} className="glass-card rounded-xl p-6 border border-snow-700/20 hover:border-magic-gold/20 transition-colors">
+                  <h3 className="font-semibold text-snow-100 mb-2">{item.question}</h3>
+                  <p className="text-snow-400 text-sm">{item.answer}</p>
                 </div>
               ))}
             </div>
@@ -185,18 +211,29 @@ export default function HowItWorks() {
         </section>
 
         {/* CTA */}
-        <section className="py-16 bg-gradient-hero text-white">
-          <div className="container text-center">
-            <Users className="h-16 w-16 mx-auto mb-6 text-accent" />
-            <h2 className="font-display text-2xl md:text-3xl font-bold mb-4">
-              Готовы создать волшебство?
+        <section className="py-20 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-winter-900 to-winter-950" />
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-magic-purple/20 rounded-full blur-3xl" />
+          </div>
+          
+          <div className="container relative z-10 text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-magic-gold/10 border border-magic-gold/20 mb-6">
+              <Users className="h-10 w-10 text-magic-gold" />
+            </div>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-snow-100 mb-4">
+              Готовы создать <span className="text-gradient-gold">волшебство?</span>
             </h2>
-            <p className="text-white/80 mb-8 max-w-xl mx-auto">
+            <p className="text-snow-400 mb-8 max-w-xl mx-auto text-lg">
               Выберите исполнителя и подарите детям незабываемый праздник!
             </p>
-            <Button variant="gold" size="lg" asChild>
-              <Link to="/catalog">Выбрать Деда Мороза</Link>
-            </Button>
+            <Link 
+              to="/catalog"
+              className="inline-flex items-center gap-2 h-14 px-10 rounded-xl bg-gradient-to-r from-magic-gold via-amber-400 to-magic-gold text-winter-950 font-bold text-lg shadow-lg shadow-magic-gold/30 hover:shadow-xl hover:shadow-magic-gold/40 transition-all duration-300"
+            >
+              <Sparkles className="h-5 w-5" />
+              Выбрать Деда Мороза
+            </Link>
           </div>
         </section>
       </main>

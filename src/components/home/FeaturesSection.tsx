@@ -1,4 +1,4 @@
-import { Shield, Star, CreditCard, Clock, Users, Video, Heart, Gift } from 'lucide-react';
+import { Shield, Star, CreditCard, Clock, Users, Video, Heart, Gift, Sparkles, Snowflake } from 'lucide-react';
 
 const parentFeatures = [
   {
@@ -56,11 +56,24 @@ const performerFeatures = [
 
 export function FeaturesSection() {
   return (
-    <section className="py-24 bg-background relative overflow-hidden">
+    <section className="py-24 relative overflow-hidden bg-gradient-to-b from-winter-950 via-winter-900 to-winter-950">
       {/* Decorative background */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-20 left-20 text-9xl">❄️</div>
-        <div className="absolute bottom-20 right-20 text-9xl">🎄</div>
+      <div className="absolute inset-0 pointer-events-none">
+        {[...Array(10)].map((_, i) => (
+          <Snowflake
+            key={i}
+            className="absolute text-magic-gold/5 animate-float-slow"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              width: `${30 + Math.random() * 40}px`,
+              height: `${30 + Math.random() * 40}px`,
+              animationDelay: `${Math.random() * 5}s`,
+            }}
+          />
+        ))}
+        <div className="absolute top-1/4 left-0 w-96 h-96 bg-magic-purple/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-0 w-96 h-96 bg-magic-cyan/10 rounded-full blur-3xl" />
       </div>
       
       <div className="container relative z-10">
@@ -68,28 +81,28 @@ export function FeaturesSection() {
           {/* For Parents */}
           <div className="animate-fade-in">
             <div className="mb-10">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold/10 text-gold-dark mb-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-magic-gold/10 border border-magic-gold/20 text-magic-gold mb-4">
                 <span className="text-lg">👨‍👩‍👧</span>
                 <span className="text-sm font-medium">Для родителей</span>
               </div>
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">
+              <h2 className="font-display text-3xl md:text-4xl font-bold text-snow-100">
                 Почему выбирают <span className="text-gradient-gold">нас</span>
               </h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {parentFeatures.map((feature, index) => (
                 <div 
                   key={index}
-                  className="group flex gap-4 p-5 rounded-2xl bg-card border border-border hover:border-gold/30 hover:shadow-lg transition-all duration-300"
+                  className="group flex gap-4 p-5 rounded-2xl glass-card border border-magic-gold/10 hover:border-magic-gold/30 hover:shadow-lg hover:shadow-magic-gold/10 transition-all duration-300"
                 >
-                  <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gold/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                  <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-magic-gold/10 border border-magic-gold/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
                     {feature.emoji}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1 text-lg">
+                    <h3 className="font-semibold text-snow-100 mb-1 text-lg">
                       {feature.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <p className="text-sm text-snow-400 leading-relaxed">
                       {feature.description}
                     </p>
                   </div>
@@ -101,28 +114,28 @@ export function FeaturesSection() {
           {/* For Performers */}
           <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
             <div className="mb-10">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-santa-500/10 border border-santa-400/20 text-santa-400 mb-4">
                 <span className="text-lg">🎅</span>
                 <span className="text-sm font-medium">Для исполнителей</span>
               </div>
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">
-                Зарабатывайте <span className="text-primary">с нами</span>
+              <h2 className="font-display text-3xl md:text-4xl font-bold text-snow-100">
+                Зарабатывайте <span className="text-santa-400">с нами</span>
               </h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {performerFeatures.map((feature, index) => (
                 <div 
                   key={index}
-                  className="group flex gap-4 p-5 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-lg transition-all duration-300"
+                  className="group flex gap-4 p-5 rounded-2xl glass-card border border-santa-400/10 hover:border-santa-400/30 hover:shadow-lg hover:shadow-santa-400/10 transition-all duration-300"
                 >
-                  <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                  <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-santa-500/10 border border-santa-400/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
                     {feature.emoji}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1 text-lg">
+                    <h3 className="font-semibold text-snow-100 mb-1 text-lg">
                       {feature.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <p className="text-sm text-snow-400 leading-relaxed">
                       {feature.description}
                     </p>
                   </div>

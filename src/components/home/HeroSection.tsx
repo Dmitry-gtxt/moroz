@@ -222,15 +222,13 @@ export function HeroSection() {
 
               {/* Search Button */}
               <div className="flex items-end">
-                <Button 
-                  variant="hero" 
-                  size="lg" 
-                  className="w-full py-4 text-lg font-semibold shadow-glow animate-pulse-glow"
+                <button 
                   onClick={handleSearch}
+                  className="w-full h-[58px] px-6 rounded-xl bg-gradient-to-r from-magic-gold via-amber-400 to-magic-gold text-winter-950 font-bold text-lg shadow-lg shadow-magic-gold/30 hover:shadow-xl hover:shadow-magic-gold/40 transition-all duration-300 flex items-center justify-center gap-2"
                 >
-                  <Search className="h-5 w-5 mr-2" />
+                  <Search className="h-5 w-5" />
                   Найти волшебника
-                </Button>
+                </button>
               </div>
             </div>
           </div>
