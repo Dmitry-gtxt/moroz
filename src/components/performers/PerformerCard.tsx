@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, MapPin, Video, CheckCircle, Clock, Calendar, Play, X } from 'lucide-react';
+import { Star, MapPin, Video, CheckCircle, Clock, Calendar, Play, X, Timer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { getCustomerPrice } from '@/lib/pricing';
 import type { Database } from '@/integrations/supabase/types';
 
-type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
+type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'] & {
+  program_duration?: number | null;
+  program_description?: string | null;
+};
 type District = Database['public']['Tables']['districts']['Row'];
 type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'] & {
   price?: number | null;
@@ -188,9 +191,17 @@ export function PerformerCard({
 
         {/* Description */}
         {!selectedDate && performer.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
             {performer.description}
           </p>
+        )}
+
+        {/* Program duration */}
+        {(performer as any).program_duration && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+            <Timer className="h-4 w-4 flex-shrink-0 text-accent" />
+            <span>Программа: {(performer as any).program_duration} мин</span>
+          </div>
         )}
 
         {/* Districts */}
