@@ -10,7 +10,8 @@ import {
   Calendar, 
   ShoppingCart, 
   LogOut,
-  Home
+  Home,
+  UserCircle
 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -67,6 +68,18 @@ export function PerformerLayout({ children }: PerformerLayoutProps) {
         </nav>
 
         <div className="p-4 border-t border-border space-y-2">
+          {/* Customer cabinet button */}
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 bg-gradient-to-r from-accent/20 to-primary/20 hover:from-accent/30 hover:to-primary/30 text-foreground border border-accent/30"
+            asChild
+          >
+            <Link to="/cabinet">
+              <UserCircle className="h-5 w-5 text-accent" />
+              Личный кабинет
+            </Link>
+          </Button>
+          
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"

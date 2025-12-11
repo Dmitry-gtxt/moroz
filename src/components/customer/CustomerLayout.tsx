@@ -95,19 +95,34 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
             );
           })}
 
-          {/* Show "Become Performer" button if user doesn't have performer profile */}
-          {hasPerformerProfile === false && (
-            <Link
-              to="/become-performer"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-gradient-to-r from-accent/10 to-primary/10 hover:from-accent/20 hover:to-primary/20 text-foreground border border-accent/30 mt-4"
-            >
-              <Star className="h-5 w-5 text-accent" />
-              <span className="font-medium">Стать исполнителем</span>
-            </Link>
-          )}
         </nav>
 
         <div className="p-4 border-t border-border space-y-2">
+          {/* Performer cabinet button */}
+          {hasPerformerProfile === false ? (
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 bg-gradient-to-r from-accent/20 to-primary/20 hover:from-accent/30 hover:to-primary/30 text-foreground border border-accent/30"
+              asChild
+            >
+              <Link to="/become-performer">
+                <Star className="h-5 w-5 text-accent" />
+                Подать заявку
+              </Link>
+            </Button>
+          ) : hasPerformerProfile === true ? (
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 bg-gradient-to-r from-accent/20 to-primary/20 hover:from-accent/30 hover:to-primary/30 text-foreground border border-accent/30"
+              asChild
+            >
+              <Link to="/performer">
+                <Snowflake className="h-5 w-5 text-accent" />
+                Кабинет Деда Мороза
+              </Link>
+            </Button>
+          ) : null}
+          
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
