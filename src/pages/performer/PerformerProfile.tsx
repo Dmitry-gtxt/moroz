@@ -558,19 +558,32 @@ export default function PerformerProfilePage() {
         {/* Pricing */}
         <Card>
           <CardHeader>
-            <CardTitle>Цена</CardTitle>
+            <CardTitle>Минимальная цена</CardTitle>
+            <CardDescription>Ваша базовая цена за выступление</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 max-w-xs">
-              <Label>Цена за 30 минут (сом)</Label>
-              <Input
-                type="number"
-                value={basePrice}
-                onChange={(e) => setBasePrice(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Это сумма, которую вы получите наличкой после мероприятия.
-              </p>
+            <div className="flex gap-4 items-start">
+              <div className="flex-1 space-y-2">
+                <Label>Минимальная цена (₽)</Label>
+                <Input
+                  type="number"
+                  value={basePrice}
+                  onChange={(e) => setBasePrice(e.target.value)}
+                  placeholder="3000"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Это сумма, которую вы получите наличкой после мероприятия.
+                </p>
+              </div>
+              <div className="flex-1 p-3 rounded-lg bg-accent/10 border border-accent/30">
+                <p className="text-xs text-muted-foreground mb-1">Цена для клиента:</p>
+                <p className="text-xl font-bold text-accent">
+                  {basePrice ? Math.round(parseInt(basePrice) * (1 + commissionRate / 100)).toLocaleString() : '0'} ₽
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  (включая {commissionRate}% комиссии)
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
