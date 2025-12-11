@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CookieConsent } from "@/components/CookieConsent";
+import { MessageNotificationBubble } from "@/components/notifications/MessageNotificationBubble";
 import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import PerformerProfile from "./pages/PerformerProfile";
@@ -28,6 +29,7 @@ import CustomerDashboard from "./pages/customer/CustomerDashboard";
 import CustomerBookings from "./pages/customer/CustomerBookings";
 import CustomerProfile from "./pages/customer/CustomerProfile";
 import CustomerCatalog from "./pages/customer/CustomerCatalog";
+import Messages from "./pages/Messages";
 import HowItWorks from "./pages/HowItWorks";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -70,6 +72,8 @@ const App = () => (
             <Route path="/performer-code" element={<PerformerCode />} />
             <Route path="/customer-rules" element={<CustomerRules />} />
             <Route path="/image-usage" element={<ImageUsage />} />
+            {/* Messages */}
+            <Route path="/messages" element={<Messages />} />
             {/* Customer cabinet routes */}
             <Route path="/cabinet" element={<CustomerDashboard />} />
             <Route path="/cabinet/catalog" element={<CustomerCatalog />} />
@@ -95,6 +99,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           <CookieConsent />
+          <MessageNotificationBubble />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
