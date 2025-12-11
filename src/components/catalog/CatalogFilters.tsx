@@ -154,7 +154,7 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
             </button>
           )}
         </div>
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
           {Array.from({ length: 24 }, (_, i) => i + 1).map((hour) => {
             const displayHour = hour === 24 ? '24' : hour.toString().padStart(2, '0');
             const value = hour === 24 ? '24:00' : `${hour.toString().padStart(2, '0')}:00`;
@@ -173,7 +173,7 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
                     timeSlots: newSlots.length > 0 ? newSlots : undefined 
                   });
                 }}
-                className={`py-1.5 px-1 rounded text-xs font-medium transition-colors ${
+                className={`py-2.5 px-1 rounded text-sm font-medium transition-colors min-h-[44px] ${
                   isSelected
                     ? 'bg-accent text-white'
                     : 'bg-secondary hover:bg-secondary/80 text-foreground'
@@ -237,7 +237,7 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
       {/* Price Range */}
       <div className="space-y-3">
         <Label className="text-sm font-semibold">
-          Цена: {filters.priceFrom || 0} - {filters.priceTo || 15000} ₽
+          Цена: {filters.priceFrom || 0} – {filters.priceTo || 15000} ₽
         </Label>
         <div className="flex gap-2">
           <input
@@ -283,7 +283,7 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
                   minRating: filters.minRating === rating ? undefined : rating,
                 })
               }
-              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-1 py-3 px-3 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                 filters.minRating === rating
                   ? 'bg-accent text-white'
                   : 'bg-secondary hover:bg-secondary/80'

@@ -155,7 +155,7 @@ export function Footer() {
 
         {/* Legal links */}
         <div className="border-t border-magic-gold/10 mt-12 pt-8">
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-snow-500 mb-6">
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-3 text-xs text-snow-500 mb-6">
             {[
               { to: '/terms', label: 'Пользовательское соглашение' },
               { to: '/privacy', label: 'Политика конфиденциальности' },
@@ -167,7 +167,7 @@ export function Footer() {
               <Link 
                 key={link.to}
                 to={link.to} 
-                className="hover:text-magic-gold transition-colors"
+                className="hover:text-magic-gold transition-colors py-2 min-h-[44px] flex items-center"
               >
                 {link.label}
               </Link>
@@ -175,19 +175,16 @@ export function Footer() {
           </div>
           
           {/* Copyright */}
-          <div className="text-center">
-            <p className="text-sm text-snow-500 flex items-center justify-center gap-2 flex-wrap">
+          <div className="text-center space-y-2">
+            <p className="text-sm text-snow-500">
               <span>© 2025-2026</span>
+              {' '}
               <span className="text-gradient-gold font-semibold">Дед-Морозы.РФ</span>
-              <span>•</span>
-              <span>ИП Шевчук Д.С.</span>
-              <span>•</span>
-              <span className="inline-flex items-center gap-1">
-                Сезон Года Змеи
-                <span className="text-lg">🐍</span>
-              </span>
             </p>
-            <p className="text-xs text-snow-600 mt-2 flex items-center justify-center gap-1">
+            <p className="text-sm text-snow-500">
+              ИП Шевчук Д.С. • Сезон Года Змеи 🐍
+            </p>
+            <p className="text-xs text-snow-600 flex items-center justify-center gap-1">
               Сделано с <Heart className="w-3 h-3 text-santa-400 fill-santa-400" /> для волшебных праздников
             </p>
           </div>

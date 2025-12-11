@@ -239,7 +239,7 @@ export function HeroSection() {
               <div className="flex items-end">
                 <button 
                   onClick={handleSearch}
-                  className="w-full h-[58px] px-6 rounded-xl bg-gradient-to-r from-magic-gold via-amber-400 to-magic-gold text-winter-950 font-bold text-xl shadow-lg shadow-magic-gold/30 hover:shadow-xl hover:shadow-magic-gold/40 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105"
+                  className="w-full h-[52px] md:h-[58px] px-4 md:px-6 rounded-xl bg-gradient-to-r from-magic-gold via-amber-400 to-magic-gold text-winter-950 font-bold text-lg md:text-xl shadow-lg shadow-magic-gold/30 hover:shadow-xl hover:shadow-magic-gold/40 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105 min-h-[44px]"
                 >
                   ✨ Вжухх!
                 </button>
@@ -249,7 +249,7 @@ export function HeroSection() {
 
           {/* Trust badges with magical styling */}
           <div 
-            className="flex flex-wrap justify-center gap-8 text-sm animate-fade-in-up"
+            className="flex flex-wrap justify-center gap-3 md:gap-8 text-xs md:text-sm animate-fade-in-up"
             style={{ animationDelay: '0.5s' }}
           >
             {[
@@ -260,7 +260,7 @@ export function HeroSection() {
             ].map((badge, i) => (
               <div 
                 key={i}
-                className="flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 hover:scale-105"
+                className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 rounded-full transition-all duration-300 hover:scale-105"
                 style={{
                   background: 'rgba(15, 25, 50, 0.5)',
                   backdropFilter: 'blur(8px)',
@@ -268,8 +268,8 @@ export function HeroSection() {
                   border: '1px solid rgba(255, 255, 255, 0.1)'
                 }}
               >
-                <span className="text-xl">{badge.icon}</span>
-                <span className="text-white/80">{badge.text}</span>
+                <span className="text-base md:text-xl">{badge.icon}</span>
+                <span className="text-white/80 whitespace-nowrap">{badge.text}</span>
               </div>
             ))}
           </div>

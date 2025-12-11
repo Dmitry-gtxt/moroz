@@ -328,7 +328,7 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
               )}
               {(filters.priceFrom || filters.priceTo) && (
                 <FilterChip
-                  label={`${filters.priceFrom || 0} - ${filters.priceTo || '∞'} сом`}
+                  label={`${filters.priceFrom || 0} – ${filters.priceTo || '∞'} ₽`}
                   onRemove={() => setFilters({ ...filters, priceFrom: undefined, priceTo: undefined })}
                 />
               )}
