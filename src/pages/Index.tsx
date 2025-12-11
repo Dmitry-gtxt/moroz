@@ -6,7 +6,7 @@ import { HowItWorks } from '@/components/home/HowItWorks';
 import { FeaturesSection } from '@/components/home/FeaturesSection';
 import { TopPerformers } from '@/components/home/TopPerformers';
 import { CTASection } from '@/components/home/CTASection';
-import { NewYearCountdown } from '@/components/home/NewYearCountdown';
+
 import { SEOHead } from '@/components/seo/SEOHead';
 
 const Index = () => {
@@ -16,7 +16,7 @@ const Index = () => {
       <Header />
       <main className="flex-1">
         <HeroSection />
-        <NewYearCountdown />
+        
         <PriceCalendarStrip />
         <HowItWorks />
         <TopPerformers />
