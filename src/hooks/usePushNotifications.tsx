@@ -3,9 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
-// VAPID public key - needs to be set in environment
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -23,7 +20,9 @@ export function usePushNotifications() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [vapidKey, setVapidKey] = useState<string | null>(null);
 
+  // Check if push is supported
   useEffect(() => {
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     setIsSupported(supported);
@@ -35,6 +34,24 @@ export function usePushNotifications() {
     setIsLoading(false);
   }, []);
 
+  // Fetch VAPID key from edge function
+  useEffect(() => {
+    const fetchVapidKey = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-vapid-key');
+        if (error) throw error;
+        if (data?.publicKey) {
+          setVapidKey(data.publicKey);
+        }
+      } catch (error) {
+        console.error('Error fetching VAPID key:', error);
+      }
+    };
+    
+    fetchVapidKey();
+  }, []);
+
+  // Check existing subscription
   useEffect(() => {
     if (!isSupported || !user) return;
 
@@ -57,8 +74,8 @@ export function usePushNotifications() {
       return false;
     }
 
-    if (!VAPID_PUBLIC_KEY) {
-      console.log('VAPID key not configured');
+    if (!vapidKey) {
+      console.log('VAPID key not loaded yet');
       toast.error('Push-уведомления не настроены');
       return false;
     }
@@ -80,7 +97,7 @@ export function usePushNotifications() {
       // Subscribe to push
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        applicationServerKey: urlBase64ToUint8Array(vapidKey)
       });
 
       const subscriptionJson = subscription.toJSON();
@@ -110,7 +127,7 @@ export function usePushNotifications() {
       toast.error('Не удалось включить уведомления');
       return false;
     }
-  }, [isSupported, user]);
+  }, [isSupported, user, vapidKey]);
 
   const unsubscribe = useCallback(async () => {
     if (!isSupported || !user) return false;
