@@ -219,9 +219,9 @@ export function PerformerCard({
             <span className="font-display text-xl font-bold text-accent">
               {customerPrice.toLocaleString()}
             </span>
-            <span className="text-sm text-muted-foreground"> сом</span>
+            <span className="text-sm text-muted-foreground"> ₽</span>
           </div>
-          <Button variant="gold" size="sm" asChild>
+          <Button variant="gold" size="sm" className="min-h-[44px] min-w-[100px]" asChild>
             <Link to={`/performer/${performer.id}${selectedDate ? `?date=${selectedDate}` : ''}`}>
               Подробнее
             </Link>
