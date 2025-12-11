@@ -14,7 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Montserrat", "system-ui", "sans-serif"],
+        display: ["Playfair Display", "serif"],
+        heading: ["Montserrat", "system-ui", "sans-serif"],
         sans: ["Open Sans", "system-ui", "sans-serif"],
       },
       colors: {
@@ -75,6 +76,10 @@ export default {
           DEFAULT: "hsl(var(--winter-blue))",
           light: "hsl(var(--winter-blue-light))",
           dark: "hsl(var(--winter-blue-dark))",
+        },
+        magic: {
+          purple: "hsl(var(--magic-purple))",
+          cyan: "hsl(var(--magic-cyan))",
         },
         snow: "hsl(var(--snow))",
         ice: "hsl(var(--ice))",

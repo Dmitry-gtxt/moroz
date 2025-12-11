@@ -59,21 +59,29 @@ export function TopPerformers() {
   }
 
   return (
-    <section className="py-20 bg-secondary/30">
+    <section className="py-24 bg-secondary/30 relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute top-10 right-10 text-6xl opacity-10 animate-float">⭐</div>
+      <div className="absolute bottom-10 left-10 text-6xl opacity-10 animate-float" style={{ animationDelay: '1s' }}>🎅</div>
+      
       <div className="container">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-12">
           <div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold/10 text-gold-dark mb-4">
+              <span className="text-lg">🏆</span>
+              <span className="text-sm font-medium">Лучшие из лучших</span>
+            </div>
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Лучшие исполнители
+              Топ <span className="text-gradient-gold">исполнителей</span>
             </h2>
             <p className="text-muted-foreground">
               Самые высокие рейтинги и отличные отзывы
             </p>
           </div>
-          <Button variant="outline" asChild>
+          <Button variant="outline" className="group" asChild>
             <Link to="/catalog">
               Смотреть всех
-              <ArrowRight className="h-4 w-4 ml-1" />
+              <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
             </Link>
           </Button>
         </div>
