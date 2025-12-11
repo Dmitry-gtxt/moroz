@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { 
@@ -26,7 +28,7 @@ const navItems = [
   { to: '/performer/profile', icon: User, label: 'Профиль' },
   { to: '/performer/calendar', icon: Calendar, label: 'Календарь' },
   { to: '/performer/bookings', icon: ShoppingCart, label: 'Заказы' },
-  { to: '/messages', icon: MessageCircle, label: 'Сообщения' },
+  { to: '/messages', icon: MessageCircle, label: 'Сообщения', showBadge: true },
 ];
 
 interface PerformerLayoutProps {
@@ -36,6 +38,7 @@ interface PerformerLayoutProps {
 export function PerformerLayout({ children }: PerformerLayoutProps) {
   const { user, signOut } = useAuth();
   const location = useLocation();
+  const unreadCount = useUnreadMessages();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Close mobile menu on route change
@@ -58,6 +61,7 @@ export function PerformerLayout({ children }: PerformerLayoutProps) {
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
+          const showBadge = (item as any).showBadge && unreadCount > 0;
           return (
             <Link
               key={item.to}
@@ -70,7 +74,12 @@ export function PerformerLayout({ children }: PerformerLayoutProps) {
               )}
             >
               <item.icon className="h-5 w-5" />
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium flex-1">{item.label}</span>
+              {showBadge && (
+                <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Badge>
+              )}
             </Link>
           );
         })}
