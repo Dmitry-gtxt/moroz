@@ -770,14 +770,6 @@ export type Database = {
           key: string | null
           value: string | null
         }
-        Insert: {
-          key?: string | null
-          value?: string | null
-        }
-        Update: {
-          key?: string | null
-          value?: string | null
-        }
         Relationships: []
       }
       public_reviews: {
@@ -938,6 +930,13 @@ export type Database = {
       can_see_booking_customer_data: {
         Args: { _booking_id: string; _user_id: string }
         Returns: boolean
+      }
+      get_public_platform_settings: {
+        Args: never
+        Returns: {
+          key: string
+          value: string
+        }[]
       }
       has_role: {
         Args: {
