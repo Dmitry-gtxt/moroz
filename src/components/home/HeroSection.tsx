@@ -224,10 +224,9 @@ export function HeroSection() {
               <div className="flex items-end">
                 <button 
                   onClick={handleSearch}
-                  className="w-full h-[58px] px-6 rounded-xl bg-gradient-to-r from-magic-gold via-amber-400 to-magic-gold text-winter-950 font-bold text-lg shadow-lg shadow-magic-gold/30 hover:shadow-xl hover:shadow-magic-gold/40 transition-all duration-300 flex items-center justify-center gap-2"
+                  className="w-full h-[58px] px-6 rounded-xl bg-gradient-to-r from-magic-gold via-amber-400 to-magic-gold text-winter-950 font-bold text-xl shadow-lg shadow-magic-gold/30 hover:shadow-xl hover:shadow-magic-gold/40 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105"
                 >
-                  <Search className="h-5 w-5" />
-                  Найти волшебника
+                  ✨ Вжухх!
                 </button>
               </div>
             </div>
@@ -256,8 +255,8 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+      {/* Bottom gradient fade - matches next section */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[hsl(220,70%,8%)] to-transparent" />
     </section>
   );
 }
