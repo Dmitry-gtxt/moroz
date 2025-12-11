@@ -1,9 +1,11 @@
 import { Link, useLocation, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
@@ -22,7 +24,7 @@ const navItems = [
   { to: '/cabinet', icon: LayoutDashboard, label: 'Обзор' },
   { to: '/cabinet/catalog', icon: Search, label: 'Каталог' },
   { to: '/cabinet/bookings', icon: ShoppingCart, label: 'Мои заказы' },
-  { to: '/messages', icon: MessageCircle, label: 'Сообщения' },
+  { to: '/messages', icon: MessageCircle, label: 'Сообщения', showBadge: true },
   { to: '/cabinet/profile', icon: User, label: 'Профиль' },
 ];
 
@@ -33,6 +35,7 @@ interface CustomerLayoutProps {
 export function CustomerLayout({ children }: CustomerLayoutProps) {
   const { user, signOut, loading } = useAuth();
   const location = useLocation();
+  const unreadCount = useUnreadMessages();
   const [hasPerformerProfile, setHasPerformerProfile] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -86,6 +89,7 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
+          const showBadge = item.showBadge && unreadCount > 0;
           return (
             <Link
               key={item.to}
@@ -98,7 +102,12 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
               )}
             >
               <item.icon className="h-5 w-5" />
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium flex-1">{item.label}</span>
+              {showBadge && (
+                <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Badge>
+              )}
             </Link>
           );
         })}

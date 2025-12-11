@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,7 @@ import { SEOHead } from '@/components/seo/SEOHead';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { toast } from 'sonner';
 import { 
   MessageCircle, 
   Send, 
@@ -16,7 +17,12 @@ import {
   User,
   Calendar,
   Check,
-  CheckCheck
+  CheckCheck,
+  Paperclip,
+  Image,
+  X,
+  FileText,
+  Loader2
 } from 'lucide-react';
 
 interface Dialog {
@@ -35,12 +41,14 @@ interface Message {
   sender_id: string;
   created_at: string;
   read_at: string | null;
+  attachments?: string[] | null;
 }
 
 export default function Messages() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedBookingId = searchParams.get('booking');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [dialogs, setDialogs] = useState<Dialog[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -48,6 +56,8 @@ export default function Messages() {
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [currentDialog, setCurrentDialog] = useState<Dialog | null>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   // Fetch dialogs
   useEffect(() => {
@@ -196,23 +206,79 @@ export default function Messages() {
     };
   }, [selectedBookingId, user, dialogs]);
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length + attachments.length > 5) {
+      toast.error('Максимум 5 файлов за раз');
+      return;
+    }
+    const validFiles = files.filter(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`Файл ${file.name} слишком большой (макс. 10 МБ)`);
+        return false;
+      }
+      return true;
+    });
+    setAttachments(prev => [...prev, ...validFiles]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadFiles = async (): Promise<string[]> => {
+    if (attachments.length === 0) return [];
+    
+    setUploadingFiles(true);
+    const urls: string[] = [];
+    
+    for (const file of attachments) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${selectedBookingId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { error } = await supabase.storage
+        .from('chat-attachments')
+        .upload(fileName, file);
+
+      if (error) {
+        console.error('Error uploading file:', error);
+        toast.error(`Ошибка загрузки ${file.name}`);
+      } else {
+        const { data: urlData } = supabase.storage
+          .from('chat-attachments')
+          .getPublicUrl(fileName);
+        urls.push(urlData.publicUrl);
+      }
+    }
+    
+    setUploadingFiles(false);
+    return urls;
+  };
+
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedBookingId || !user) return;
+    if ((!newMessage.trim() && attachments.length === 0) || !selectedBookingId || !user) return;
 
     setSendingMessage(true);
+    
+    // Upload files first
+    const uploadedUrls = await uploadFiles();
     
     const { error } = await supabase
       .from('chat_messages')
       .insert({
         booking_id: selectedBookingId,
         sender_id: user.id,
-        text: newMessage.trim()
+        text: newMessage.trim() || (uploadedUrls.length > 0 ? '📎 Вложение' : ''),
+        attachments: uploadedUrls.length > 0 ? uploadedUrls : null
       });
 
     if (error) {
       console.error('Error sending message:', error);
+      toast.error('Ошибка отправки сообщения');
     } else {
       setNewMessage('');
+      setAttachments([]);
       
       // Send push notification to the other user
       try {
@@ -240,6 +306,11 @@ export default function Messages() {
     setSearchParams({});
     setCurrentDialog(null);
     setMessages([]);
+    setAttachments([]);
+  };
+
+  const isImageUrl = (url: string) => {
+    return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
   };
 
   if (loading) {
@@ -371,7 +442,37 @@ export default function Messages() {
                               : 'bg-muted text-foreground rounded-bl-md'
                           )}
                         >
-                          <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                          {/* Attachments */}
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                              {msg.attachments.map((url, idx) => (
+                                isImageUrl(url) ? (
+                                  <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
+                                    <img 
+                                      src={url} 
+                                      alt="Вложение" 
+                                      className="max-w-full rounded-lg max-h-60 object-cover"
+                                    />
+                                  </a>
+                                ) : (
+                                  <a 
+                                    key={idx}
+                                    href={url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className={cn(
+                                      'flex items-center gap-2 text-sm underline',
+                                      isMe ? 'text-primary-foreground' : 'text-foreground'
+                                    )}
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                    Файл
+                                  </a>
+                                )
+                              ))}
+                            </div>
+                          )}
+                          <p className="text-sm whitespace-pre-wrap">{msg.text !== '📎 Вложение' && msg.text}</p>
                           <div className={cn(
                             'flex items-center gap-1 mt-1',
                             isMe ? 'justify-end' : 'justify-start'
@@ -397,25 +498,75 @@ export default function Messages() {
                 </div>
               </ScrollArea>
 
+              {/* Attachments preview */}
+              {attachments.length > 0 && (
+                <div className="px-4 py-2 border-t border-border bg-muted/50">
+                  <div className="flex flex-wrap gap-2">
+                    {attachments.map((file, idx) => (
+                      <div key={idx} className="relative group">
+                        {file.type.startsWith('image/') ? (
+                          <img 
+                            src={URL.createObjectURL(file)} 
+                            alt={file.name}
+                            className="h-16 w-16 object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="h-16 w-16 bg-muted rounded-lg flex items-center justify-center">
+                            <FileText className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
+                        <button
+                          onClick={() => removeAttachment(idx)}
+                          className="absolute -top-1 -right-1 h-5 w-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Message input */}
               <div className="p-4 border-t border-border bg-card">
                 <form 
                   onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
                   className="flex gap-2"
                 >
+                  <input 
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx,.txt"
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={sendingMessage || uploadingFiles}
+                  >
+                    <Paperclip className="h-5 w-5" />
+                  </Button>
                   <Input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Написать сообщение..."
                     className="flex-1"
-                    disabled={sendingMessage}
+                    disabled={sendingMessage || uploadingFiles}
                   />
                   <Button 
                     type="submit" 
                     size="icon"
-                    disabled={!newMessage.trim() || sendingMessage}
+                    disabled={(!newMessage.trim() && attachments.length === 0) || sendingMessage || uploadingFiles}
                   >
-                    <Send className="h-4 w-4" />
+                    {(sendingMessage || uploadingFiles) ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
                   </Button>
                 </form>
               </div>
