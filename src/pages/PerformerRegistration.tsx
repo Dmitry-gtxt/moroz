@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/hooks/useAuth';
@@ -59,6 +59,11 @@ export default function PerformerRegistration() {
   const [experienceYears, setExperienceYears] = useState('');
   const [costumeStyle, setCostumeStyle] = useState('');
   const [verificationPhone, setVerificationPhone] = useState('');
+  
+  // Consent checkboxes
+  const [acceptAgreement, setAcceptAgreement] = useState(false);
+  const [acceptCode, setAcceptCode] = useState(false);
+  const [acceptImageUsage, setAcceptImageUsage] = useState(false);
   
   // Files
   const [photos, setPhotos] = useState<File[]>([]);
@@ -237,6 +242,10 @@ export default function PerformerRegistration() {
     if (currentStep === 4) {
       if (!verificationPhone.trim()) {
         toast.error('Укажите номер телефона для верификации');
+        return false;
+      }
+      if (!acceptAgreement || !acceptCode || !acceptImageUsage) {
+        toast.error('Необходимо принять все условия');
         return false;
       }
       return true;
@@ -794,6 +803,51 @@ export default function PerformerRegistration() {
                   <p className="text-xs text-muted-foreground">
                     Убедитесь, что номер активен и вы можете принимать звонки
                   </p>
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Подтверждение условий *</Label>
+                  <div className="space-y-3">
+                    <div className="flex items-start space-x-2">
+                      <Checkbox 
+                        id="acceptAgreement" 
+                        checked={acceptAgreement} 
+                        onCheckedChange={(checked) => setAcceptAgreement(checked === true)}
+                      />
+                      <label htmlFor="acceptAgreement" className="text-sm text-muted-foreground leading-tight cursor-pointer">
+                        Я принимаю{' '}
+                        <Link to="/performer-agreement" target="_blank" className="text-accent hover:underline">
+                          Договор возмездного оказания услуг
+                        </Link>
+                      </label>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <Checkbox 
+                        id="acceptCode" 
+                        checked={acceptCode} 
+                        onCheckedChange={(checked) => setAcceptCode(checked === true)}
+                      />
+                      <label htmlFor="acceptCode" className="text-sm text-muted-foreground leading-tight cursor-pointer">
+                        Я обязуюсь соблюдать{' '}
+                        <Link to="/performer-code" target="_blank" className="text-accent hover:underline">
+                          Кодекс исполнителя
+                        </Link>
+                      </label>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <Checkbox 
+                        id="acceptImageUsage" 
+                        checked={acceptImageUsage} 
+                        onCheckedChange={(checked) => setAcceptImageUsage(checked === true)}
+                      />
+                      <label htmlFor="acceptImageUsage" className="text-sm text-muted-foreground leading-tight cursor-pointer">
+                        Я согласен с{' '}
+                        <Link to="/image-usage" target="_blank" className="text-accent hover:underline">
+                          Офертой на использование изображений
+                        </Link>
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="p-4 bg-muted rounded-lg">

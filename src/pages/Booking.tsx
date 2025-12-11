@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { sendBookingNotification } from '@/lib/notifications';
@@ -62,6 +63,11 @@ const Booking = () => {
     customerEmail: '',
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+  // Consent checkboxes for step 3
+  const [acceptOffer, setAcceptOffer] = useState(false);
+  const [acceptRefund, setAcceptRefund] = useState(false);
+  const [acceptRules, setAcceptRules] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -209,6 +215,11 @@ const Booking = () => {
       }
       return;
     } else if (step === 3) {
+      if (!acceptOffer || !acceptRefund || !acceptRules) {
+        toast.error('Необходимо принять все условия для оформления заказа');
+        return;
+      }
+      
       if (!user) {
         toast.error('Необходимо войти в аккаунт');
         return;
@@ -560,12 +571,57 @@ const Booking = () => {
                       </p>
                     </div>
 
+                    <div className="space-y-3 mb-6">
+                      <Label className="text-sm font-medium">Подтверждение условий *</Label>
+                      <div className="space-y-3">
+                        <div className="flex items-start space-x-2">
+                          <Checkbox 
+                            id="acceptOffer" 
+                            checked={acceptOffer} 
+                            onCheckedChange={(checked) => setAcceptOffer(checked === true)}
+                          />
+                          <label htmlFor="acceptOffer" className="text-sm text-muted-foreground leading-tight cursor-pointer">
+                            Я принимаю{' '}
+                            <Link to="/offer" target="_blank" className="text-accent hover:underline">
+                              Публичную оферту
+                            </Link>
+                          </label>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <Checkbox 
+                            id="acceptRefund" 
+                            checked={acceptRefund} 
+                            onCheckedChange={(checked) => setAcceptRefund(checked === true)}
+                          />
+                          <label htmlFor="acceptRefund" className="text-sm text-muted-foreground leading-tight cursor-pointer">
+                            Я ознакомлен с{' '}
+                            <Link to="/refund-policy" target="_blank" className="text-accent hover:underline">
+                              Правилами возврата авансового платежа
+                            </Link>
+                          </label>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <Checkbox 
+                            id="acceptRules" 
+                            checked={acceptRules} 
+                            onCheckedChange={(checked) => setAcceptRules(checked === true)}
+                          />
+                          <label htmlFor="acceptRules" className="text-sm text-muted-foreground leading-tight cursor-pointer">
+                            Я обязуюсь соблюдать{' '}
+                            <Link to="/customer-rules" target="_blank" className="text-accent hover:underline">
+                              Правила поведения заказчика
+                            </Link>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="flex gap-4">
                       <Button variant="outline" onClick={() => setStep(2)} disabled={submitting}>
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Назад
                       </Button>
-                      <Button variant="hero" className="flex-1" onClick={handleSubmit} disabled={submitting}>
+                      <Button variant="hero" className="flex-1" onClick={handleSubmit} disabled={submitting || !acceptOffer || !acceptRefund || !acceptRules}>
                         {submitting ? (
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         ) : (
