@@ -460,8 +460,12 @@ export default function PerformerCalendar() {
                               Оставьте пустым для базовой цены
                             </p>
                           </div>
-                          <div className="p-2 rounded-lg bg-green-50 border border-green-200 min-w-[120px]">
-                            <p className="text-xs text-muted-foreground">Вы получите на руки:</p>
+                          <div className="p-2 rounded-lg bg-green-50 border border-green-200 min-w-[180px]">
+                            <p className="text-xs text-muted-foreground">Комиссия: {commissionRate ?? '...'}%</p>
+                            <p className="text-sm text-muted-foreground">
+                              {commissionRate !== null && formatPrice(Math.round((rangePrice ? parseInt(rangePrice) : basePrice) * commissionRate / 100))}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">На руки:</p>
                             <p className="text-lg font-bold text-green-700">
                               {commissionRate !== null ? formatPrice(getPerformerNetAmount(rangePrice ? parseInt(rangePrice) : basePrice, commissionRate)) : '...'}
                             </p>
@@ -674,8 +678,12 @@ export default function PerformerCalendar() {
                       Оставьте пустым для базовой цены
                     </p>
                   </div>
-                  <div className="p-2 rounded-lg bg-green-50 border border-green-200 min-w-[120px]">
-                    <p className="text-xs text-muted-foreground">Вы получите на руки:</p>
+                  <div className="p-2 rounded-lg bg-green-50 border border-green-200 min-w-[180px]">
+                    <p className="text-xs text-muted-foreground">Комиссия: {commissionRate ?? '...'}%</p>
+                    <p className="text-sm text-muted-foreground">
+                      {commissionRate !== null && formatPrice(Math.round((editingPrice ? parseInt(editingPrice) : basePrice) * commissionRate / 100))}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">На руки:</p>
                     <p className="text-lg font-bold text-green-700">
                       {commissionRate !== null ? formatPrice(getPerformerNetAmount(editingPrice ? parseInt(editingPrice) : basePrice, commissionRate)) : '...'}
                     </p>
@@ -727,8 +735,12 @@ export default function PerformerCalendar() {
                     Оставьте пустым для базовой цены
                   </p>
                 </div>
-                <div className="p-2 rounded-lg bg-green-50 border border-green-200 min-w-[120px]">
-                  <p className="text-xs text-muted-foreground">Вы получите на руки:</p>
+                <div className="p-2 rounded-lg bg-green-50 border border-green-200 min-w-[180px]">
+                  <p className="text-xs text-muted-foreground">Комиссия: {commissionRate ?? '...'}%</p>
+                  <p className="text-sm text-muted-foreground">
+                    {commissionRate !== null && formatPrice(Math.round((dayPrice ? parseInt(dayPrice) : basePrice) * commissionRate / 100))}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">На руки:</p>
                   <p className="text-lg font-bold text-green-700">
                     {commissionRate !== null ? formatPrice(getPerformerNetAmount(dayPrice ? parseInt(dayPrice) : basePrice, commissionRate)) : '...'}
                   </p>
