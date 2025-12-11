@@ -1,23 +1,27 @@
-import { Shield, Star, CreditCard, Clock, Users, Video } from 'lucide-react';
+import { Shield, Star, CreditCard, Clock, Users, Video, Heart, Gift } from 'lucide-react';
 
 const parentFeatures = [
   {
     icon: Star,
+    emoji: '⭐',
     title: 'Честные отзывы',
     description: 'Только реальные отзывы от клиентов после выполненных заказов',
   },
   {
     icon: Shield,
+    emoji: '🛡️',
     title: 'Проверенные исполнители',
-    description: 'Все анкеты проходят модерацию и верификацию документов',
+    description: 'Все анкеты проходят модерацию и верификацию',
   },
   {
     icon: CreditCard,
+    emoji: '💳',
     title: 'Безопасная предоплата',
     description: 'Деньги хранятся на сервисе до выполнения заказа',
   },
   {
     icon: Video,
+    emoji: '🎬',
     title: 'Видео-приветствия',
     description: 'Посмотрите видео от исполнителя перед бронированием',
   },
@@ -26,55 +30,66 @@ const parentFeatures = [
 const performerFeatures = [
   {
     icon: Users,
+    emoji: '👨‍👩‍👧‍👦',
     title: 'Больше клиентов',
-    description: 'Получайте заказы от родителей со всей Самарской области',
+    description: 'Получайте заказы со всей Самарской области',
   },
   {
     icon: Clock,
+    emoji: '⏰',
     title: 'Гибкий график',
     description: 'Сами управляйте своим календарём и ценами',
   },
   {
-    icon: CreditCard,
-    title: 'Полная загрузка слотов',
-    description: 'Получайте заказы на все предновогодние и новогодние праздники!',
+    icon: Gift,
+    emoji: '🎁',
+    title: 'Полная загрузка',
+    description: 'Заказы на все праздничные дни!',
   },
   {
-    icon: Star,
-    title: 'Рейтинг и репутация',
-    description: 'Собирайте отзывы и повышайте свой рейтинг',
+    icon: Heart,
+    emoji: '💖',
+    title: 'Рейтинг и отзывы',
+    description: 'Собирайте отзывы и повышайте рейтинг',
   },
 ];
 
 export function FeaturesSection() {
   return (
-    <section className="py-20 bg-background">
-      <div className="container">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+    <section className="py-24 bg-background relative overflow-hidden">
+      {/* Decorative background */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-20 left-20 text-9xl">❄️</div>
+        <div className="absolute bottom-20 right-20 text-9xl">🎄</div>
+      </div>
+      
+      <div className="container relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-20">
           {/* For Parents */}
-          <div>
-            <div className="mb-8">
-              <span className="text-accent font-semibold text-sm uppercase tracking-wider">
-                Родителям
-              </span>
-              <h2 className="font-display text-3xl font-bold text-foreground mt-2">
-                Почему выбирают нас
+          <div className="animate-fade-in">
+            <div className="mb-10">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold/10 text-gold-dark mb-4">
+                <span className="text-lg">👨‍👩‍👧</span>
+                <span className="text-sm font-medium">Для родителей</span>
+              </div>
+              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">
+                Почему выбирают <span className="text-gradient-gold">нас</span>
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {parentFeatures.map((feature, index) => (
                 <div 
                   key={index}
-                  className="flex gap-4 p-4 rounded-xl hover:bg-secondary/50 transition-colors"
+                  className="group flex gap-4 p-5 rounded-2xl bg-card border border-border hover:border-gold/30 hover:shadow-lg transition-all duration-300"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-                    <feature.icon className="h-6 w-6 text-accent" />
+                  <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gold/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    {feature.emoji}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">
+                    <h3 className="font-semibold text-foreground mb-1 text-lg">
                       {feature.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       {feature.description}
                     </p>
                   </div>
@@ -84,29 +99,30 @@ export function FeaturesSection() {
           </div>
 
           {/* For Performers */}
-          <div>
-            <div className="mb-8">
-              <span className="text-primary font-semibold text-sm uppercase tracking-wider">
-                Исполнителям
-              </span>
-              <h2 className="font-display text-3xl font-bold text-foreground mt-2">
-                Зарабатывайте с нами
+          <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <div className="mb-10">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
+                <span className="text-lg">🎅</span>
+                <span className="text-sm font-medium">Для исполнителей</span>
+              </div>
+              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">
+                Зарабатывайте <span className="text-primary">с нами</span>
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {performerFeatures.map((feature, index) => (
                 <div 
                   key={index}
-                  className="flex gap-4 p-4 rounded-xl hover:bg-secondary/50 transition-colors"
+                  className="group flex gap-4 p-5 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-lg transition-all duration-300"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <feature.icon className="h-6 w-6 text-primary" />
+                  <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    {feature.emoji}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">
+                    <h3 className="font-semibold text-foreground mb-1 text-lg">
                       {feature.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       {feature.description}
                     </p>
                   </div>

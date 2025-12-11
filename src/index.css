@@ -2,35 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600&display=swap');
 
 @layer base {
   :root {
-    /* Winter night palette */
-    --background: 210 30% 98%;
-    --foreground: 215 25% 15%;
+    /* Magical winter night palette */
+    --background: 220 30% 98%;
+    --foreground: 220 25% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 220 25% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 220 25% 15%;
 
-    /* Deep winter blue */
-    --primary: 215 60% 25%;
-    --primary-foreground: 210 40% 98%;
+    /* Deep magical blue */
+    --primary: 220 70% 20%;
+    --primary-foreground: 220 40% 98%;
 
     /* Light frost blue */
     --secondary: 210 40% 94%;
-    --secondary-foreground: 215 60% 25%;
+    --secondary-foreground: 220 70% 20%;
 
     /* Muted frost */
     --muted: 210 30% 92%;
-    --muted-foreground: 215 20% 45%;
+    --muted-foreground: 220 20% 45%;
 
-    /* Warm gold accent */
-    --accent: 38 90% 50%;
-    --accent-foreground: 215 25% 10%;
+    /* Warm magical gold */
+    --accent: 42 95% 55%;
+    --accent-foreground: 220 25% 10%;
 
     /* Festive red */
     --destructive: 0 72% 51%;
@@ -38,21 +38,24 @@
 
     --border: 210 25% 88%;
     --input: 210 25% 88%;
-    --ring: 215 60% 35%;
+    --ring: 220 70% 35%;
 
     --radius: 0.75rem;
 
-    /* Custom colors */
-    --gold: 38 90% 50%;
-    --gold-light: 40 95% 65%;
-    --gold-dark: 36 85% 40%;
+    /* Custom magical colors */
+    --gold: 42 95% 55%;
+    --gold-light: 45 100% 70%;
+    --gold-dark: 38 90% 45%;
     
     --frost: 200 60% 94%;
     --frost-dark: 210 40% 85%;
     
-    --winter-blue: 215 60% 25%;
-    --winter-blue-light: 215 50% 40%;
-    --winter-blue-dark: 215 70% 15%;
+    --winter-blue: 220 70% 20%;
+    --winter-blue-light: 220 60% 35%;
+    --winter-blue-dark: 220 80% 12%;
+    
+    --magic-purple: 260 60% 45%;
+    --magic-cyan: 180 70% 45%;
     
     --snow: 210 30% 98%;
     --ice: 200 50% 96%;
@@ -60,27 +63,30 @@
     --santa-red: 0 72% 51%;
     --santa-red-dark: 0 70% 40%;
 
-    /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(215 60% 25%) 0%, hsl(215 70% 15%) 100%);
-    --gradient-gold: linear-gradient(135deg, hsl(38 90% 50%) 0%, hsl(36 85% 40%) 100%);
+    /* Magical Gradients */
+    --gradient-hero: linear-gradient(180deg, hsl(220 80% 12%) 0%, hsl(220 70% 20%) 50%, hsl(200 60% 25%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(42 95% 55%) 0%, hsl(38 90% 45%) 100%);
     --gradient-frost: linear-gradient(180deg, hsl(210 30% 98%) 0%, hsl(200 60% 94%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 30% 98%) 100%);
+    --gradient-magic: linear-gradient(135deg, hsl(220 80% 12%) 0%, hsl(260 60% 30%) 50%, hsl(220 70% 20%) 100%);
+    --gradient-aurora: linear-gradient(180deg, hsl(180 70% 45% / 0.3) 0%, hsl(260 60% 45% / 0.3) 50%, transparent 100%);
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(215 60% 25% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(215 60% 25% / 0.1), 0 2px 4px -2px hsl(215 60% 25% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(215 60% 25% / 0.1), 0 4px 6px -4px hsl(215 60% 25% / 0.1);
-    --shadow-glow: 0 0 20px hsl(38 90% 50% / 0.3);
-    --shadow-frost: 0 4px 20px hsl(200 60% 94% / 0.5);
+    /* Magical Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(220 70% 20% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(220 70% 20% / 0.1), 0 2px 4px -2px hsl(220 70% 20% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(220 70% 20% / 0.1), 0 4px 6px -4px hsl(220 70% 20% / 0.1);
+    --shadow-glow: 0 0 30px hsl(42 95% 55% / 0.4);
+    --shadow-frost: 0 4px 30px hsl(200 60% 94% / 0.5);
+    --shadow-magic: 0 0 60px hsl(260 60% 45% / 0.3), 0 0 100px hsl(180 70% 45% / 0.2);
 
     --sidebar-background: 210 30% 98%;
-    --sidebar-foreground: 215 25% 15%;
-    --sidebar-primary: 215 60% 25%;
+    --sidebar-foreground: 220 25% 15%;
+    --sidebar-primary: 220 70% 20%;
     --sidebar-primary-foreground: 210 40% 98%;
     --sidebar-accent: 210 40% 94%;
-    --sidebar-accent-foreground: 215 60% 25%;
+    --sidebar-accent-foreground: 220 70% 20%;
     --sidebar-border: 210 25% 88%;
-    --sidebar-ring: 215 60% 35%;
+    --sidebar-ring: 220 70% 35%;
   }
 
   .dark {
@@ -147,6 +153,11 @@
     background-image: var(--gradient-gold);
   }
 
+  .text-gradient-magic {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(42 95% 55%) 0%, hsl(45 100% 70%) 50%, hsl(42 95% 55%) 100%);
+  }
+
   .bg-gradient-hero {
     background-image: var(--gradient-hero);
   }
@@ -159,6 +170,10 @@
     background-image: var(--gradient-card);
   }
 
+  .bg-gradient-magic {
+    background-image: var(--gradient-magic);
+  }
+
   .shadow-glow {
     box-shadow: var(--shadow-glow);
   }
@@ -167,7 +182,11 @@
     box-shadow: var(--shadow-frost);
   }
 
-  /* Snowflake animation */
+  .shadow-magic {
+    box-shadow: var(--shadow-magic);
+  }
+
+  /* Magical animations */
   @keyframes snowfall {
     0% {
       transform: translateY(-10vh) translateX(0) rotate(0deg);
@@ -184,7 +203,7 @@
       transform: translateY(0px);
     }
     50% {
-      transform: translateY(-10px);
+      transform: translateY(-15px);
     }
   }
 
@@ -199,10 +218,58 @@
 
   @keyframes pulse-glow {
     0%, 100% {
-      box-shadow: 0 0 20px hsl(38 90% 50% / 0.3);
+      box-shadow: 0 0 30px hsl(42 95% 55% / 0.4);
     }
     50% {
-      box-shadow: 0 0 40px hsl(38 90% 50% / 0.5);
+      box-shadow: 0 0 60px hsl(42 95% 55% / 0.6);
+    }
+  }
+
+  @keyframes twinkle {
+    0%, 100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+  }
+
+  @keyframes aurora {
+    0%, 100% {
+      opacity: 0.3;
+      transform: translateX(0);
+    }
+    50% {
+      opacity: 0.5;
+      transform: translateX(10px);
+    }
+  }
+
+  @keyframes sparkle {
+    0%, 100% {
+      opacity: 0;
+      transform: scale(0) rotate(0deg);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1) rotate(180deg);
+    }
+  }
+
+  @keyframes float-slow {
+    0%, 100% {
+      transform: translateY(0) translateX(0);
+    }
+    25% {
+      transform: translateY(-10px) translateX(5px);
+    }
+    50% {
+      transform: translateY(-20px) translateX(0);
+    }
+    75% {
+      transform: translateY(-10px) translateX(-5px);
     }
   }
 
@@ -214,6 +281,10 @@
     animation: float 3s ease-in-out infinite;
   }
 
+  .animate-float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+  }
+
   .animate-shimmer {
     animation: shimmer 2s linear infinite;
     background-size: 200% 100%;
@@ -221,5 +292,30 @@
 
   .animate-pulse-glow {
     animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .animate-twinkle {
+    animation: twinkle 3s ease-in-out infinite;
+  }
+
+  .animate-aurora {
+    animation: aurora 8s ease-in-out infinite;
+  }
+
+  .animate-sparkle {
+    animation: sparkle 2s ease-in-out infinite;
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .glass-dark {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 }
