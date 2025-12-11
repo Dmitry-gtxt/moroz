@@ -447,16 +447,26 @@ export default function PerformerCalendar() {
                       
                       {/* Price for new slots */}
                       <div className="space-y-2 pt-2 border-t">
-                        <Label>Цена за слот (сом)</Label>
-                        <Input
-                          type="number"
-                          placeholder={`Базовая: ${basePrice}`}
-                          value={rangePrice}
-                          onChange={(e) => setRangePrice(e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Оставьте пустым для использования базовой цены ({formatPrice(basePrice)})
-                        </p>
+                        <Label>Цена за слот (₽)</Label>
+                        <div className="flex gap-3 items-start">
+                          <div className="flex-1">
+                            <Input
+                              type="number"
+                              placeholder={`Базовая: ${basePrice}`}
+                              value={rangePrice}
+                              onChange={(e) => setRangePrice(e.target.value)}
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Оставьте пустым для базовой цены
+                            </p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 min-w-[120px]">
+                            <p className="text-xs text-muted-foreground">Клиент увидит:</p>
+                            <p className="text-lg font-bold text-accent">
+                              {formatPrice(getCustomerPrice(rangePrice ? parseInt(rangePrice) : basePrice, commissionRate))}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <DialogFooter>
@@ -651,18 +661,27 @@ export default function PerformerCalendar() {
                 Слот: {slotToEditPrice.start_time.slice(0, 5)} — {slotToEditPrice.end_time.slice(0, 5)}
               </p>
               <div className="space-y-2">
-                <Label>Цена (сом)</Label>
-                <Input
-                  type="number"
-                  placeholder={`Базовая: ${basePrice}`}
-                  value={editingPrice}
-                  onChange={(e) => setEditingPrice(e.target.value)}
-                />
+                <Label>Цена (₽)</Label>
+                <div className="flex gap-3 items-start">
+                  <div className="flex-1">
+                    <Input
+                      type="number"
+                      placeholder={`Базовая: ${basePrice}`}
+                      value={editingPrice}
+                      onChange={(e) => setEditingPrice(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Оставьте пустым для базовой цены
+                    </p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 min-w-[120px]">
+                    <p className="text-xs text-muted-foreground">Клиент увидит:</p>
+                    <p className="text-lg font-bold text-accent">
+                      {formatPrice(getCustomerPrice(editingPrice ? parseInt(editingPrice) : basePrice, commissionRate))}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Оставьте пустым для использования базовой цены.
-                Клиент увидит: {formatPrice(getCustomerPrice(editingPrice ? parseInt(editingPrice) : basePrice, commissionRate))}
-              </p>
             </div>
           )}
           <DialogFooter>
@@ -695,18 +714,27 @@ export default function PerformerCalendar() {
               {format(selectedDate, 'd MMMM yyyy', { locale: ru })} — {freeSlots.length} свободных слотов
             </p>
             <div className="space-y-2">
-              <Label>Цена за слот (сом)</Label>
-              <Input
-                type="number"
-                placeholder={`Базовая: ${basePrice}`}
-                value={dayPrice}
-                onChange={(e) => setDayPrice(e.target.value)}
-              />
+              <Label>Цена за слот (₽)</Label>
+              <div className="flex gap-3 items-start">
+                <div className="flex-1">
+                  <Input
+                    type="number"
+                    placeholder={`Базовая: ${basePrice}`}
+                    value={dayPrice}
+                    onChange={(e) => setDayPrice(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Оставьте пустым для базовой цены
+                  </p>
+                </div>
+                <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 min-w-[120px]">
+                  <p className="text-xs text-muted-foreground">Клиент увидит:</p>
+                  <p className="text-lg font-bold text-accent">
+                    {formatPrice(getCustomerPrice(dayPrice ? parseInt(dayPrice) : basePrice, commissionRate))}
+                  </p>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Оставьте пустым для сброса к базовой цене.
-              Клиент увидит: {formatPrice(getCustomerPrice(dayPrice ? parseInt(dayPrice) : basePrice, commissionRate))}
-            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDayPriceDialogOpen(false)}>
