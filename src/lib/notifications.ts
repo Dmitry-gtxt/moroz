@@ -153,7 +153,7 @@ export async function sendProfileVerificationNotification(params: {
 }): Promise<void> {
   console.log('Sending profile verification notifications for performer:', params.performerName);
 
-  // Send notification to performer
+  // Send email notification to performer
   await sendNotificationEmail({
     type: 'profile_pending_verification',
     performerId: params.performerId,
@@ -161,11 +161,35 @@ export async function sendProfileVerificationNotification(params: {
     changedFields: params.changedFields,
   });
 
-  // Send notification to admin
+  // Send email notification to admin
   await sendNotificationEmail({
     type: 'profile_unpublished_admin',
     performerId: params.performerId,
     performerName: params.performerName,
     changedFields: params.changedFields,
   });
+
+  // Send push notification to all admins
+  try {
+    const { data: adminRoles } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'admin');
+
+    if (adminRoles && adminRoles.length > 0) {
+      for (const adminRole of adminRoles) {
+        await supabase.functions.invoke('send-push-notification', {
+          body: {
+            userId: adminRole.user_id,
+            title: '🔔 Профиль изменён',
+            body: `${params.performerName} обновил профиль. Требуется модерация.`,
+            url: '/admin/moderation',
+            tag: 'moderation-needed'
+          }
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Failed to send admin push notification:', error);
+  }
 }

@@ -142,6 +142,19 @@ interface VerificationSubmittedAdminRequest {
   performerName: string;
 }
 
+interface ModerationApprovedRequest {
+  type: "moderation_approved";
+  performerId: string;
+  performerName: string;
+}
+
+interface ModerationRejectedRequest {
+  type: "moderation_rejected";
+  performerId: string;
+  performerName: string;
+  reason: string;
+}
+
 type NotificationRequest = 
   | BookingNotificationRequest 
   | BookingConfirmedRequest 
@@ -156,7 +169,9 @@ type NotificationRequest =
   | VerificationApprovedRequest
   | VerificationRejectedRequest
   | ProfileActivatedRequest
-  | VerificationSubmittedAdminRequest;
+  | VerificationSubmittedAdminRequest
+  | ModerationApprovedRequest
+  | ModerationRejectedRequest;
 
 const eventTypeLabels: Record<string, string> = {
   home: "На дом",
@@ -973,6 +988,59 @@ const handler = async (req: Request): Promise<Response> => {
           <p><a href="https://dedmoroz63.рф/admin/verification" style="background: #1976d2; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Перейти к верификации</a></p>
         </div>
       `);
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders } });
+    }
+
+    // Handle moderation approved
+    if (payload.type === "moderation_approved") {
+      const { performerId, performerName } = payload as ModerationApprovedRequest;
+      
+      let emailToSend: string | undefined;
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: performer } = await supabase.from('performer_profiles').select('user_id').eq('id', performerId).single();
+        if (performer?.user_id) {
+          const { data: authUser } = await supabase.auth.admin.getUserById(performer.user_id);
+          emailToSend = authUser?.user?.email;
+        }
+      }
+
+      if (emailToSend) {
+        await sendEmail([emailToSend], "✅ Изменения профиля одобрены!", `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4caf50;">✅ Профиль одобрен!</h1>
+            <p>Здравствуйте, ${escapeHtml(performerName)}!</p>
+            <p>Ваши изменения в профиле прошли модерацию. Профиль снова виден в каталоге.</p>
+          </div>
+        `);
+      }
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders } });
+    }
+
+    // Handle moderation rejected
+    if (payload.type === "moderation_rejected") {
+      const { performerId, performerName, reason } = payload as ModerationRejectedRequest;
+      
+      let emailToSend: string | undefined;
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: performer } = await supabase.from('performer_profiles').select('user_id').eq('id', performerId).single();
+        if (performer?.user_id) {
+          const { data: authUser } = await supabase.auth.admin.getUserById(performer.user_id);
+          emailToSend = authUser?.user?.email;
+        }
+      }
+
+      if (emailToSend) {
+        await sendEmail([emailToSend], "❌ Изменения профиля отклонены", `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #f44336;">❌ Модерация не пройдена</h1>
+            <p>Здравствуйте, ${escapeHtml(performerName)}!</p>
+            <p><strong>Причина:</strong> ${escapeHtml(reason)}</p>
+            <p>Пожалуйста, внесите изменения и отправьте профиль повторно.</p>
+          </div>
+        `);
+      }
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders } });
     }
 

@@ -501,7 +501,7 @@ const PerformerProfile = () => {
                       Написать сообщение
                     </Button>
                     <p className="text-xs text-muted-foreground text-center mt-2">
-                      Чат доступен после бронирования
+                      Чат доступен после подтверждения бронирования
                     </p>
                   </div>
                 </div>
