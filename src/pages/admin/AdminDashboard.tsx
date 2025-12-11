@@ -56,10 +56,16 @@ export default function AdminDashboard() {
 
     setSavingSettings(true);
     
+    // Use upsert to create or update the setting
     const { error } = await supabase
       .from('platform_settings')
-      .update({ value: commissionRate })
-      .eq('key', 'commission_rate');
+      .upsert({ 
+        key: 'commission_rate', 
+        value: commissionRate,
+        description: 'Процент наценки платформы на цену исполнителя'
+      }, { 
+        onConflict: 'key' 
+      });
 
     if (error) {
       toast.error('Ошибка сохранения настроек');
@@ -140,9 +146,9 @@ export default function AdminDashboard() {
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Этот процент добавляется к цене исполнителя и становится предоплатой (комиссией платформы).
-                    Например, при {commissionRate}% и цене исполнителя 5000 сом, клиент увидит{' '}
-                    {Math.round(5000 * (1 + parseInt(commissionRate || '0', 10) / 100))} сом,
-                    а предоплата составит {Math.round(5000 * (parseInt(commissionRate || '0', 10) / 100))} сом.
+                    Например, при {commissionRate}% и цене исполнителя 5000 ₽, клиент увидит{' '}
+                    {Math.round(5000 * (1 + parseInt(commissionRate || '0', 10) / 100))} ₽,
+                    а предоплата составит {Math.round(5000 * (parseInt(commissionRate || '0', 10) / 100))} ₽.
                   </p>
                 </div>
 
