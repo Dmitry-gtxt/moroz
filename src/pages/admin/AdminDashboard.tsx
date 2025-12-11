@@ -23,6 +23,7 @@ export default function AdminDashboard() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
+  const [testEmail, setTestEmail] = useState('admin@gtxt.biz');
 
   useEffect(() => {
     async function fetchData() {
@@ -82,12 +83,17 @@ export default function AdminDashboard() {
   };
 
   const handleTestEmail = async () => {
+    if (!testEmail || !testEmail.includes('@')) {
+      toast.error('Введите корректный email');
+      return;
+    }
+    
     setTestingEmail(true);
     try {
       const { error } = await supabase.functions.invoke('send-notification-email', {
         body: {
           type: 'test',
-          email: 'admin@gtxt.biz',
+          email: testEmail,
           data: {
             testMessage: 'Это тестовое уведомление для проверки работы email-рассылки.'
           }
@@ -95,7 +101,7 @@ export default function AdminDashboard() {
       });
 
       if (error) throw error;
-      toast.success('Тестовое письмо отправлено на admin@gtxt.biz');
+      toast.success(`Тестовое письмо отправлено на ${testEmail}`);
     } catch (error: any) {
       console.error('Email test error:', error);
       toast.error('Ошибка отправки тестового письма: ' + (error.message || 'Неизвестная ошибка'));
@@ -239,9 +245,20 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Test Notifications */}
-                <div className="pt-4 border-t border-border">
-                  <Label className="mb-3 block">Тестирование уведомлений</Label>
-                  <div className="flex flex-wrap gap-3">
+                <div className="pt-4 border-t border-border space-y-4">
+                  <Label>Тестирование уведомлений</Label>
+                  <div className="flex flex-wrap gap-3 items-end">
+                    <div className="space-y-1">
+                      <Label htmlFor="testEmail" className="text-xs text-muted-foreground">Email для тестирования</Label>
+                      <Input
+                        id="testEmail"
+                        type="email"
+                        value={testEmail}
+                        onChange={(e) => setTestEmail(e.target.value)}
+                        placeholder="admin@example.com"
+                        className="w-64"
+                      />
+                    </div>
                     <Button 
                       variant="outline" 
                       onClick={handleTestEmail} 
@@ -252,7 +269,7 @@ export default function AdminDashboard() {
                       ) : (
                         <Mail className="h-4 w-4 mr-2" />
                       )}
-                      Тест email (админу)
+                      Тест email
                     </Button>
                     <Button 
                       variant="outline" 
@@ -264,7 +281,7 @@ export default function AdminDashboard() {
                       ) : (
                         <Bell className="h-4 w-4 mr-2" />
                       )}
-                      Тест push-уведомления
+                      Тест push
                     </Button>
                   </div>
                 </div>
