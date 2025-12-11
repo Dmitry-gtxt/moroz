@@ -6,8 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { 
   Search, Calendar, CreditCard, Star, CheckCircle, 
-  Shield, Clock, MessageCircle, Gift, Users, Sparkles, Snowflake
+  Shield, Clock, MessageCircle, Gift, Users, Sparkles, Snowflake, ChevronDown
 } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { getCommissionRate, getPrepaymentPercentage } from '@/lib/pricing';
 
 import howItWorks1 from '@/assets/how-it-works-1.jpg';
@@ -41,23 +47,43 @@ const benefits = [
 const faq = [
   {
     question: 'Как отменить бронирование?',
-    answer: 'Отмена возможна за 24 часа до визита с полным возвратом предоплаты. При отмене менее чем за 24 часа возврат 50%.',
+    answer: 'Отмена возможна не позднее, чем за 24 часа до времени визита — в этом случае предоплата возвращается полностью. При отмене менее чем за 24 часа до визита предоплата не возвращается. Если исполнитель не явился или опоздал более чем на 40 минут — возврат в полном объёме.',
   },
   {
     question: 'Что входит в программу визита?',
-    answer: 'Стандартная программа: приветствие, игры, загадки, хоровод, вручение подарков. Длительность 20-30 минут. Детали уточняйте у исполнителя.',
+    answer: 'Стандартная программа: приветствие, игры, загадки, хоровод, вручение подарков. Длительность 20-30 минут. Детали и дополнительные элементы программы уточняйте напрямую у исполнителя.',
   },
   {
     question: 'Можно ли заказать программу на улице?',
-    answer: 'Да, многие исполнители работают на улице. Используйте фильтр "На улице" в каталоге.',
+    answer: 'Да, многие исполнители работают на улице. Используйте фильтр "На улице" в каталоге. Убедитесь, что исполнитель готов к работе на открытом воздухе в зимних условиях.',
   },
   {
     question: 'Как подготовить ребёнка к визиту?',
-    answer: 'Расскажите о Дедушке Морозе заранее. Подготовьте стишок или песню. Положите подарки в мешок заранее.',
+    answer: 'Расскажите о Дедушке Морозе заранее, чтобы ребёнок не испугался. Подготовьте стишок или песню. Положите подарки в мешок заранее — исполнитель вручит их от имени Деда Мороза.',
   },
   {
-    question: 'Что делать если исполнитель опаздывает?',
-    answer: 'Свяжитесь с исполнителем через чат. Если он не выходит на связь — напишите в поддержку, мы поможем.',
+    question: 'Что делать, если исполнитель опаздывает?',
+    answer: 'Свяжитесь с исполнителем через чат на платформе. Если он не выходит на связь в течение 15 минут — напишите в поддержку, мы поможем решить ситуацию. При опоздании более 40 минут вы имеете право на полный возврат предоплаты.',
+  },
+  {
+    question: 'Как происходит оплата?',
+    answer: 'При бронировании вы вносите предоплату — это комиссия сервиса, которая подтверждает бронь. Остальную сумму (вознаграждение исполнителя) вы оплачиваете непосредственно исполнителю до или после мероприятия.',
+  },
+  {
+    question: 'Можно ли заказать визит в последний момент?',
+    answer: 'Да, если у исполнителя есть свободные слоты в расписании. Однако рекомендуем бронировать заранее, особенно в пиковые даты (30-31 декабря), когда спрос очень высокий.',
+  },
+  {
+    question: 'Безопасно ли оплачивать на сайте?',
+    answer: 'Абсолютно. Мы используем защищённое соединение и надёжный эквайринг. Ваши платёжные данные не хранятся на нашем сервере — они обрабатываются банком напрямую.',
+  },
+  {
+    question: 'Что если исполнитель не пришёл?',
+    answer: 'В случае неявки исполнителя без предупреждения мы возвращаем предоплату в полном объёме и помогаем найти замену. Такие исполнители получают штрафные баллы и могут быть заблокированы на платформе.',
+  },
+  {
+    question: 'Можно ли заказать пару — Деда Мороза и Снегурочку?',
+    answer: 'Да, в каталоге есть исполнители, работающие в дуэте. Используйте фильтр "Дуэт" для поиска таких предложений. Это делает праздник ещё ярче и интереснее для детей.',
   },
 ];
 
@@ -223,14 +249,22 @@ export default function HowItWorks() {
             <h2 className="font-display text-3xl md:text-4xl font-bold text-center text-snow-100 mb-12">
               Частые <span className="text-gradient-gold">вопросы</span>
             </h2>
-            <div className="space-y-4">
+            <Accordion type="single" collapsible className="space-y-3">
               {faq.map((item, index) => (
-                <div key={index} className="glass-card rounded-xl p-6 border border-snow-700/20 hover:border-magic-gold/20 transition-colors">
-                  <h3 className="font-semibold text-snow-100 mb-2">{item.question}</h3>
-                  <p className="text-snow-400 text-sm">{item.answer}</p>
-                </div>
+                <AccordionItem 
+                  key={index} 
+                  value={`item-${index}`}
+                  className="glass-card rounded-xl border border-snow-700/20 hover:border-magic-gold/20 transition-colors px-6 data-[state=open]:border-magic-gold/30"
+                >
+                  <AccordionTrigger className="text-left font-semibold text-snow-100 hover:no-underline py-5">
+                    {item.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-snow-400 text-sm pb-5">
+                    {item.answer}
+                  </AccordionContent>
+                </AccordionItem>
               ))}
-            </div>
+            </Accordion>
           </div>
         </section>
 
