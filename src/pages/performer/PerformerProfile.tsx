@@ -439,29 +439,20 @@ export default function PerformerProfilePage() {
             <CardDescription>Информация о вашей программе для родителей</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="programDuration">Длительность (минут)</Label>
-                <Input
-                  id="programDuration"
-                  type="number"
-                  min="10"
-                  max="180"
-                  value={programDuration}
-                  onChange={(e) => setProgramDuration(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Вы получите на руки</Label>
-                <div className="p-3 rounded-lg bg-green-50 border border-green-200">
-                  <p className="text-xl font-bold text-green-700">
-                    {basePrice ? Math.round(parseInt(basePrice) * (1 - commissionRate / 100)).toLocaleString() : '0'} ₽
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    (после удержания {commissionRate}% комиссии)
-                  </p>
-                </div>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="programDuration">Длительность</Label>
+              <select
+                id="programDuration"
+                value={programDuration}
+                onChange={(e) => setProgramDuration(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="20">20 минут</option>
+                <option value="25">25 минут</option>
+                <option value="30">30 минут</option>
+                <option value="35">35 минут</option>
+                <option value="40">40 минут</option>
+              </select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="programDescription">Описание программы</Label>
@@ -469,12 +460,45 @@ export default function PerformerProfilePage() {
                 id="programDescription"
                 value={programDescription}
                 onChange={(e) => setProgramDescription(e.target.value)}
-                placeholder="Опишите что входит в вашу программу: игры, конкурсы, стихи, вручение подарков..."
+                placeholder="Опишите что входит в вашу программу: игры, конкурсы, стихи, вручение подарков... Количество текста в этом блоке прямо влияет на конверсию!"
                 rows={4}
               />
               <p className="text-xs text-muted-foreground">
                 Подробное описание поможет родителям сделать выбор
               </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pricing - moved here after Program */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Минимальная цена за выступление</CardTitle>
+            <CardDescription>Цена, которую увидят заказчики в вашем профиле</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4 items-start">
+              <div className="flex-1 space-y-2">
+                <Label>Минимальная цена (₽)</Label>
+                <Input
+                  type="number"
+                  value={basePrice}
+                  onChange={(e) => setBasePrice(e.target.value)}
+                  placeholder="3000"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Это сумма, которую заказчик видит в вашем профиле с пометкой МИНИМАЛЬНАЯ.
+                </p>
+              </div>
+              <div className="flex-1 p-3 rounded-lg bg-green-50 border border-green-200">
+                <p className="text-xs text-muted-foreground mb-1">Вы получите на руки:</p>
+                <p className="text-xl font-bold text-green-700">
+                  {basePrice ? Math.round(parseInt(basePrice) * (1 - commissionRate / 100)).toLocaleString() : '0'} ₽
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  (после удержания {commissionRate}% комиссии/предоплаты)
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -551,39 +575,6 @@ export default function PerformerProfilePage() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Pricing */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Минимальная цена</CardTitle>
-            <CardDescription>Ваша базовая цена за выступление</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 items-start">
-              <div className="flex-1 space-y-2">
-                <Label>Минимальная цена (₽)</Label>
-                <Input
-                  type="number"
-                  value={basePrice}
-                  onChange={(e) => setBasePrice(e.target.value)}
-                  placeholder="3000"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Это сумма, которую вы получите наличкой после мероприятия.
-                </p>
-              </div>
-              <div className="flex-1 p-3 rounded-lg bg-accent/10 border border-accent/30">
-                <p className="text-xs text-muted-foreground mb-1">Цена для клиента:</p>
-                <p className="text-xl font-bold text-accent">
-                  {basePrice ? Math.round(parseInt(basePrice) * (1 + commissionRate / 100)).toLocaleString() : '0'} ₽
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  (включая {commissionRate}% комиссии)
-                </p>
               </div>
             </div>
           </CardContent>

@@ -712,19 +712,20 @@ export default function PerformerRegistration() {
                   <h4 className="font-semibold flex items-center gap-2">
                     🎭 Программа выступления
                   </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="programDuration">Длительность (минут)</Label>
-                      <Input
-                        id="programDuration"
-                        type="number"
-                        min="10"
-                        max="180"
-                        value={programDuration}
-                        onChange={(e) => setProgramDuration(e.target.value)}
-                        placeholder="30"
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="programDuration">Длительность</Label>
+                    <select
+                      id="programDuration"
+                      value={programDuration}
+                      onChange={(e) => setProgramDuration(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="20">20 минут</option>
+                      <option value="25">25 минут</option>
+                      <option value="30">30 минут</option>
+                      <option value="35">35 минут</option>
+                      <option value="40">40 минут</option>
+                    </select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="programDescription">Описание программы</Label>
@@ -732,7 +733,7 @@ export default function PerformerRegistration() {
                       id="programDescription"
                       value={programDescription}
                       onChange={(e) => setProgramDescription(e.target.value)}
-                      placeholder="Опишите что входит в вашу программу: игры, конкурсы, стихи, вручение подарков..."
+                      placeholder="Опишите что входит в вашу программу: игры, конкурсы, стихи, вручение подарков... Количество текста в этом блоке прямо влияет на конверсию!"
                       rows={4}
                     />
                     <p className="text-xs text-muted-foreground">
