@@ -139,9 +139,13 @@ export default function AdminVerification() {
   async function confirmVerifyPerformer() {
     if (!verifyingPerformerId) return;
 
+    // Update verification status AND auto-activate the profile
     const { error } = await supabase
       .from('performer_profiles')
-      .update({ verification_status: 'verified' })
+      .update({ 
+        verification_status: 'verified',
+        is_active: true 
+      })
       .eq('id', verifyingPerformerId);
 
     if (error) {
@@ -162,7 +166,7 @@ export default function AdminVerification() {
         chat_id: chat.id,
         sender_id: user?.id || 'admin',
         sender_type: 'admin',
-        text: `✅ Верификация пройдена!\n\nВаш профиль успешно верифицирован. Теперь вы можете активировать свой профиль для отображения в каталоге.`,
+        text: `✅ Ваш профиль успешно верифицирован. Теперь вы отображаетесь в каталоге.\n\nЧтобы деактивировать видимость вашего профиля или удалить его — напишите в этом чате Администратору.\n\nВ случае изменения фото, видео или любой другой публично доступной информации о себе — ваш профиль будет снят с публикации до перепрохождения модерации.`,
       });
     }
 
@@ -175,7 +179,7 @@ export default function AdminVerification() {
       }
     });
 
-    toast.success('Исполнитель верифицирован');
+    toast.success('Исполнитель верифицирован и активирован');
     setVerifyingPerformerId(null);
     setVerifyingPerformerName('');
     fetchPerformers();

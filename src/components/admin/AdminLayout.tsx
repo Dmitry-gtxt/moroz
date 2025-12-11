@@ -1,21 +1,11 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
-import { Users, FileCheck, ShoppingCart, LayoutDashboard, LogOut, Star, History, CreditCard, Shield } from 'lucide-react';
+import { Users, FileCheck, ShoppingCart, LayoutDashboard, LogOut, Star, History, CreditCard, Shield, MessageCircle, ClipboardCheck } from 'lucide-react';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
-const navItems = [
-  { to: '/admin', icon: LayoutDashboard, label: 'Обзор' },
-  { to: '/admin/performers', icon: Users, label: 'Исполнители' },
-  { to: '/admin/verification', icon: FileCheck, label: 'Верификация' },
-  { to: '/admin/reviews', icon: Star, label: 'Отзывы' },
-  { to: '/admin/orders', icon: ShoppingCart, label: 'Заказы' },
-  { to: '/admin/history', icon: History, label: 'История заказов' },
-  { to: '/admin/paid', icon: CreditCard, label: 'Оплаченные' },
-  { to: '/admin/audit', icon: Shield, label: 'Аудит-лог' },
-];
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -25,6 +15,55 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { isAdmin, loading } = useAdmin();
   const { signOut } = useAuth();
   const location = useLocation();
+  
+  const [verificationCount, setVerificationCount] = useState(0);
+  const [moderationCount, setModerationCount] = useState(0);
+
+  useEffect(() => {
+    async function fetchCounts() {
+      // Fetch all pending profiles
+      const { data: pendingProfiles } = await supabase
+        .from('performer_profiles')
+        .select('id, created_at, updated_at')
+        .eq('verification_status', 'pending');
+
+      if (pendingProfiles) {
+        // Moderation: profiles edited after creation (updated > created by 1 hour)
+        const modProfiles = pendingProfiles.filter(p => {
+          const created = new Date(p.created_at).getTime();
+          const updated = new Date(p.updated_at).getTime();
+          return (updated - created) > 3600000;
+        });
+        
+        setModerationCount(modProfiles.length);
+        setVerificationCount(pendingProfiles.length - modProfiles.length);
+      }
+    }
+
+    fetchCounts();
+
+    const channel = supabase
+      .channel('admin-layout-counts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'performer_profiles' }, fetchCounts)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const navItems = [
+    { to: '/admin', icon: LayoutDashboard, label: 'Обзор' },
+    { to: '/admin/performers', icon: Users, label: 'Исполнители' },
+    { to: '/admin/verification', icon: FileCheck, label: 'Верификация', badge: verificationCount },
+    { to: '/admin/moderation', icon: ClipboardCheck, label: 'Модерация', badge: moderationCount },
+    { to: '/admin/reviews', icon: Star, label: 'Отзывы' },
+    { to: '/admin/orders', icon: ShoppingCart, label: 'Заказы' },
+    { to: '/admin/history', icon: History, label: 'История заказов' },
+    { to: '/admin/paid', icon: CreditCard, label: 'Оплаченные' },
+    { to: '/messages', icon: MessageCircle, label: 'Сообщения' },
+    { to: '/admin/audit', icon: Shield, label: 'Аудит-лог' },
+  ];
 
   if (loading) {
     return (
@@ -55,19 +94,27 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = location.pathname === item.to;
+            const hasBadge = item.badge && item.badge > 0;
             return (
               <Link
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
+                  'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors relative',
                   isActive
                     ? 'bg-primary text-primary-foreground'
+                    : hasBadge
+                    ? 'text-red-500 hover:bg-red-50 hover:text-red-600 font-medium'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 )}
               >
                 <item.icon className="h-5 w-5" />
                 <span className="font-medium">{item.label}</span>
+                {hasBadge && (
+                  <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}
