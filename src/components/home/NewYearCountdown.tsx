@@ -62,7 +62,7 @@ export function NewYearCountdown() {
       ))}
       
       <div className="container relative z-10">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-2xl mx-auto">
           {/* Compact card */}
           <div className="relative glass-card rounded-2xl p-4 md:p-6 border border-magic-gold/20">
             {/* Glow effect */}
