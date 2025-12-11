@@ -693,17 +693,18 @@ export default function PerformerRegistration() {
                       </p>
                     </div>
                     <div className="flex-1 p-3 rounded-lg bg-green-50 border border-green-200">
-                      <p className="text-xs text-muted-foreground mb-1">Вы получите на руки:</p>
+                      <p className="text-xs text-muted-foreground mb-1">Комиссия: {commissionRate}%</p>
+                      <p className="text-sm text-muted-foreground">
+                        {basePrice ? Math.round(parseInt(basePrice) * commissionRate / 100).toLocaleString() : '0'} ₽
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">На руки:</p>
                       <p className="text-xl font-bold text-green-700">
                         {basePrice ? Math.round(parseInt(basePrice) * (1 - commissionRate / 100)).toLocaleString() : '0'} ₽
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        (после удержания {commissionRate}% комиссии)
-                      </p>
                     </div>
                   </div>
-                  <p className="text-xs text-orange-600 mt-2">
-                    ⚠️ Комиссия платформы {commissionRate}% удерживается с вас при оплате клиентом
+                  <p className="text-xs text-muted-foreground mt-3 p-3 bg-muted/50 rounded-lg">
+                    Комиссия сервиса {commissionRate}% — оплачивается клиентом в формате бронирования, после подтверждения вами заявки. Остальную сумму клиент оплачивает вам перед или после мероприятия — это ваше фактическое вознаграждение.
                   </p>
                 </div>
 
