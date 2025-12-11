@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 import { bookingStep1Schema, bookingStep2Schema } from '@/lib/validations/booking';
-import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment, getCommissionRate } from '@/lib/pricing';
+import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment, getCommissionRate, getPrepaymentPercentage } from '@/lib/pricing';
 import { ZodError } from 'zod';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
@@ -160,6 +160,7 @@ const Booking = () => {
   const customerPrice = getCustomerPrice(performerPrice, commissionRate); // What customer sees
   const prepaymentAmount = getPrepaymentAmount(performerPrice, commissionRate); // Platform commission
   const performerPayment = getPerformerPayment(performerPrice); // Paid in cash to performer
+  const prepaymentPercent = getPrepaymentPercentage(commissionRate);
   const photoUrl = performer.photo_urls?.[0] || '/placeholder.svg';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -566,7 +567,7 @@ const Booking = () => {
                         <span className="font-semibold">{customerPrice.toLocaleString()} ₽</span>
                       </div>
                       <div className="flex justify-between py-3 border-b border-border">
-                        <span className="text-muted-foreground">Предоплата (после подтверждения)</span>
+                        <span className="text-muted-foreground">Предоплата {prepaymentPercent}% (после подтверждения)</span>
                         <span className="font-bold text-lg text-accent">{prepaymentAmount.toLocaleString()} ₽</span>
                       </div>
                       <div className="flex justify-between py-3">
@@ -675,7 +676,7 @@ const Booking = () => {
                           <span className="font-semibold">{customerPrice.toLocaleString()} ₽</span>
                         </div>
                         <div className="flex justify-between text-accent">
-                          <span>Предоплата (после подтверждения):</span>
+                          <span>Предоплата {prepaymentPercent}% (после подтверждения):</span>
                           <span className="font-bold">{prepaymentAmount.toLocaleString()} ₽</span>
                         </div>
                       </div>

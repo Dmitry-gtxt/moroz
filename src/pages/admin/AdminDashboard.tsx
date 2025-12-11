@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Users, FileCheck, ShoppingCart, TrendingUp, Settings, Loader2, Save } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Users, FileCheck, ShoppingCart, TrendingUp, Settings, Loader2, Save, HelpCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { clearCommissionCache, getPrepaymentPercentage } from '@/lib/pricing';
@@ -145,11 +146,26 @@ export default function AdminDashboard() {
                       />
                       <span className="text-muted-foreground">%</span>
                     </div>
-                    <div className="px-4 py-2 bg-secondary rounded-lg">
+                    <div className="px-4 py-2 bg-secondary rounded-lg flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Размер предоплаты: </span>
                       <span className="font-semibold text-foreground">
                         {getPrepaymentPercentage(parseInt(commissionRate || '0', 10))}%
                       </span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="font-medium mb-1">Формула расчёта:</p>
+                            <p className="text-sm">x / (x + 100)</p>
+                            <p className="text-sm mt-1">где x — процент наценки</p>
+                            <p className="text-sm mt-2 text-muted-foreground">
+                              Например: {commissionRate}% / ({commissionRate}% + 100) = {getPrepaymentPercentage(parseInt(commissionRate || '0', 10))}%
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground">
