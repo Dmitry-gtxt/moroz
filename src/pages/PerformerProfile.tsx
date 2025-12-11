@@ -350,7 +350,7 @@ const PerformerProfile = () => {
                     <span className="text-sm text-muted-foreground">Стоимость от</span>
                     <div className="font-display text-4xl font-bold text-accent">
                       {customerPriceFrom.toLocaleString()} 
-                      <span className="text-xl font-normal text-muted-foreground"> сом</span>
+                      <span className="text-xl font-normal text-muted-foreground"> ₽</span>
                     </div>
                     <span className="text-sm text-muted-foreground">за визит 20-30 минут</span>
                   </div>
@@ -431,8 +431,8 @@ const PerformerProfile = () => {
                       {selectedDatePriceRange && (
                         <p className="text-sm text-muted-foreground mb-3">
                           {selectedDatePriceRange.min === selectedDatePriceRange.max 
-                            ? `Цена: ${selectedDatePriceRange.min.toLocaleString()} сом`
-                            : `Цена: ${selectedDatePriceRange.min.toLocaleString()} — ${selectedDatePriceRange.max.toLocaleString()} сом`
+                            ? `Цена: ${selectedDatePriceRange.min.toLocaleString()} ₽`
+                            : `Цена: ${selectedDatePriceRange.min.toLocaleString()} — ${selectedDatePriceRange.max.toLocaleString()} ₽`
                           }
                         </p>
                       )}
@@ -459,7 +459,7 @@ const PerformerProfile = () => {
                                   {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
                                 </span>
                                 <span className={`text-xs ${selectedSlot === slot.id ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                  {slotPrice.toLocaleString()} сом
+                                  {slotPrice.toLocaleString()} ₽
                                 </span>
                                 {hasPendingBooking && selectedSlot !== slot.id && (
                                   <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full" title="Есть другие заявки" />

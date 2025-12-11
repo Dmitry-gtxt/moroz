@@ -153,7 +153,7 @@ export default function AdminOrders() {
                           {booking.performer_profiles?.display_name ?? 'Неизвестно'}
                         </TableCell>
                         <TableCell>{eventTypeLabels[booking.event_type] ?? booking.event_type}</TableCell>
-                        <TableCell className="font-medium">{booking.price_total} сом</TableCell>
+                        <TableCell className="font-medium">{booking.price_total} ₽</TableCell>
                         <TableCell>
                           <Badge variant={payment.variant}>{payment.label}</Badge>
                         </TableCell>

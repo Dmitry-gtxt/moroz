@@ -259,7 +259,7 @@ export default function AdminBookingHistory() {
                               <div className="flex items-center gap-2">
                                 <Badge variant={status.variant}>{status.label}</Badge>
                                 <Badge variant={payment.variant}>{payment.label}</Badge>
-                                <span className="font-semibold">{booking.price_total.toLocaleString()} сом</span>
+                                <span className="font-semibold">{booking.price_total.toLocaleString()} ₽</span>
                               </div>
                             </div>
                             <div className="flex gap-2">
