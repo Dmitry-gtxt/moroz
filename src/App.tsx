@@ -43,6 +43,7 @@ import PerformerCode from "./pages/PerformerCode";
 import CustomerRules from "./pages/CustomerRules";
 import ImageUsage from "./pages/ImageUsage";
 import BankInfo from "./pages/BankInfo";
+import Students from "./pages/Students";
 
 import AdminReviews from "./pages/admin/AdminReviews";
 
@@ -76,6 +77,7 @@ const App = () => (
             <Route path="/customer-rules" element={<CustomerRules />} />
             <Route path="/image-usage" element={<ImageUsage />} />
             <Route path="/bank-info" element={<BankInfo />} />
+            <Route path="/students" element={<Students />} />
             {/* Messages */}
             <Route path="/messages" element={<Messages />} />
             {/* Customer cabinet routes */}
