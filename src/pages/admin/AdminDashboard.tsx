@@ -27,12 +27,13 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     async function fetchData() {
-      const [performers, pendingDocs, bookings, pendingBookings, settings] = await Promise.all([
+      const [performers, pendingDocs, bookings, pendingBookings, commissionSetting, testEmailSetting] = await Promise.all([
         supabase.from('performer_profiles').select('id', { count: 'exact', head: true }),
         supabase.from('verification_documents').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('bookings').select('id', { count: 'exact', head: true }),
         supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('platform_settings').select('*').eq('key', 'commission_rate').maybeSingle(),
+        supabase.from('platform_settings').select('*').eq('key', 'test_email').maybeSingle(),
       ]);
 
       setStats({
@@ -42,8 +43,11 @@ export default function AdminDashboard() {
         pendingOrders: pendingBookings.count ?? 0,
       });
 
-      if (settings.data) {
-        setCommissionRate(settings.data.value);
+      if (commissionSetting.data) {
+        setCommissionRate(commissionSetting.data.value);
+      }
+      if (testEmailSetting.data) {
+        setTestEmail(testEmailSetting.data.value);
       }
       setLoadingSettings(false);
     }
@@ -58,25 +62,37 @@ export default function AdminDashboard() {
       return;
     }
 
+    if (testEmail && !testEmail.includes('@')) {
+      toast.error('Введите корректный email для тестирования');
+      return;
+    }
+
     setSavingSettings(true);
     
-    // Use upsert to create or update the setting
-    const { error } = await supabase
-      .from('platform_settings')
-      .upsert({ 
-        key: 'commission_rate', 
-        value: commissionRate,
-        description: 'Процент наценки платформы на цену исполнителя'
-      }, { 
-        onConflict: 'key' 
-      });
+    // Save both settings
+    const [commissionResult, emailResult] = await Promise.all([
+      supabase
+        .from('platform_settings')
+        .upsert({ 
+          key: 'commission_rate', 
+          value: commissionRate,
+          description: 'Процент наценки платформы на цену исполнителя'
+        }, { onConflict: 'key' }),
+      supabase
+        .from('platform_settings')
+        .upsert({ 
+          key: 'test_email', 
+          value: testEmail,
+          description: 'Email для тестирования уведомлений'
+        }, { onConflict: 'key' })
+    ]);
 
-    if (error) {
+    if (commissionResult.error || emailResult.error) {
       toast.error('Ошибка сохранения настроек');
-      console.error(error);
+      console.error(commissionResult.error || emailResult.error);
     } else {
       clearCommissionCache();
-      toast.success('Настройки сохранены. Новый процент будет применён ко всем новым бронированиям.');
+      toast.success('Настройки сохранены');
     }
     
     setSavingSettings(false);
