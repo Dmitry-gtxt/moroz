@@ -28,8 +28,9 @@ export async function getCommissionRate(): Promise<number> {
   }
 
   try {
+    // Use public_platform_settings view for anonymous access
     const { data, error } = await supabase
-      .from('platform_settings')
+      .from('public_platform_settings')
       .select('value')
       .eq('key', 'commission_rate')
       .maybeSingle();
