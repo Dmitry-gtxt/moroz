@@ -452,13 +452,13 @@ export default function PerformerProfilePage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Цена для клиента</Label>
-                <div className="p-3 rounded-lg bg-accent/10 border border-accent/30">
-                  <p className="text-xl font-bold text-accent">
-                    {basePrice ? Math.round(parseInt(basePrice) * (1 + commissionRate / 100)).toLocaleString() : '0'} ₽
+                <Label>Вы получите на руки</Label>
+                <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+                  <p className="text-xl font-bold text-green-700">
+                    {basePrice ? Math.round(parseInt(basePrice) * (1 - commissionRate / 100)).toLocaleString() : '0'} ₽
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    (включая {commissionRate}% комиссии)
+                    (после удержания {commissionRate}% комиссии)
                   </p>
                 </div>
               </div>

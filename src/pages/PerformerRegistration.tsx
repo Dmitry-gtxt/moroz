@@ -677,7 +677,7 @@ export default function PerformerRegistration() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="basePrice">Минимальная цена (₽) *</Label>
+                <Label htmlFor="basePrice">Цена для клиента (₽) *</Label>
                   <div className="flex gap-4 items-start">
                     <div className="flex-1">
                       <Input
@@ -686,22 +686,25 @@ export default function PerformerRegistration() {
                         min="0"
                         value={basePrice}
                         onChange={(e) => setBasePrice(e.target.value)}
-                        placeholder="3000"
+                        placeholder="5000"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Ваша цена за программу
+                        Сумма, которую заплатит клиент
                       </p>
                     </div>
-                    <div className="flex-1 p-3 rounded-lg bg-accent/10 border border-accent/30">
-                      <p className="text-xs text-muted-foreground mb-1">Цена для клиента:</p>
-                      <p className="text-xl font-bold text-accent">
-                        {basePrice ? Math.round(parseInt(basePrice) * (1 + commissionRate / 100)).toLocaleString() : '0'} ₽
+                    <div className="flex-1 p-3 rounded-lg bg-green-50 border border-green-200">
+                      <p className="text-xs text-muted-foreground mb-1">Вы получите на руки:</p>
+                      <p className="text-xl font-bold text-green-700">
+                        {basePrice ? Math.round(parseInt(basePrice) * (1 - commissionRate / 100)).toLocaleString() : '0'} ₽
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        (включая {commissionRate}% комиссии)
+                        (после удержания {commissionRate}% комиссии)
                       </p>
                     </div>
                   </div>
+                  <p className="text-xs text-orange-600 mt-2">
+                    ⚠️ Комиссия платформы {commissionRate}% удерживается с вас при оплате клиентом
+                  </p>
                 </div>
 
                 {/* Программа */}
