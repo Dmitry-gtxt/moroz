@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CancelBookingDialog } from '@/components/bookings/CancelBookingDialog';
+import { notifyBookingConfirmed, scheduleBookingReminders } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -118,6 +119,7 @@ export default function PerformerBookings() {
 
       // Send customer notification when booking is confirmed
       if (newStatus === 'confirmed' && booking?.customer_email) {
+        // Send email notification
         supabase.functions.invoke('send-notification-email', {
           body: {
             type: 'booking_confirmed',
@@ -130,6 +132,25 @@ export default function PerformerBookings() {
             priceTotal: booking.price_total,
           },
         });
+
+        // Send push notification to customer
+        notifyBookingConfirmed(
+          booking.customer_id,
+          performerName,
+          format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+          booking.booking_time
+        );
+
+        // Schedule booking reminders if payment is confirmed
+        if (booking.payment_status === 'prepayment_paid' || booking.payment_status === 'fully_paid') {
+          scheduleBookingReminders(
+            booking.id,
+            booking.booking_date,
+            booking.booking_time,
+            booking.customer_id,
+            booking.performer_id
+          );
+        }
       }
     }
   };
