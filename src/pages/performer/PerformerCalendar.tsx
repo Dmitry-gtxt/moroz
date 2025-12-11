@@ -16,7 +16,7 @@ import { format, isSameDay, addDays } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Loader2, Plus, Trash2, Clock, CalendarCheck, AlertCircle, Pencil, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getCustomerPrice, getCommissionRate, formatPrice } from '@/lib/pricing';
+import { getPerformerNetAmount, getCommissionRate, formatPrice } from '@/lib/pricing';
 import type { Database } from '@/integrations/supabase/types';
 
 type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row'] & {
@@ -227,7 +227,7 @@ export default function PerformerCalendar() {
 
   // Get display price for slot
   const getSlotPrice = (slot: AvailabilitySlot) => slot.price ?? basePrice;
-  const getSlotCustomerPrice = (slot: AvailabilitySlot) => getCustomerPrice(getSlotPrice(slot), commissionRate);
+  const getSlotNetAmount = (slot: AvailabilitySlot) => getPerformerNetAmount(getSlotPrice(slot), commissionRate);
 
   // Delete single slot
   const handleDeleteSlot = async (slot: AvailabilitySlot) => {
@@ -460,10 +460,10 @@ export default function PerformerCalendar() {
                               Оставьте пустым для базовой цены
                             </p>
                           </div>
-                          <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 min-w-[120px]">
-                            <p className="text-xs text-muted-foreground">Клиент увидит:</p>
-                            <p className="text-lg font-bold text-accent">
-                              {formatPrice(getCustomerPrice(rangePrice ? parseInt(rangePrice) : basePrice, commissionRate))}
+                          <div className="p-2 rounded-lg bg-green-50 border border-green-200 min-w-[120px]">
+                            <p className="text-xs text-muted-foreground">Вы получите на руки:</p>
+                            <p className="text-lg font-bold text-green-700">
+                              {formatPrice(getPerformerNetAmount(rangePrice ? parseInt(rangePrice) : basePrice, commissionRate))}
                             </p>
                           </div>
                         </div>
@@ -616,7 +616,7 @@ export default function PerformerCalendar() {
               {/* Price legend */}
               <div className="mt-4 p-3 bg-muted/50 rounded-lg">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Базовая цена:</strong> {formatPrice(basePrice)} → <strong>Клиент видит:</strong> {formatPrice(getCustomerPrice(basePrice, commissionRate))}
+                  <strong>Цена:</strong> {formatPrice(basePrice)} → <strong>На руки:</strong> {formatPrice(getPerformerNetAmount(basePrice, commissionRate))} (после {commissionRate}% комиссии)
                 </p>
               </div>
             </CardContent>
@@ -674,10 +674,10 @@ export default function PerformerCalendar() {
                       Оставьте пустым для базовой цены
                     </p>
                   </div>
-                  <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 min-w-[120px]">
-                    <p className="text-xs text-muted-foreground">Клиент увидит:</p>
-                    <p className="text-lg font-bold text-accent">
-                      {formatPrice(getCustomerPrice(editingPrice ? parseInt(editingPrice) : basePrice, commissionRate))}
+                  <div className="p-2 rounded-lg bg-green-50 border border-green-200 min-w-[120px]">
+                    <p className="text-xs text-muted-foreground">Вы получите на руки:</p>
+                    <p className="text-lg font-bold text-green-700">
+                      {formatPrice(getPerformerNetAmount(editingPrice ? parseInt(editingPrice) : basePrice, commissionRate))}
                     </p>
                   </div>
                 </div>
@@ -727,10 +727,10 @@ export default function PerformerCalendar() {
                     Оставьте пустым для базовой цены
                   </p>
                 </div>
-                <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 min-w-[120px]">
-                  <p className="text-xs text-muted-foreground">Клиент увидит:</p>
-                  <p className="text-lg font-bold text-accent">
-                    {formatPrice(getCustomerPrice(dayPrice ? parseInt(dayPrice) : basePrice, commissionRate))}
+                <div className="p-2 rounded-lg bg-green-50 border border-green-200 min-w-[120px]">
+                  <p className="text-xs text-muted-foreground">Вы получите на руки:</p>
+                  <p className="text-lg font-bold text-green-700">
+                    {formatPrice(getPerformerNetAmount(dayPrice ? parseInt(dayPrice) : basePrice, commissionRate))}
                   </p>
                 </div>
               </div>

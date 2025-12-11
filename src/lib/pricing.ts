@@ -1,22 +1,21 @@
 /**
  * Pricing utilities for the platform
  * 
- * Pricing policy:
- * - Performers set their base price for 30 min (what they receive)
- * - Customers see price + X% markup (configurable via platform settings)
- * - Customer pays X% of performer's price as prepayment (platform commission)
- * - Remaining 100% is paid directly to performer in cash after the event
+ * NEW Pricing policy:
+ * - Performers set their minimum price (what customer pays)
+ * - Platform commission is deducted from performer's price
+ * - Performer receives: price - (price * commission%)
+ * - Customer prepayment = commission% of the price
  * 
  * Example with 40% commission:
- * - Performer price: 5000 ₽
- * - Customer sees: 7000 ₽ (5000 * 1.4)
- * - Prepayment: 2000 ₽ (5000 * 0.4) - goes to platform
- * - Cash to performer: 5000 ₽
+ * - Performer sets price: 5000 ₽ (customer pays this)
+ * - Platform commission/prepayment: 2000 ₽ (5000 * 0.4)
+ * - Performer receives "на руки": 3000 ₽ (5000 - 2000)
  */
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Default markup percentage (can be overridden by platform settings)
+// Default commission percentage (can be overridden by platform settings)
 let CACHED_COMMISSION_RATE: number | null = null;
 const DEFAULT_COMMISSION_RATE = 40; // 40%
 
@@ -54,52 +53,60 @@ export function clearCommissionCache(): void {
 }
 
 /**
- * Get the markup as a decimal (e.g., 40% = 0.4)
+ * Get the commission as a decimal (e.g., 40% = 0.4)
  */
-export function getMarkupDecimal(commissionRate: number): number {
+export function getCommissionDecimal(commissionRate: number): number {
   return commissionRate / 100;
 }
 
 /**
- * Calculate prepayment percentage for display to customers
- * Formula: x / (x + 100) where x is commission rate
- * Example: 40% commission → 40/(40+100) = 28.57% ≈ 29%
+ * The prepayment percentage equals the commission percentage
+ * Customer pays commission% upfront as prepayment
  */
 export function getPrepaymentPercentage(commissionRate: number): number {
-  if (commissionRate <= 0) return 0;
-  return Math.round((commissionRate / (commissionRate + 100)) * 100);
+  return commissionRate;
 }
 
 /**
- * Calculate the price shown to customers (with platform markup)
+ * Calculate what the performer receives "на руки" (after commission)
+ * Price is what customer pays, performer gets: price - commission
+ */
+export function getPerformerNetAmount(customerPrice: number, commissionRate: number = DEFAULT_COMMISSION_RATE): number {
+  return Math.round(customerPrice * (1 - getCommissionDecimal(commissionRate)));
+}
+
+/**
+ * Calculate the prepayment amount (= platform commission)
+ */
+export function getPrepaymentAmount(customerPrice: number, commissionRate: number = DEFAULT_COMMISSION_RATE): number {
+  return Math.round(customerPrice * getCommissionDecimal(commissionRate));
+}
+
+/**
+ * LEGACY: This now returns the same price (no markup added)
+ * Customer pays the price set by performer directly
  */
 export function getCustomerPrice(performerPrice: number, commissionRate: number = DEFAULT_COMMISSION_RATE): number {
-  return Math.round(performerPrice * (1 + getMarkupDecimal(commissionRate)));
-}
-
-/**
- * Calculate the prepayment amount (platform commission)
- */
-export function getPrepaymentAmount(performerPrice: number, commissionRate: number = DEFAULT_COMMISSION_RATE): number {
-  return Math.round(performerPrice * getMarkupDecimal(commissionRate));
-}
-
-/**
- * Calculate what the performer receives (in cash after event)
- */
-export function getPerformerPayment(performerPrice: number): number {
+  // Price is now what customer pays directly
   return performerPrice;
+}
+
+/**
+ * LEGACY: What the performer receives (now equals net amount after commission)
+ */
+export function getPerformerPayment(performerPrice: number, commissionRate: number = DEFAULT_COMMISSION_RATE): number {
+  return getPerformerNetAmount(performerPrice, commissionRate);
 }
 
 /**
  * Get all pricing details for a booking
  */
-export function getBookingPricing(performerPrice: number, commissionRate: number = DEFAULT_COMMISSION_RATE) {
+export function getBookingPricing(price: number, commissionRate: number = DEFAULT_COMMISSION_RATE) {
   return {
-    customerPrice: getCustomerPrice(performerPrice, commissionRate),
-    prepayment: getPrepaymentAmount(performerPrice, commissionRate),
-    performerPayment: getPerformerPayment(performerPrice),
-    performerPrice,
+    customerPrice: price, // What customer pays
+    prepayment: getPrepaymentAmount(price, commissionRate), // Commission = prepayment
+    performerPayment: getPerformerNetAmount(price, commissionRate), // What performer gets "на руки"
+    performerPrice: price,
     commissionRate,
   };
 }
