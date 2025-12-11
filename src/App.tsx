@@ -29,12 +29,6 @@ import CustomerCatalog from "./pages/customer/CustomerCatalog";
 import HowItWorks from "./pages/HowItWorks";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
-import Offer from "./pages/Offer";
-import RefundPolicy from "./pages/RefundPolicy";
-import Cookies from "./pages/Cookies";
-import PerformerAgreement from "./pages/PerformerAgreement";
-import PerformerCode from "./pages/PerformerCode";
-import CustomerRules from "./pages/CustomerRules";
 
 import AdminReviews from "./pages/admin/AdminReviews";
 
@@ -60,12 +54,6 @@ const App = () => (
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
-            <Route path="/offer" element={<Offer />} />
-            <Route path="/refund-policy" element={<RefundPolicy />} />
-            <Route path="/cookies" element={<Cookies />} />
-            <Route path="/performer-agreement" element={<PerformerAgreement />} />
-            <Route path="/performer-code" element={<PerformerCode />} />
-            <Route path="/customer-rules" element={<CustomerRules />} />
             {/* Customer cabinet routes */}
             <Route path="/cabinet" element={<CustomerDashboard />} />
             <Route path="/cabinet/catalog" element={<CustomerCatalog />} />
