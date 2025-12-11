@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Gift, Star } from 'lucide-react';
+import { Sparkles, Star } from 'lucide-react';
 
 interface TimeLeft {
   days: number;
@@ -16,7 +16,6 @@ export function NewYearCountdown() {
       const now = new Date();
       const newYear = new Date(now.getFullYear() + 1, 0, 1);
       
-      // If we're already past New Year, target next year
       if (now >= newYear) {
         newYear.setFullYear(newYear.getFullYear() + 1);
       }
@@ -38,19 +37,19 @@ export function NewYearCountdown() {
   }, []);
 
   const timeBlocks = [
-    { value: timeLeft.days, label: 'дней' },
-    { value: timeLeft.hours, label: 'часов' },
-    { value: timeLeft.minutes, label: 'минут' },
-    { value: timeLeft.seconds, label: 'секунд' },
+    { value: timeLeft.days, label: 'дн' },
+    { value: timeLeft.hours, label: 'ч' },
+    { value: timeLeft.minutes, label: 'мин' },
+    { value: timeLeft.seconds, label: 'сек' },
   ];
 
   return (
-    <section className="relative py-16 overflow-hidden">
+    <section className="relative py-8 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-winter-900/50 via-magic-purple/20 to-winter-900/50" />
       
       {/* Animated stars */}
-      {[...Array(20)].map((_, i) => (
+      {[...Array(10)].map((_, i) => (
         <div
           key={i}
           className="absolute w-1 h-1 bg-magic-gold rounded-full animate-twinkle"
@@ -62,60 +61,45 @@ export function NewYearCountdown() {
         />
       ))}
       
-      {/* Decorative elements */}
-      <div className="absolute top-10 left-10 text-magic-gold/20 animate-float">
-        <Gift className="w-16 h-16" />
-      </div>
-      <div className="absolute bottom-10 right-10 text-magic-gold/20 animate-float" style={{ animationDelay: '1s' }}>
-        <Star className="w-12 h-12" />
-      </div>
-      
       <div className="container relative z-10">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-magic-gold/10 border border-magic-gold/30 mb-4">
-            <Sparkles className="w-4 h-4 text-magic-gold animate-pulse" />
-            <span className="text-sm font-medium text-magic-gold">Волшебство близко!</span>
-          </div>
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-gradient-gold mb-2">
-            До Нового Года осталось
-          </h2>
-          <p className="text-snow-300/70">Успейте заказать Деда Мороза!</p>
-        </div>
-        
-        {/* Countdown blocks */}
-        <div className="flex justify-center gap-3 md:gap-6 flex-wrap">
-          {timeBlocks.map((block, index) => (
-            <div key={index} className="relative group">
-              {/* Glow effect */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-magic-gold/30 to-magic-cyan/30 rounded-2xl blur-lg opacity-50 group-hover:opacity-100 transition-opacity" />
+        <div className="max-w-md mx-auto">
+          {/* Compact card */}
+          <div className="relative glass-card rounded-2xl p-4 md:p-6 border border-magic-gold/20">
+            {/* Glow effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-magic-gold/20 to-magic-cyan/20 rounded-2xl blur-lg opacity-50" />
+            
+            <div className="relative">
+              {/* Header */}
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-magic-gold animate-pulse" />
+                <h2 className="text-lg md:text-xl font-display font-bold text-gradient-gold">
+                  До Нового Года
+                </h2>
+                <Sparkles className="w-4 h-4 text-magic-gold animate-pulse" />
+              </div>
               
-              {/* Card */}
-              <div className="relative glass-card rounded-2xl p-4 md:p-6 min-w-[80px] md:min-w-[120px] text-center border border-magic-gold/20">
-                {/* Sparkle decoration */}
-                <div className="absolute -top-2 -right-2 text-magic-gold animate-sparkle">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                
-                {/* Number */}
-                <div className="text-4xl md:text-6xl font-display font-bold text-gradient-magic mb-1 tabular-nums">
-                  {block.value.toString().padStart(2, '0')}
-                </div>
-                
-                {/* Label */}
-                <div className="text-xs md:text-sm text-snow-300/70 uppercase tracking-wider">
-                  {block.label}
-                </div>
+              {/* Countdown - 2x2 grid */}
+              <div className="grid grid-cols-4 gap-2 md:gap-3">
+                {timeBlocks.map((block, index) => (
+                  <div key={index} className="text-center">
+                    <div className="text-2xl md:text-3xl font-display font-bold text-gradient-magic tabular-nums">
+                      {block.value.toString().padStart(2, '0')}
+                    </div>
+                    <div className="text-[10px] md:text-xs text-snow-300/70 uppercase tracking-wider">
+                      {block.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* CTA text */}
+              <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-magic-gold/20">
+                <Star className="w-3 h-3 text-magic-gold" />
+                <span className="text-xs text-snow-300/70">Успейте заказать Деда Мороза!</span>
+                <Star className="w-3 h-3 text-magic-gold" />
               </div>
             </div>
-          ))}
-        </div>
-        
-        {/* Decorative line */}
-        <div className="flex items-center justify-center gap-4 mt-10">
-          <div className="h-px w-20 bg-gradient-to-r from-transparent to-magic-gold/50" />
-          <Star className="w-4 h-4 text-magic-gold animate-pulse" />
-          <div className="h-px w-20 bg-gradient-to-l from-transparent to-magic-gold/50" />
+          </div>
         </div>
       </div>
     </section>
