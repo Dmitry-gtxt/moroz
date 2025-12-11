@@ -155,6 +155,14 @@ interface ModerationRejectedRequest {
   reason: string;
 }
 
+interface TestEmailRequest {
+  type: "test";
+  email: string;
+  data?: {
+    testMessage?: string;
+  };
+}
+
 type NotificationRequest = 
   | BookingNotificationRequest 
   | BookingConfirmedRequest 
@@ -171,7 +179,8 @@ type NotificationRequest =
   | ProfileActivatedRequest
   | VerificationSubmittedAdminRequest
   | ModerationApprovedRequest
-  | ModerationRejectedRequest;
+  | ModerationRejectedRequest
+  | TestEmailRequest;
 
 const eventTypeLabels: Record<string, string> = {
   home: "На дом",
@@ -1042,6 +1051,38 @@ const handler = async (req: Request): Promise<Response> => {
         `);
       }
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders } });
+    }
+
+    // Handle test email
+    if (payload.type === "test") {
+      const { email, data } = payload as TestEmailRequest;
+      const testMessage = data?.testMessage || 'Это тестовое уведомление.';
+      
+      console.log("Sending test email to:", email);
+      
+      const res = await sendEmail(
+        [email],
+        "🧪 Тестовое уведомление — Дед-Морозы.РФ",
+        `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4caf50; margin-bottom: 24px;">✅ Тест успешен!</h1>
+            <p style="font-size: 16px; color: #333;">${escapeHtml(testMessage)}</p>
+            <div style="background: #e8f5e9; border-radius: 12px; padding: 20px; margin: 24px 0;">
+              <p style="margin: 0; color: #2e7d32;">🎉 Email-уведомления работают корректно!</p>
+              <p style="margin: 8px 0 0; color: #666; font-size: 14px;">Время отправки: ${new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })} (МСК)</p>
+            </div>
+            <p style="font-size: 14px; color: #666;">С уважением,<br>Платформа Дед-Морозы.РФ</p>
+          </div>
+        `
+      );
+
+      const responseData = await res.json();
+      console.log("Test email response:", responseData);
+
+      return new Response(JSON.stringify({ success: true, data: responseData }), {
+        status: res.ok ? 200 : 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     throw new Error("Unknown notification type");

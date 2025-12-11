@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Users, FileCheck, ShoppingCart, TrendingUp, Settings, Loader2, Save, HelpCircle } from 'lucide-react';
+import { Users, FileCheck, ShoppingCart, TrendingUp, Settings, Loader2, Save, HelpCircle, Mail, Bell } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { clearCommissionCache } from '@/lib/pricing';
@@ -21,6 +21,8 @@ export default function AdminDashboard() {
   const [commissionRate, setCommissionRate] = useState('40');
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [testingPush, setTestingPush] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -79,6 +81,59 @@ export default function AdminDashboard() {
     setSavingSettings(false);
   };
 
+  const handleTestEmail = async () => {
+    setTestingEmail(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-notification-email', {
+        body: {
+          type: 'test',
+          email: 'admin@gtxt.biz',
+          data: {
+            testMessage: 'Это тестовое уведомление для проверки работы email-рассылки.'
+          }
+        }
+      });
+
+      if (error) throw error;
+      toast.success('Тестовое письмо отправлено на admin@gtxt.biz');
+    } catch (error: any) {
+      console.error('Email test error:', error);
+      toast.error('Ошибка отправки тестового письма: ' + (error.message || 'Неизвестная ошибка'));
+    } finally {
+      setTestingEmail(false);
+    }
+  };
+
+  const handleTestPush = async () => {
+    setTestingPush(true);
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Необходимо авторизоваться');
+        setTestingPush(false);
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          userId: user.id,
+          title: 'Тестовое уведомление',
+          body: 'Push-уведомления работают корректно!',
+          url: '/admin'
+        }
+      });
+
+      if (error) throw error;
+      toast.success('Тестовое push-уведомление отправлено');
+    } catch (error: any) {
+      console.error('Push test error:', error);
+      toast.error('Ошибка отправки push-уведомления: ' + (error.message || 'Неизвестная ошибка'));
+    } finally {
+      setTestingPush(false);
+    }
+  };
+
   const statCards = [
     { title: 'Всего исполнителей', value: stats.totalPerformers, icon: Users, color: 'text-primary' },
     { title: 'На модерации', value: stats.pendingModeration, icon: FileCheck, color: 'text-accent' },
@@ -128,12 +183,12 @@ export default function AdminDashboard() {
                 Загрузка настроек...
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="max-w-md space-y-2">
                   <Label htmlFor="commissionRate">
-                    Процент наценки на цену исполнителя (%)
+                    Процент комиссии платформы (%)
                   </Label>
-                  <div className="flex gap-4 items-center">
+                  <div className="flex gap-4 items-center flex-wrap">
                     <div className="flex gap-2 items-center">
                       <Input
                         id="commissionRate"
@@ -147,7 +202,7 @@ export default function AdminDashboard() {
                       <span className="text-muted-foreground">%</span>
                     </div>
                     <div className="px-4 py-2 bg-secondary rounded-lg flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Размер предоплаты для клиента: </span>
+                      <span className="text-sm text-muted-foreground">Размер предоплаты: </span>
                       <span className="font-semibold text-foreground">
                         {commissionRate || '0'}%
                       </span>
@@ -158,7 +213,7 @@ export default function AdminDashboard() {
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p className="font-medium mb-1">Комиссия = Предоплата</p>
-                            <p className="text-sm">Клиент вносит {commissionRate}% от цены как предоплату</p>
+                            <p className="text-sm">Клиент вносит {commissionRate}% от цены как предоплату (это и есть комиссия платформы)</p>
                             <p className="text-sm mt-1">Исполнитель получает остаток наличными</p>
                           </TooltipContent>
                         </Tooltip>
@@ -166,20 +221,53 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Комиссия удерживается с исполнителя. При цене 5000 ₽ и комиссии {commissionRate}%:
-                    клиент платит 5000 ₽, предоплата {Math.round(5000 * (parseInt(commissionRate || '0', 10) / 100))} ₽,
+                    При цене 5000 ₽ и комиссии {commissionRate}%:
+                    клиент платит 5000 ₽, предоплата (комиссия) {Math.round(5000 * (parseInt(commissionRate || '0', 10) / 100))} ₽,
                     исполнитель получает на руки {Math.round(5000 * (1 - parseInt(commissionRate || '0', 10) / 100))} ₽.
                   </p>
                 </div>
 
-                <Button onClick={handleSaveSettings} disabled={savingSettings}>
-                  {savingSettings ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4 mr-2" />
-                  )}
-                  Сохранить настройки
-                </Button>
+                <div className="flex flex-wrap gap-3">
+                  <Button onClick={handleSaveSettings} disabled={savingSettings}>
+                    {savingSettings ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Сохранить настройки
+                  </Button>
+                </div>
+
+                {/* Test Notifications */}
+                <div className="pt-4 border-t border-border">
+                  <Label className="mb-3 block">Тестирование уведомлений</Label>
+                  <div className="flex flex-wrap gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleTestEmail} 
+                      disabled={testingEmail}
+                    >
+                      {testingEmail ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Mail className="h-4 w-4 mr-2" />
+                      )}
+                      Тест email (админу)
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleTestPush} 
+                      disabled={testingPush}
+                    >
+                      {testingPush ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Bell className="h-4 w-4 mr-2" />
+                      )}
+                      Тест push-уведомления
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
