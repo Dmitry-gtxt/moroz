@@ -13,64 +13,43 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, X, ExternalLink, ChevronDown, MessageCircle, User, Mail, Phone, Power } from 'lucide-react';
+import { Check, X, MessageCircle, User, Mail, Phone, Power, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { SupportChatDialog } from '@/components/admin/SupportChatDialog';
 import type { Database } from '@/integrations/supabase/types';
+import { Link } from 'react-router-dom';
 
-type VerificationDocument = Database['public']['Tables']['verification_documents']['Row'];
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
 
-interface DocumentWithPerformer extends VerificationDocument {
-  performer_profiles: Pick<PerformerProfile, 'display_name' | 'user_id' | 'is_active' | 'verification_status'> | null;
-}
-
-interface PerformerGroup {
-  performerId: string;
-  displayName: string;
-  userId: string | null;
+interface PerformerWithContact extends PerformerProfile {
   email: string | null;
   phone: string | null;
-  isActive: boolean;
-  verificationStatus: string;
-  documents: DocumentWithPerformer[];
-  hasPending: boolean;
 }
 
-const documentTypeLabels: Record<string, string> = {
-  passport: 'Паспорт',
-  id_card: 'Удостоверение личности',
-  certificate: 'Сертификат',
-  portfolio: 'Портфолио',
-  medical: 'Мед. справка',
-  other: 'Другое',
-};
-
-const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  pending: { label: 'На проверке', variant: 'outline' },
-  approved: { label: 'Одобрен', variant: 'default' },
+const verificationStatusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  unverified: { label: 'Не верифицирован', variant: 'outline' },
+  pending: { label: 'На проверке', variant: 'secondary' },
+  verified: { label: 'Верифицирован', variant: 'default' },
   rejected: { label: 'Отклонён', variant: 'destructive' },
 };
 
 export default function AdminVerification() {
   const [loading, setLoading] = useState(true);
-  const [performerGroups, setPerformerGroups] = useState<PerformerGroup[]>([]);
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const [performers, setPerformers] = useState<PerformerWithContact[]>([]);
   const [userEmails, setUserEmails] = useState<Record<string, string>>({});
   const [userPhones, setUserPhones] = useState<Record<string, string>>({});
 
   // Rejection dialog state
-  const [rejectingDocId, setRejectingDocId] = useState<string | null>(null);
   const [rejectingPerformerId, setRejectingPerformerId] = useState<string | null>(null);
+  const [rejectingPerformerName, setRejectingPerformerName] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+
+  // Verification dialog state
+  const [verifyingPerformerId, setVerifyingPerformerId] = useState<string | null>(null);
+  const [verifyingPerformerName, setVerifyingPerformerName] = useState('');
 
   // Activation dialog state
   const [activatingPerformerId, setActivatingPerformerId] = useState<string | null>(null);
@@ -79,66 +58,28 @@ export default function AdminVerification() {
   // Support chat state
   const [chatPerformerId, setChatPerformerId] = useState<string | null>(null);
 
-  async function fetchDocuments() {
+  async function fetchPerformers() {
     setLoading(true);
+    
+    // Fetch performers with pending verification status
     const { data, error } = await supabase
-      .from('verification_documents')
-      .select('*, performer_profiles(display_name, user_id, is_active, verification_status)')
-      .order('uploaded_at', { ascending: false });
+      .from('performer_profiles')
+      .select('*')
+      .eq('verification_status', 'pending')
+      .order('created_at', { ascending: false });
 
     if (error) {
-      toast.error('Ошибка загрузки документов');
+      toast.error('Ошибка загрузки исполнителей');
       console.error(error);
       setLoading(false);
       return;
     }
 
-    const docs = (data as DocumentWithPerformer[]) ?? [];
+    const performersList = (data ?? []) as PerformerProfile[];
     
-    // Group by performer
-    const groups = new Map<string, PerformerGroup>();
-    
-    for (const doc of docs) {
-      const perfId = doc.performer_id;
-      if (!groups.has(perfId)) {
-        groups.set(perfId, {
-          performerId: perfId,
-          displayName: doc.performer_profiles?.display_name ?? 'Неизвестно',
-          userId: doc.performer_profiles?.user_id ?? null,
-          email: null,
-          phone: null,
-          isActive: doc.performer_profiles?.is_active ?? false,
-          verificationStatus: doc.performer_profiles?.verification_status ?? 'unverified',
-          documents: [],
-          hasPending: false,
-        });
-      }
-      const group = groups.get(perfId)!;
-      group.documents.push(doc);
-      if (doc.status === 'pending') {
-        group.hasPending = true;
-      }
-    }
-
-    const groupsArray = Array.from(groups.values());
-    // Sort by pending first
-    groupsArray.sort((a, b) => {
-      if (a.hasPending && !b.hasPending) return -1;
-      if (!a.hasPending && b.hasPending) return 1;
-      return 0;
-    });
-    
-    setPerformerGroups(groupsArray);
-
-    // Auto-open groups with pending docs
-    const pendingGroups = new Set<string>();
-    groupsArray.forEach(g => {
-      if (g.hasPending) pendingGroups.add(g.performerId);
-    });
-    setOpenGroups(pendingGroups);
-
     // Fetch emails and phones for all user_ids
-    const userIds = groupsArray.map(g => g.userId).filter(Boolean) as string[];
+    const userIds = performersList.map(p => p.user_id).filter(Boolean) as string[];
+    
     if (userIds.length > 0) {
       // Fetch phones from profiles
       const { data: profiles } = await supabase
@@ -163,93 +104,104 @@ export default function AdminVerification() {
         setUserEmails(emailsData.emails);
       }
     }
+
+    // Map performers with contact info
+    const performersWithContact: PerformerWithContact[] = performersList.map(p => ({
+      ...p,
+      email: p.user_id ? userEmails[p.user_id] || null : null,
+      phone: p.user_id ? userPhones[p.user_id] || null : null,
+    }));
+
+    setPerformers(performersWithContact);
     setLoading(false);
   }
 
   useEffect(() => {
-    fetchDocuments();
+    fetchPerformers();
   }, []);
 
-  const toggleGroup = (performerId: string) => {
-    setOpenGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(performerId)) {
-        next.delete(performerId);
-      } else {
-        next.add(performerId);
-      }
-      return next;
-    });
-  };
+  // Re-map contact info when emails/phones are loaded
+  useEffect(() => {
+    if (performers.length > 0) {
+      setPerformers(prev => prev.map(p => ({
+        ...p,
+        email: p.user_id ? userEmails[p.user_id] || null : null,
+        phone: p.user_id ? userPhones[p.user_id] || null : null,
+      })));
+    }
+  }, [userEmails, userPhones]);
 
-  async function approveDocument(docId: string, performerId: string, performerName: string) {
-    const { error: docError } = await supabase
-      .from('verification_documents')
-      .update({ 
-        status: 'approved', 
-        reviewed_at: new Date().toISOString() 
-      })
-      .eq('id', docId);
+  function openVerifyDialog(performerId: string, performerName: string) {
+    setVerifyingPerformerId(performerId);
+    setVerifyingPerformerName(performerName);
+  }
 
-    if (docError) {
-      toast.error('Ошибка обновления статуса');
+  async function confirmVerifyPerformer() {
+    if (!verifyingPerformerId) return;
+
+    const { error } = await supabase
+      .from('performer_profiles')
+      .update({ verification_status: 'verified' })
+      .eq('id', verifyingPerformerId);
+
+    if (error) {
+      toast.error('Ошибка верификации');
       return;
     }
 
-    // Update performer verification status to verified
-    await supabase
-      .from('performer_profiles')
-      .update({ verification_status: 'verified' })
-      .eq('id', performerId);
+    // Send notification to support chat
+    const { data: chat } = await supabase
+      .from('support_chats')
+      .select('id')
+      .eq('performer_id', verifyingPerformerId)
+      .maybeSingle();
+
+    if (chat) {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from('support_messages').insert({
+        chat_id: chat.id,
+        sender_id: user?.id || 'admin',
+        sender_type: 'admin',
+        text: `✅ Верификация пройдена!\n\nВаш профиль успешно верифицирован. Теперь вы можете активировать свой профиль для отображения в каталоге.`,
+      });
+    }
 
     // Send email notification
     await supabase.functions.invoke('send-notification-email', {
       body: {
         type: 'verification_approved',
-        performerId,
-        performerName,
+        performerId: verifyingPerformerId,
+        performerName: verifyingPerformerName,
       }
     });
 
-    toast.success('Документ одобрен, исполнитель верифицирован');
-    fetchDocuments();
+    toast.success('Исполнитель верифицирован');
+    setVerifyingPerformerId(null);
+    setVerifyingPerformerName('');
+    fetchPerformers();
   }
 
-  function openRejectDialog(docId: string, performerId: string) {
-    setRejectingDocId(docId);
+  function openRejectDialog(performerId: string, performerName: string) {
     setRejectingPerformerId(performerId);
+    setRejectingPerformerName(performerName);
     setRejectionReason('');
   }
 
-  async function confirmRejectDocument() {
-    if (!rejectingDocId || !rejectingPerformerId || !rejectionReason.trim()) {
+  async function confirmRejectPerformer() {
+    if (!rejectingPerformerId || !rejectionReason.trim()) {
       toast.error('Укажите причину отклонения');
       return;
     }
 
-    const { error: docError } = await supabase
-      .from('verification_documents')
-      .update({ 
-        status: 'rejected', 
-        reviewed_at: new Date().toISOString(),
-        admin_comment: rejectionReason 
-      })
-      .eq('id', rejectingDocId);
-
-    if (docError) {
-      toast.error('Ошибка обновления статуса');
-      return;
-    }
-
-    // Update performer verification status
-    await supabase
+    const { error } = await supabase
       .from('performer_profiles')
       .update({ verification_status: 'rejected' })
       .eq('id', rejectingPerformerId);
 
-    // Get performer name
-    const group = performerGroups.find(g => g.performerId === rejectingPerformerId);
-    const performerName = group?.displayName ?? 'Исполнитель';
+    if (error) {
+      toast.error('Ошибка отклонения');
+      return;
+    }
 
     // Send notification to support chat
     const { data: chat } = await supabase
@@ -273,16 +225,16 @@ export default function AdminVerification() {
       body: {
         type: 'verification_rejected',
         performerId: rejectingPerformerId,
-        performerName,
+        performerName: rejectingPerformerName,
         reason: rejectionReason,
       }
     });
 
-    toast.success('Документ отклонён');
-    setRejectingDocId(null);
+    toast.success('Заявка отклонена');
     setRejectingPerformerId(null);
+    setRejectingPerformerName('');
     setRejectionReason('');
-    fetchDocuments();
+    fetchPerformers();
   }
 
   function openActivationDialog(performerId: string, performerName: string) {
@@ -315,17 +267,15 @@ export default function AdminVerification() {
     toast.success('Профиль активирован');
     setActivatingPerformerId(null);
     setActivatingPerformerName('');
-    fetchDocuments();
+    fetchPerformers();
   }
-
-  const pendingGroupsCount = performerGroups.filter(g => g.hasPending).length;
 
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-display font-bold text-foreground">Верификация</h1>
-          <p className="text-muted-foreground mt-1">Проверка документов и анкет исполнителей</p>
+          <p className="text-muted-foreground mt-1">Проверка анкет исполнителей</p>
         </div>
 
         {/* Pending verifications */}
@@ -333,8 +283,8 @@ export default function AdminVerification() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               Заявки на верификацию
-              {pendingGroupsCount > 0 && (
-                <Badge variant="secondary">{pendingGroupsCount}</Badge>
+              {performers.length > 0 && (
+                <Badge variant="secondary">{performers.length}</Badge>
               )}
             </CardTitle>
           </CardHeader>
@@ -343,198 +293,190 @@ export default function AdminVerification() {
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ) : performerGroups.length === 0 ? (
+            ) : performers.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">Нет заявок на верификацию</p>
             ) : (
               <div className="space-y-4">
-                {performerGroups.map((group) => (
-                  <Collapsible 
-                    key={group.performerId} 
-                    open={openGroups.has(group.performerId)}
-                    onOpenChange={() => toggleGroup(group.performerId)}
-                  >
-                    <div className={`border rounded-lg ${group.hasPending ? 'border-yellow-400 bg-yellow-50/50' : 'border-border'}`}>
-                      <CollapsibleTrigger asChild>
-                        <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-4">
-                            <ChevronDown className={`h-5 w-5 transition-transform ${openGroups.has(group.performerId) ? 'rotate-180' : ''}`} />
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold">{group.displayName}</span>
-                                {group.hasPending && (
-                                  <Badge variant="outline" className="text-yellow-600 border-yellow-400">
-                                    Ожидает проверки
-                                  </Badge>
-                                )}
-                                {group.verificationStatus === 'verified' && (
-                                  <Badge variant="default">Верифицирован</Badge>
-                                )}
-                                {group.isActive && (
-                                  <Badge variant="secondary" className="bg-green-100 text-green-700">Активен</Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                                {group.userId && userEmails[group.userId] && (
-                                  <span className="flex items-center gap-1">
-                                    <Mail className="h-3 w-3" />
-                                    {userEmails[group.userId]}
-                                  </span>
-                                )}
-                                {group.userId && userPhones[group.userId] && (
-                                  <span className="flex items-center gap-1">
-                                    <Phone className="h-3 w-3" />
-                                    {userPhones[group.userId]}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                {performers.map((performer) => {
+                  const status = verificationStatusLabels[performer.verification_status] ?? verificationStatusLabels.pending;
+                  return (
+                    <div 
+                      key={performer.id} 
+                      className="border rounded-lg border-yellow-400 bg-yellow-50/50 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-lg">{performer.display_name}</span>
+                            <Badge variant={status.variant}>{status.label}</Badge>
+                            {performer.is_active && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-700">Активен</Badge>
+                            )}
                           </div>
-                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2 flex-wrap">
+                            {performer.user_id && userEmails[performer.user_id] && (
+                              <span className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {userEmails[performer.user_id]}
+                              </span>
+                            )}
+                            {performer.user_id && userPhones[performer.user_id] && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {userPhones[performer.user_id]}
+                              </span>
+                            )}
+                            <span>
+                              Регистрация: {format(new Date(performer.created_at), 'd MMM yyyy, HH:mm', { locale: ru })}
+                            </span>
+                          </div>
+
+                          {/* Performer details */}
+                          <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                            {performer.age && (
+                              <div>
+                                <span className="text-muted-foreground">Возраст:</span> {performer.age} лет
+                              </div>
+                            )}
+                            {performer.experience_years !== null && performer.experience_years > 0 && (
+                              <div>
+                                <span className="text-muted-foreground">Опыт:</span> {performer.experience_years} лет
+                              </div>
+                            )}
+                            {performer.base_price && (
+                              <div>
+                                <span className="text-muted-foreground">Мин. цена:</span> {performer.base_price.toLocaleString()} ₽
+                              </div>
+                            )}
+                            {performer.performer_types && performer.performer_types.length > 0 && (
+                              <div>
+                                <span className="text-muted-foreground">Роли:</span> {performer.performer_types.join(', ')}
+                              </div>
+                            )}
+                          </div>
+
+                          {performer.description && (
+                            <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                              {performer.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
                             <Button
                               variant="ghost"
-                              size="sm"
-                              onClick={() => setChatPerformerId(group.performerId)}
+                              size="icon"
+                              onClick={() => setChatPerformerId(performer.id)}
                               title="Открыть чат"
                             >
                               <MessageCircle className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
                               asChild
-                              title="Управление профилем"
+                              title="Просмотр профиля"
                             >
-                              <a href={`/admin/performer/${group.performerId}`} target="_blank" rel="noopener noreferrer">
-                                <User className="h-4 w-4" />
-                              </a>
+                              <Link to={`/admin/performer/${performer.id}`}>
+                                <Eye className="h-4 w-4" />
+                              </Link>
                             </Button>
-                            {group.verificationStatus === 'verified' && !group.isActive && (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => openActivationDialog(group.performerId, group.displayName)}
-                              >
-                                <Power className="h-4 w-4 mr-1" />
-                                Активировать
-                              </Button>
-                            )}
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => openVerifyDialog(performer.id, performer.display_name)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Одобрить
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => openRejectDialog(performer.id, performer.display_name)}
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Отклонить
+                            </Button>
                           </div>
                         </div>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="border-t px-4 py-3 space-y-3">
-                          {group.documents.map((doc) => {
-                            const status = statusLabels[doc.status] ?? statusLabels.pending;
-                            return (
-                              <div 
-                                key={doc.id} 
-                                className={`flex items-center justify-between p-3 rounded-lg ${
-                                  doc.status === 'pending' ? 'bg-yellow-100/50' : 'bg-muted/50'
-                                }`}
-                              >
-                                <div className="flex items-center gap-4">
-                                  <div>
-                                    <div className="font-medium">
-                                      {documentTypeLabels[doc.document_type] ?? doc.document_type}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">
-                                      Загружен: {format(new Date(doc.uploaded_at), 'd MMM yyyy, HH:mm', { locale: ru })}
-                                    </div>
-                                    {doc.admin_comment && (
-                                      <div className="text-sm text-destructive mt-1">
-                                        Комментарий: {doc.admin_comment}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Button variant="ghost" size="sm" asChild>
-                                    <a href={doc.document_url} target="_blank" rel="noopener noreferrer">
-                                      <ExternalLink className="h-4 w-4 mr-1" />
-                                      Открыть
-                                    </a>
-                                  </Button>
-                                  {doc.status === 'pending' ? (
-                                    <>
-                                      <Button
-                                        variant="default"
-                                        size="sm"
-                                        onClick={() => approveDocument(doc.id, doc.performer_id, group.displayName)}
-                                      >
-                                        <Check className="h-4 w-4 mr-1" />
-                                        Одобрить
-                                      </Button>
-                                      <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() => openRejectDialog(doc.id, doc.performer_id)}
-                                      >
-                                        <X className="h-4 w-4 mr-1" />
-                                        Отклонить
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <Badge variant={status.variant}>{status.label}</Badge>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </CollapsibleContent>
+                      </div>
                     </div>
-                  </Collapsible>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Rejection reason dialog */}
-      <Dialog open={!!rejectingDocId} onOpenChange={() => setRejectingDocId(null)}>
+      {/* Verify confirmation dialog */}
+      <Dialog open={!!verifyingPerformerId} onOpenChange={() => setVerifyingPerformerId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Причина отклонения</DialogTitle>
+            <DialogTitle>Подтвердить верификацию</DialogTitle>
             <DialogDescription>
-              Укажите причину отклонения документа. Это сообщение будет отправлено исполнителю.
+              Вы уверены, что хотите верифицировать исполнителя "{verifyingPerformerName}"?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVerifyingPerformerId(null)}>
+              Отмена
+            </Button>
+            <Button onClick={confirmVerifyPerformer} className="bg-green-600 hover:bg-green-700">
+              Верифицировать
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rejection dialog */}
+      <Dialog open={!!rejectingPerformerId} onOpenChange={() => setRejectingPerformerId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Отклонить заявку</DialogTitle>
+            <DialogDescription>
+              Укажите причину отклонения для исполнителя "{rejectingPerformerName}". 
+              Эта информация будет отправлена исполнителю.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="rejectionReason">Причина</Label>
+            <div>
+              <Label htmlFor="rejection-reason">Причина отклонения *</Label>
               <Textarea
-                id="rejectionReason"
+                id="rejection-reason"
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Опишите причину отклонения..."
-                rows={3}
+                placeholder="Опишите причину отклонения заявки..."
+                className="mt-1"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectingDocId(null)}>
+            <Button variant="outline" onClick={() => setRejectingPerformerId(null)}>
               Отмена
             </Button>
-            <Button 
-              variant="destructive" 
-              onClick={confirmRejectDocument}
-              disabled={!rejectionReason.trim()}
-            >
+            <Button variant="destructive" onClick={confirmRejectPerformer}>
               Отклонить
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Profile activation dialog */}
+      {/* Activation dialog */}
       <Dialog open={!!activatingPerformerId} onOpenChange={() => setActivatingPerformerId(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Активировать профиль</DialogTitle>
             <DialogDescription>
-              После активации профиль <strong>{activatingPerformerName}</strong> станет видимым в каталоге для клиентов.
-              Исполнителю будет отправлено уведомление на почту.
+              Вы уверены, что хотите активировать профиль "{activatingPerformerName}"? 
+              После активации профиль появится в публичном каталоге.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -549,13 +491,13 @@ export default function AdminVerification() {
         </DialogContent>
       </Dialog>
 
-      {/* Support chat dialog */}
+      {/* Support Chat Dialog */}
       {chatPerformerId && (
-        <SupportChatDialog
-          performerId={chatPerformerId}
-          performerName={performerGroups.find(g => g.performerId === chatPerformerId)?.displayName || 'Исполнитель'}
+        <SupportChatDialog 
           open={!!chatPerformerId}
           onOpenChange={(open) => !open && setChatPerformerId(null)}
+          performerId={chatPerformerId} 
+          performerName={performers.find(p => p.id === chatPerformerId)?.display_name || 'Исполнитель'}
         />
       )}
     </AdminLayout>
