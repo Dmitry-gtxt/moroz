@@ -14,13 +14,15 @@ import {
   Snowflake,
   Search,
   Star,
-  Menu
+  Menu,
+  MessageCircle
 } from 'lucide-react';
 
 const navItems = [
   { to: '/cabinet', icon: LayoutDashboard, label: 'Обзор' },
   { to: '/cabinet/catalog', icon: Search, label: 'Каталог' },
   { to: '/cabinet/bookings', icon: ShoppingCart, label: 'Мои заказы' },
+  { to: '/messages', icon: MessageCircle, label: 'Сообщения' },
   { to: '/cabinet/profile', icon: User, label: 'Профиль' },
 ];
 

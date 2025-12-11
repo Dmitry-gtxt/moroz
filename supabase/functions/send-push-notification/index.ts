@@ -5,6 +5,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY");
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY");
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,18 +13,23 @@ const corsHeaders = {
 };
 
 interface PushNotificationRequest {
-  userId: string;
-  title: string;
-  body: string;
+  userId?: string;
+  title?: string;
+  body?: string;
   icon?: string;
   url?: string;
   tag?: string;
+  // For new message notifications
+  type?: 'new_message' | 'direct';
+  bookingId?: string;
+  senderName?: string;
+  senderId?: string;
 }
 
 // Web Push implementation using Web Crypto API
 async function generateVAPIDAuthToken(endpoint: string): Promise<string> {
   const audience = new URL(endpoint).origin;
-  const expiration = Math.floor(Date.now() / 1000) + 12 * 60 * 60; // 12 hours
+  const expiration = Math.floor(Date.now() / 1000) + 12 * 60 * 60;
   
   const header = { typ: "JWT", alg: "ES256" };
   const payload = {
@@ -53,7 +59,6 @@ async function generateVAPIDAuthToken(endpoint: string): Promise<string> {
   const payloadB64 = base64UrlEncode(JSON.stringify(payload));
   const unsignedToken = `${headerB64}.${payloadB64}`;
   
-  // Import private key
   const privateKeyRaw = Uint8Array.from(atob(VAPID_PRIVATE_KEY!.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
   
   const key = await crypto.subtle.importKey(
@@ -75,38 +80,99 @@ async function generateVAPIDAuthToken(endpoint: string): Promise<string> {
   return `${unsignedToken}.${signatureB64}`;
 }
 
-async function sendPushNotification(
-  subscription: { endpoint: string; p256dh: string; auth: string },
+async function sendPushToUser(
+  supabaseAdmin: any,
+  userId: string,
   payload: { title: string; body: string; icon?: string; url?: string; tag?: string }
-): Promise<boolean> {
-  try {
-    // If VAPID keys are not set, log and skip
-    if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-      console.log("VAPID keys not configured, skipping push notification");
-      return false;
-    }
+): Promise<number> {
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    console.log("VAPID keys not configured, skipping push notification");
+    return 0;
+  }
 
-    const jwt = await generateVAPIDAuthToken(subscription.endpoint);
-    
-    const response = await fetch(subscription.endpoint, {
+  const { data: subscriptions, error } = await supabaseAdmin
+    .from("push_subscriptions")
+    .select("*")
+    .eq("user_id", userId);
+
+  if (error || !subscriptions?.length) {
+    console.log("No push subscriptions for user:", userId);
+    return 0;
+  }
+
+  let sent = 0;
+  const failedEndpoints: string[] = [];
+
+  for (const sub of subscriptions) {
+    try {
+      const jwt = await generateVAPIDAuthToken(sub.endpoint);
+      
+      const response = await fetch(sub.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "Content-Encoding": "aes128gcm",
+          "TTL": "86400",
+          "Authorization": `vapid t=${jwt}, k=${VAPID_PUBLIC_KEY}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        sent++;
+      } else {
+        console.error("Push failed:", response.status);
+        failedEndpoints.push(sub.endpoint);
+      }
+    } catch (error) {
+      console.error("Error sending push:", error);
+      failedEndpoints.push(sub.endpoint);
+    }
+  }
+
+  if (failedEndpoints.length > 0) {
+    await supabaseAdmin
+      .from("push_subscriptions")
+      .delete()
+      .eq("user_id", userId)
+      .in("endpoint", failedEndpoints);
+  }
+
+  return sent;
+}
+
+async function sendEmailNotification(
+  email: string,
+  subject: string,
+  htmlContent: string
+): Promise<boolean> {
+  if (!RESEND_API_KEY) {
+    console.log("RESEND_API_KEY not configured, skipping email");
+    return false;
+  }
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Content-Type": "application/octet-stream",
-        "Content-Encoding": "aes128gcm",
-        "TTL": "86400",
-        "Authorization": `vapid t=${jwt}, k=${VAPID_PUBLIC_KEY}`,
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        from: "Дед-Морозы.РФ <noreply@moroz.lovable.app>",
+        to: [email],
+        subject,
+        html: htmlContent,
+      }),
     });
-
+    
     if (!response.ok) {
-      console.error("Push notification failed:", response.status, await response.text());
+      console.error("Email send failed:", await response.text());
       return false;
     }
-
     return true;
   } catch (error) {
-    console.error("Error sending push notification:", error);
+    console.error("Error sending email:", error);
     return false;
   }
 }
@@ -120,60 +186,113 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-    
     const payload: PushNotificationRequest = await req.json();
-    const { userId, title, body, icon, url, tag } = payload;
 
-    console.log("Sending push notification to user:", userId);
+    // Handle new message notification
+    if (payload.type === 'new_message' && payload.bookingId && payload.senderId) {
+      console.log("Processing new message notification for booking:", payload.bookingId);
 
-    // Get all push subscriptions for the user
-    const { data: subscriptions, error } = await supabaseAdmin
-      .from("push_subscriptions")
-      .select("*")
-      .eq("user_id", userId);
+      // Get booking details
+      const { data: booking, error: bookingError } = await supabaseAdmin
+        .from("bookings")
+        .select(`
+          id,
+          customer_id,
+          customer_name,
+          customer_email,
+          performer_id,
+          performer_profiles!bookings_performer_id_fkey (
+            user_id,
+            display_name
+          )
+        `)
+        .eq("id", payload.bookingId)
+        .single();
 
-    if (error) {
-      console.error("Error fetching subscriptions:", error);
-      throw error;
-    }
+      if (bookingError || !booking) {
+        console.error("Booking not found:", bookingError);
+        return new Response(JSON.stringify({ error: "Booking not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
 
-    if (!subscriptions || subscriptions.length === 0) {
-      console.log("No push subscriptions found for user:", userId);
-      return new Response(JSON.stringify({ success: true, sent: 0 }), {
+      const performer = booking.performer_profiles as any;
+      const isFromCustomer = payload.senderId === booking.customer_id;
+      
+      // Determine recipient
+      const recipientUserId = isFromCustomer ? performer?.user_id : booking.customer_id;
+      const senderName = isFromCustomer ? booking.customer_name : performer?.display_name;
+
+      if (!recipientUserId) {
+        console.log("No recipient user id found");
+        return new Response(JSON.stringify({ success: true, sent: 0 }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      const notificationPayload = {
+        title: "Новое сообщение",
+        body: `${senderName || "Пользователь"}: Новое сообщение в чате заказа`,
+        icon: "/favicon.png",
+        url: `/messages?booking=${payload.bookingId}`,
+        tag: `message-${payload.bookingId}`
+      };
+
+      // Send push notification
+      const sent = await sendPushToUser(supabaseAdmin, recipientUserId, notificationPayload);
+
+      // Send email notification to customer if message is from performer
+      if (!isFromCustomer && booking.customer_email) {
+        await sendEmailNotification(
+          booking.customer_email,
+          "Новое сообщение от исполнителя",
+          `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #1a1a2e;">🎅 Новое сообщение</h2>
+            <p>Здравствуйте, ${booking.customer_name}!</p>
+            <p>Вы получили новое сообщение от <strong>${performer?.display_name || 'исполнителя'}</strong>.</p>
+            <p style="margin-top: 20px;">
+              <a href="https://moroz.lovable.app/messages?booking=${booking.id}" 
+                 style="background-color: #1a1a2e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px;">
+                Перейти к диалогу
+              </a>
+            </p>
+            <p style="color: #666; margin-top: 30px; font-size: 14px;">
+              С наилучшими пожеланиями,<br>
+              Команда Дед-Морозы.РФ
+            </p>
+          </div>
+          `
+        );
+      }
+
+      return new Response(JSON.stringify({ success: true, sent }), {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    console.log("Found", subscriptions.length, "subscriptions for user");
+    // Direct notification (existing behavior)
+    const { userId, title, body, icon, url, tag } = payload;
 
-    // Send to all subscriptions
-    let sent = 0;
-    const failedEndpoints: string[] = [];
-
-    for (const sub of subscriptions) {
-      const success = await sendPushNotification(
-        { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
-        { title, body, icon: icon || "/favicon.png", url, tag }
-      );
-
-      if (success) {
-        sent++;
-      } else {
-        failedEndpoints.push(sub.endpoint);
-      }
+    if (!userId || !title || !body) {
+      return new Response(JSON.stringify({ error: "Missing required fields" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    // Remove failed subscriptions
-    if (failedEndpoints.length > 0) {
-      await supabaseAdmin
-        .from("push_subscriptions")
-        .delete()
-        .eq("user_id", userId)
-        .in("endpoint", failedEndpoints);
-      
-      console.log("Removed", failedEndpoints.length, "failed subscriptions");
-    }
+    console.log("Sending direct push notification to user:", userId);
+
+    const sent = await sendPushToUser(supabaseAdmin, userId, {
+      title,
+      body,
+      icon: icon || "/favicon.png",
+      url,
+      tag
+    });
 
     return new Response(JSON.stringify({ success: true, sent }), {
       status: 200,

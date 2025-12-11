@@ -14,7 +14,8 @@ import {
   Home,
   UserCircle,
   Menu,
-  Snowflake
+  Snowflake,
+  MessageCircle
 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -25,6 +26,7 @@ const navItems = [
   { to: '/performer/profile', icon: User, label: 'Профиль' },
   { to: '/performer/calendar', icon: Calendar, label: 'Календарь' },
   { to: '/performer/bookings', icon: ShoppingCart, label: 'Заказы' },
+  { to: '/messages', icon: MessageCircle, label: 'Сообщения' },
 ];
 
 interface PerformerLayoutProps {
