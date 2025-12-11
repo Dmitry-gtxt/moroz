@@ -648,6 +648,21 @@ export type Database = {
         }
         Relationships: []
       }
+      public_platform_settings: {
+        Row: {
+          key: string | null
+          value: string | null
+        }
+        Insert: {
+          key?: string | null
+          value?: string | null
+        }
+        Update: {
+          key?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
       public_reviews: {
         Row: {
           booking_id: string | null
