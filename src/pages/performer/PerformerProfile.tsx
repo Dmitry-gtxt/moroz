@@ -77,9 +77,10 @@ export default function PerformerProfilePage() {
     async function fetchData() {
       if (!user) return;
 
-      const [profileRes, districtsRes] = await Promise.all([
+      const [profileRes, districtsRes, commissionRes] = await Promise.all([
         supabase.from('performer_profiles').select('*').eq('user_id', user.id).maybeSingle(),
         supabase.from('districts').select('*').order('name'),
+        supabase.from('public_platform_settings').select('value').eq('key', 'commission_rate').maybeSingle(),
       ]);
 
       if (profileRes.data) {
@@ -101,6 +102,10 @@ export default function PerformerProfilePage() {
 
       if (districtsRes.data) {
         setDistricts(districtsRes.data);
+      }
+
+      if (commissionRes.data?.value) {
+        setCommissionRate(parseInt(commissionRes.data.value, 10) || 40);
       }
 
       setLoading(false);
@@ -446,11 +451,13 @@ export default function PerformerProfilePage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Цена</Label>
+                <Label>Цена для клиента</Label>
                 <div className="p-3 rounded-lg bg-accent/10 border border-accent/30">
-                  <p className="text-xs text-muted-foreground">Цена для клиента:</p>
-                  <p className="text-lg font-bold text-accent">
-                    {basePrice ? Math.round(parseInt(basePrice) * 1.4).toLocaleString() : '0'} ₽
+                  <p className="text-xl font-bold text-accent">
+                    {basePrice ? Math.round(parseInt(basePrice) * (1 + commissionRate / 100)).toLocaleString() : '0'} ₽
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    (включая {commissionRate}% комиссии)
                   </p>
                 </div>
               </div>
