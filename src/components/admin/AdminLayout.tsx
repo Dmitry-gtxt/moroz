@@ -40,8 +40,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <div className="min-h-screen flex bg-muted/30">
-      {/* Sidebar */}
-      <aside className="w-64 bg-card border-r border-border flex flex-col">
+      {/* Sidebar - Fixed */}
+      <aside className="w-64 bg-card border-r border-border flex-col fixed top-0 left-0 h-screen z-40 hidden md:flex">
         <div className="p-6 border-b border-border">
           <Link to="/" className="flex items-center gap-2">
             <span className="text-2xl">🎅</span>
@@ -52,7 +52,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <p className="text-xs text-muted-foreground mt-1">Админ-панель</p>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = location.pathname === item.to;
             return (
@@ -85,8 +85,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      {/* Main content - with left margin for fixed sidebar */}
+      <main className="flex-1 md:ml-64 overflow-auto">
         <div className="p-8">
           {children}
         </div>

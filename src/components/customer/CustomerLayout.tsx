@@ -162,8 +162,8 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
 
   return (
     <div className="min-h-screen flex bg-muted/30">
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 bg-card border-r border-border flex-col">
+      {/* Desktop Sidebar - Fixed */}
+      <aside className="hidden md:flex w-64 bg-card border-r border-border flex-col fixed top-0 left-0 h-screen z-40">
         <SidebarContent />
       </aside>
 
@@ -189,8 +189,8 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
         </div>
       </div>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto md:mt-0 mt-16">
+      {/* Main content - with left margin for fixed sidebar */}
+      <main className="flex-1 md:ml-64 overflow-auto md:mt-0 mt-16">
         <div className="p-4 md:p-8">
           {children}
         </div>
