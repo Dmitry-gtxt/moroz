@@ -63,6 +63,9 @@ export default function PerformerProfilePage() {
   const [costumeStyle, setCostumeStyle] = useState('');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [programDuration, setProgramDuration] = useState('30');
+  const [programDescription, setProgramDescription] = useState('');
+  const [commissionRate, setCommissionRate] = useState(40);
 
   // Video upload with progress
   const { uploadVideo, uploading: uploadingVideo, progress: uploadProgress, fileName: uploadFileName } = useVideoUpload({
@@ -92,6 +95,8 @@ export default function PerformerProfilePage() {
         setCostumeStyle(p.costume_style || '');
         setPhotoUrls(p.photo_urls);
         setVideoUrl(p.video_greeting_url);
+        setProgramDuration((p as any).program_duration?.toString() || '30');
+        setProgramDescription((p as any).program_description || '');
       }
 
       if (districtsRes.data) {
@@ -126,7 +131,7 @@ export default function PerformerProfilePage() {
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user || photoUrls.length >= 5) return;
+    if (!file || !user || photoUrls.length >= 15) return;
 
     const fileName = `${user.id}/${Date.now()}-${file.name}`;
     const { error } = await supabase.storage.from('performer-photos').upload(fileName, file);
@@ -189,6 +194,8 @@ export default function PerformerProfilePage() {
         costume_style: costumeStyle || null,
         photo_urls: photoUrls,
         video_greeting_url: videoUrl,
+        program_duration: programDuration ? parseInt(programDuration) : 30,
+        program_description: programDescription || null,
       })
       .eq('id', profile.id)
       .select()
@@ -300,7 +307,11 @@ export default function PerformerProfilePage() {
         <Card>
           <CardHeader>
             <CardTitle>Фотографии</CardTitle>
-            <CardDescription>До 5 фотографий в костюме</CardDescription>
+            <CardDescription>
+              До 15 фотографий в костюме
+              <br />
+              <span className="text-amber-600 font-medium">💡 Рекомендация: первое фото желательно сделать квадратным — оно будет использоваться как главное в каталоге</span>
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-5 gap-4">
@@ -315,7 +326,7 @@ export default function PerformerProfilePage() {
                   </button>
                 </div>
               ))}
-              {photoUrls.length < 5 && (
+              {photoUrls.length < 15 && (
                 <label className="aspect-square border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
                   <Upload className="h-6 w-6 text-muted-foreground mb-1" />
                   <span className="text-xs text-muted-foreground">Добавить</span>
@@ -415,7 +426,51 @@ export default function PerformerProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Types */}
+        {/* Program */}
+        <Card>
+          <CardHeader>
+            <CardTitle>🎭 Программа выступления</CardTitle>
+            <CardDescription>Информация о вашей программе для родителей</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="programDuration">Длительность (минут)</Label>
+                <Input
+                  id="programDuration"
+                  type="number"
+                  min="10"
+                  max="180"
+                  value={programDuration}
+                  onChange={(e) => setProgramDuration(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Цена</Label>
+                <div className="p-3 rounded-lg bg-accent/10 border border-accent/30">
+                  <p className="text-xs text-muted-foreground">Цена для клиента:</p>
+                  <p className="text-lg font-bold text-accent">
+                    {basePrice ? Math.round(parseInt(basePrice) * 1.4).toLocaleString() : '0'} ₽
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="programDescription">Описание программы</Label>
+              <Textarea
+                id="programDescription"
+                value={programDescription}
+                onChange={(e) => setProgramDescription(e.target.value)}
+                placeholder="Опишите что входит в вашу программу: игры, конкурсы, стихи, вручение подарков..."
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">
+                Подробное описание поможет родителям сделать выбор
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Тип исполнителя</CardTitle>

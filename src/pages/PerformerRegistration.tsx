@@ -59,6 +59,9 @@ export default function PerformerRegistration() {
   const [experienceYears, setExperienceYears] = useState('');
   const [costumeStyle, setCostumeStyle] = useState('');
   const [verificationPhone, setVerificationPhone] = useState('');
+  const [programDuration, setProgramDuration] = useState('30');
+  const [programDescription, setProgramDescription] = useState('');
+  const [commissionRate, setCommissionRate] = useState(40);
   
   // Consent checkboxes
   const [acceptAgreement, setAcceptAgreement] = useState(false);
@@ -119,6 +122,25 @@ export default function PerformerRegistration() {
     fetchDistricts();
   }, []);
 
+  // Fetch commission rate for price display
+  useEffect(() => {
+    async function fetchCommissionRate() {
+      try {
+        const { data } = await supabase
+          .from('public_platform_settings')
+          .select('value')
+          .eq('key', 'commission_rate')
+          .maybeSingle();
+        if (data?.value) {
+          setCommissionRate(parseInt(data.value, 10) || 40);
+        }
+      } catch (err) {
+        console.error('Failed to fetch commission rate:', err);
+      }
+    }
+    fetchCommissionRate();
+  }, []);
+
   // Redirect to auth if not logged in (after all hooks)
   if (!authLoading && !user) {
     return <Navigate to="/auth?redirect=/become-performer" replace />;
@@ -135,8 +157,8 @@ export default function PerformerRegistration() {
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (photos.length + files.length > 5) {
-      toast.error('Максимум 5 фотографий');
+    if (photos.length + files.length > 15) {
+      toast.error('Максимум 15 фотографий');
       return;
     }
     
@@ -332,6 +354,8 @@ export default function PerformerRegistration() {
           costume_style: costumeStyle || null,
           photo_urls: photoUrls,
           video_greeting_url: videoUrl,
+          program_duration: programDuration ? parseInt(programDuration) : 30,
+          program_description: programDescription || null,
           is_active: false,
           verification_status: 'pending',
         })
@@ -653,19 +677,65 @@ export default function PerformerRegistration() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="basePrice">Минимальная цена за 30 минут (₽) *</Label>
-                  <Input
-                    id="basePrice"
-                    type="number"
-                    min="0"
-                    value={basePrice}
-                    onChange={(e) => setBasePrice(e.target.value)}
-                    placeholder="3000"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Укажите минимальную цену вашей работы за 30 минут. Эта информация будет отражена в профиле.
-                    Клиент увидит цену с учётом сервисного сбора платформы.
-                  </p>
+                  <Label htmlFor="basePrice">Минимальная цена (₽) *</Label>
+                  <div className="flex gap-4 items-start">
+                    <div className="flex-1">
+                      <Input
+                        id="basePrice"
+                        type="number"
+                        min="0"
+                        value={basePrice}
+                        onChange={(e) => setBasePrice(e.target.value)}
+                        placeholder="3000"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Ваша цена за программу
+                      </p>
+                    </div>
+                    <div className="flex-1 p-3 rounded-lg bg-accent/10 border border-accent/30">
+                      <p className="text-xs text-muted-foreground mb-1">Цена для клиента:</p>
+                      <p className="text-xl font-bold text-accent">
+                        {basePrice ? Math.round(parseInt(basePrice) * (1 + commissionRate / 100)).toLocaleString() : '0'} ₽
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        (включая {commissionRate}% комиссии)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Программа */}
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    🎭 Программа выступления
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="programDuration">Длительность (минут)</Label>
+                      <Input
+                        id="programDuration"
+                        type="number"
+                        min="10"
+                        max="180"
+                        value={programDuration}
+                        onChange={(e) => setProgramDuration(e.target.value)}
+                        placeholder="30"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="programDescription">Описание программы</Label>
+                    <Textarea
+                      id="programDescription"
+                      value={programDescription}
+                      onChange={(e) => setProgramDescription(e.target.value)}
+                      placeholder="Опишите что входит в вашу программу: игры, конкурсы, стихи, вручение подарков..."
+                      rows={4}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Подробное описание поможет родителям сделать выбор
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex gap-4">
@@ -685,7 +755,11 @@ export default function PerformerRegistration() {
             <Card>
               <CardHeader>
                 <CardTitle>Фотографии</CardTitle>
-                <CardDescription>Загрузите фото в костюме (до 5 шт.)</CardDescription>
+                <CardDescription>
+                  Загрузите фото в костюме (до 15 шт.)
+                  <br />
+                  <span className="text-amber-600 font-medium">💡 Рекомендация: первое фото желательно сделать квадратным — оно будет использоваться как главное в каталоге</span>
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-3 gap-4">
@@ -705,7 +779,7 @@ export default function PerformerRegistration() {
                     </div>
                   ))}
                   
-                  {photos.length < 5 && (
+                  {photos.length < 15 && (
                     <label className="aspect-square border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
                       <Upload className="h-8 w-8 text-muted-foreground mb-2" />
                       <span className="text-sm text-muted-foreground">Добавить</span>

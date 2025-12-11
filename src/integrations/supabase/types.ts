@@ -243,6 +243,8 @@ export type Database = {
           photo_urls: string[]
           price_from: number | null
           price_to: number | null
+          program_description: string | null
+          program_duration: number | null
           rating_average: number | null
           rating_count: number | null
           updated_at: string
@@ -267,6 +269,8 @@ export type Database = {
           photo_urls?: string[]
           price_from?: number | null
           price_to?: number | null
+          program_description?: string | null
+          program_duration?: number | null
           rating_average?: number | null
           rating_count?: number | null
           updated_at?: string
@@ -291,6 +295,8 @@ export type Database = {
           photo_urls?: string[]
           price_from?: number | null
           price_to?: number | null
+          program_description?: string | null
+          program_duration?: number | null
           rating_average?: number | null
           rating_count?: number | null
           updated_at?: string

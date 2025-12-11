@@ -179,11 +179,11 @@ export function HeroSection() {
                     onChange={(e) => setSelectedTime(e.target.value)}
                     className="w-full pl-12 pr-4 py-4 rounded-xl bg-white/10 border border-white/20 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all"
                   >
-                    <option value="" className="text-foreground">Любое время</option>
+                    <option value="" className="bg-slate-800 text-white">Любое время</option>
                     {Array.from({ length: 24 }, (_, i) => i + 1).map((hour) => {
                       const displayHour = hour === 24 ? '24:00' : `${hour.toString().padStart(2, '0')}:00`;
                       return (
-                        <option key={hour} value={displayHour} className="text-foreground">
+                        <option key={hour} value={displayHour} className="bg-slate-800 text-white">
                           {displayHour}
                         </option>
                       );
@@ -202,31 +202,31 @@ export function HeroSection() {
                     onChange={(e) => setSelectedDistrict(e.target.value)}
                     className="w-full pl-12 pr-4 py-4 rounded-xl bg-white/10 border border-white/20 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all"
                   >
-                    <option value="" className="text-foreground">Все районы</option>
-                    <optgroup label="Самара" className="text-foreground">
+                    <option value="" className="bg-slate-800 text-white">Все районы</option>
+                    <optgroup label="Самара" className="bg-slate-800 text-white">
                       {districtGroups.samara.districts.map((d) => (
-                        <option key={d.id} value={d.slug} className="text-foreground">
+                        <option key={d.id} value={d.slug} className="bg-slate-800 text-white">
                           {d.name}
                         </option>
                       ))}
                     </optgroup>
-                    <optgroup label="Тольятти" className="text-foreground">
+                    <optgroup label="Тольятти" className="bg-slate-800 text-white">
                       {districtGroups.tolyatti.districts.map((d) => (
-                        <option key={d.id} value={d.slug} className="text-foreground">
+                        <option key={d.id} value={d.slug} className="bg-slate-800 text-white">
                           {d.name}
                         </option>
                       ))}
                     </optgroup>
-                    <optgroup label="Другие города" className="text-foreground">
+                    <optgroup label="Другие города" className="bg-slate-800 text-white">
                       {districtGroups.cities.districts.map((d) => (
-                        <option key={d.id} value={d.slug} className="text-foreground">
+                        <option key={d.id} value={d.slug} className="bg-slate-800 text-white">
                           {d.name}
                         </option>
                       ))}
                     </optgroup>
-                    <optgroup label="Районы области" className="text-foreground">
+                    <optgroup label="Районы области" className="bg-slate-800 text-white">
                       {districtGroups.oblastRayons.districts.map((d) => (
-                        <option key={d.id} value={d.slug} className="text-foreground">
+                        <option key={d.id} value={d.slug} className="bg-slate-800 text-white">
                           {d.name}
                         </option>
                       ))}
