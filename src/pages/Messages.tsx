@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -19,20 +19,21 @@ import {
   Check,
   CheckCheck,
   Paperclip,
-  Image,
   X,
   FileText,
-  Loader2
+  Loader2,
+  Headphones
 } from 'lucide-react';
 
 interface Dialog {
-  booking_id: string;
+  id: string;
+  type: 'booking' | 'support';
   other_user_name: string;
-  booking_date: string;
+  subtitle: string;
   last_message: string;
   last_message_time: string;
   unread_count: number;
-  performer_photo?: string;
+  photo?: string;
 }
 
 interface Message {
@@ -47,7 +48,8 @@ interface Message {
 export default function Messages() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const selectedBookingId = searchParams.get('booking');
+  const selectedChatId = searchParams.get('chat');
+  const selectedChatType = searchParams.get('type') as 'booking' | 'support' | null;
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [dialogs, setDialogs] = useState<Dialog[]>([]);
@@ -59,15 +61,16 @@ export default function Messages() {
   const [attachments, setAttachments] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
-  // Fetch dialogs
+  // Fetch dialogs (both booking chats and support chats)
   useEffect(() => {
     if (!user) return;
 
     const fetchDialogs = async () => {
       setLoading(true);
+      const dialogsData: Dialog[] = [];
       
-      // Get all bookings where user is customer or performer
-      const { data: bookings, error } = await supabase
+      // 1. Fetch booking-related dialogs
+      const { data: bookings } = await supabase
         .from('bookings')
         .select(`
           id,
@@ -84,20 +87,10 @@ export default function Messages() {
         .or(`customer_id.eq.${user.id},performer_id.in.(select id from performer_profiles where user_id = '${user.id}')`)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching bookings:', error);
-        setLoading(false);
-        return;
-      }
-
-      // For each booking, get last message and unread count
-      const dialogsData: Dialog[] = [];
-      
       for (const booking of bookings || []) {
         const performer = booking.performer_profiles as any;
         const isCustomer = booking.customer_id === user.id;
         
-        // Get last message
         const { data: lastMsg } = await supabase
           .from('chat_messages')
           .select('text, created_at, sender_id, read_at')
@@ -106,7 +99,6 @@ export default function Messages() {
           .limit(1)
           .maybeSingle();
 
-        // Get unread count (messages not from me and not read)
         const { count: unreadCount } = await supabase
           .from('chat_messages')
           .select('id', { count: 'exact', head: true })
@@ -114,18 +106,62 @@ export default function Messages() {
           .neq('sender_id', user.id)
           .is('read_at', null);
 
-        // Only show dialogs that have messages
         if (lastMsg) {
           dialogsData.push({
-            booking_id: booking.id,
+            id: booking.id,
+            type: 'booking',
             other_user_name: isCustomer 
               ? (performer?.display_name || 'Исполнитель')
               : booking.customer_name,
-            booking_date: booking.booking_date,
+            subtitle: `Заказ на ${format(new Date(booking.booking_date), 'd MMM', { locale: ru })}`,
             last_message: lastMsg.text,
             last_message_time: lastMsg.created_at,
             unread_count: unreadCount || 0,
-            performer_photo: performer?.photo_urls?.[0]
+            photo: performer?.photo_urls?.[0]
+          });
+        }
+      }
+
+      // 2. Fetch support chat (for performers)
+      const { data: performerProfile } = await supabase
+        .from('performer_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (performerProfile) {
+        const { data: supportChat } = await supabase
+          .from('support_chats')
+          .select('id')
+          .eq('performer_id', performerProfile.id)
+          .maybeSingle();
+
+        if (supportChat) {
+          const { data: lastSupportMsg } = await supabase
+            .from('support_messages')
+            .select('text, created_at, sender_id, read_at')
+            .eq('chat_id', supportChat.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          const { count: unreadSupportCount } = await supabase
+            .from('support_messages')
+            .select('id', { count: 'exact', head: true })
+            .eq('chat_id', supportChat.id)
+            .neq('sender_id', user.id)
+            .is('read_at', null);
+
+          // Always show support chat if it exists
+          dialogsData.push({
+            id: supportChat.id,
+            type: 'support',
+            other_user_name: 'Поддержка',
+            subtitle: 'Служба поддержки платформы',
+            last_message: lastSupportMsg?.text || 'Напишите нам, если нужна помощь',
+            last_message_time: lastSupportMsg?.created_at || new Date().toISOString(),
+            unread_count: unreadSupportCount || 0,
+            photo: undefined
           });
         }
       }
@@ -144,56 +180,78 @@ export default function Messages() {
 
   // Fetch messages for selected dialog
   useEffect(() => {
-    if (!selectedBookingId || !user) return;
+    if (!selectedChatId || !selectedChatType || !user) return;
 
     const fetchMessages = async () => {
-      const { data, error } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('booking_id', selectedBookingId)
-        .order('created_at', { ascending: true });
+      if (selectedChatType === 'booking') {
+        const { data } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .eq('booking_id', selectedChatId)
+          .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching messages:', error);
-        return;
+        setMessages(data || []);
+
+        // Mark messages as read
+        await supabase
+          .from('chat_messages')
+          .update({ read_at: new Date().toISOString() })
+          .eq('booking_id', selectedChatId)
+          .neq('sender_id', user.id)
+          .is('read_at', null);
+      } else {
+        const { data } = await supabase
+          .from('support_messages')
+          .select('id, text, sender_id, created_at, read_at')
+          .eq('chat_id', selectedChatId)
+          .order('created_at', { ascending: true });
+
+        setMessages(data?.map(m => ({ ...m, attachments: null })) || []);
+
+        // Mark messages as read
+        await supabase
+          .from('support_messages')
+          .update({ read_at: new Date().toISOString() })
+          .eq('chat_id', selectedChatId)
+          .neq('sender_id', user.id)
+          .is('read_at', null);
       }
 
-      setMessages(data || []);
-
-      // Mark messages as read
-      await supabase
-        .from('chat_messages')
-        .update({ read_at: new Date().toISOString() })
-        .eq('booking_id', selectedBookingId)
-        .neq('sender_id', user.id)
-        .is('read_at', null);
-
-      // Find current dialog info
-      const dialog = dialogs.find(d => d.booking_id === selectedBookingId);
+      const dialog = dialogs.find(d => d.id === selectedChatId && d.type === selectedChatType);
       setCurrentDialog(dialog || null);
     };
 
     fetchMessages();
 
     // Subscribe to new messages
+    const tableName = selectedChatType === 'booking' ? 'chat_messages' : 'support_messages';
+    const filterColumn = selectedChatType === 'booking' ? 'booking_id' : 'chat_id';
+    
     const channel = supabase
-      .channel(`messages-${selectedBookingId}`)
+      .channel(`messages-${selectedChatType}-${selectedChatId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'chat_messages',
-          filter: `booking_id=eq.${selectedBookingId}`
+          table: tableName,
+          filter: `${filterColumn}=eq.${selectedChatId}`
         },
         async (payload) => {
-          const newMsg = payload.new as Message;
-          setMessages(prev => [...prev, newMsg]);
+          const newMsg = payload.new as any;
+          setMessages(prev => [...prev, {
+            id: newMsg.id,
+            text: newMsg.text,
+            sender_id: newMsg.sender_id,
+            created_at: newMsg.created_at,
+            read_at: newMsg.read_at,
+            attachments: newMsg.attachments || null
+          }]);
           
           // Mark as read if not from me
           if (newMsg.sender_id !== user.id) {
             await supabase
-              .from('chat_messages')
+              .from(tableName)
               .update({ read_at: new Date().toISOString() })
               .eq('id', newMsg.id);
           }
@@ -204,7 +262,7 @@ export default function Messages() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedBookingId, user, dialogs]);
+  }, [selectedChatId, selectedChatType, user, dialogs]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -235,7 +293,7 @@ export default function Messages() {
     
     for (const file of attachments) {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${selectedBookingId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const fileName = `${user?.id}/${selectedChatId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       
       const { error } = await supabase.storage
         .from('chat-attachments')
@@ -257,49 +315,67 @@ export default function Messages() {
   };
 
   const sendMessage = async () => {
-    if ((!newMessage.trim() && attachments.length === 0) || !selectedBookingId || !user) return;
+    if ((!newMessage.trim() && attachments.length === 0) || !selectedChatId || !selectedChatType || !user) return;
 
     setSendingMessage(true);
     
-    // Upload files first
-    const uploadedUrls = await uploadFiles();
-    
-    const { error } = await supabase
-      .from('chat_messages')
-      .insert({
-        booking_id: selectedBookingId,
-        sender_id: user.id,
-        text: newMessage.trim() || (uploadedUrls.length > 0 ? '📎 Вложение' : ''),
-        attachments: uploadedUrls.length > 0 ? uploadedUrls : null
-      });
-
-    if (error) {
-      console.error('Error sending message:', error);
-      toast.error('Ошибка отправки сообщения');
-    } else {
-      setNewMessage('');
-      setAttachments([]);
+    if (selectedChatType === 'booking') {
+      const uploadedUrls = await uploadFiles();
       
-      // Send push notification to the other user
-      try {
-        await supabase.functions.invoke('send-push-notification', {
-          body: {
-            type: 'new_message',
-            bookingId: selectedBookingId,
-            senderId: user.id,
-            senderName: currentDialog?.other_user_name || 'Пользователь'
-          }
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({
+          booking_id: selectedChatId,
+          sender_id: user.id,
+          text: newMessage.trim() || (uploadedUrls.length > 0 ? '📎 Вложение' : ''),
+          attachments: uploadedUrls.length > 0 ? uploadedUrls : null
         });
-      } catch (e) {
-        console.error('Error sending notification:', e);
+
+      if (error) {
+        console.error('Error sending message:', error);
+        toast.error('Ошибка отправки сообщения');
+      } else {
+        setNewMessage('');
+        setAttachments([]);
+        
+        try {
+          await supabase.functions.invoke('send-push-notification', {
+            body: {
+              type: 'new_message',
+              bookingId: selectedChatId,
+              senderId: user.id,
+              senderName: currentDialog?.other_user_name || 'Пользователь'
+            }
+          });
+        } catch (e) {
+          console.error('Error sending notification:', e);
+        }
+      }
+    } else {
+      // Support chat
+      const { error } = await supabase
+        .from('support_messages')
+        .insert({
+          chat_id: selectedChatId,
+          sender_id: user.id,
+          sender_type: 'performer',
+          text: newMessage.trim()
+        });
+
+      if (error) {
+        console.error('Error sending support message:', error);
+        toast.error('Ошибка отправки сообщения');
+      } else {
+        setNewMessage('');
+        setAttachments([]);
       }
     }
     
     setSendingMessage(false);
   };
 
-  const selectDialog = (bookingId: string) => {
-    setSearchParams({ booking: bookingId });
+  const selectDialog = (dialog: Dialog) => {
+    setSearchParams({ chat: dialog.id, type: dialog.type });
   };
 
   const goBack = () => {
@@ -330,21 +406,33 @@ export default function Messages() {
           {/* Header */}
           <div className="sticky top-0 z-10 bg-card border-b border-border p-4">
             <div className="flex items-center gap-4">
-              {selectedBookingId ? (
+              {selectedChatId ? (
                 <>
                   <Button variant="ghost" size="icon" onClick={goBack}>
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
-                  <div>
-                    <h1 className="font-semibold text-foreground">
-                      {currentDialog?.other_user_name || 'Диалог'}
-                    </h1>
-                    {currentDialog && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {format(new Date(currentDialog.booking_date), 'd MMMM yyyy', { locale: ru })}
-                      </p>
+                  <div className="flex items-center gap-3">
+                    {currentDialog?.type === 'support' ? (
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Headphones className="h-5 w-5 text-primary" />
+                      </div>
+                    ) : currentDialog?.photo ? (
+                      <img src={currentDialog.photo} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                      </div>
                     )}
+                    <div>
+                      <h1 className="font-semibold text-foreground">
+                        {currentDialog?.other_user_name || 'Диалог'}
+                      </h1>
+                      {currentDialog && (
+                        <p className="text-xs text-muted-foreground">
+                          {currentDialog.subtitle}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </>
               ) : (
@@ -357,7 +445,7 @@ export default function Messages() {
           </div>
 
           {/* Content */}
-          {!selectedBookingId ? (
+          {!selectedChatId ? (
             // Dialogs list
             <div className="divide-y divide-border">
               {dialogs.length === 0 ? (
@@ -368,8 +456,8 @@ export default function Messages() {
               ) : (
                 dialogs.map((dialog) => (
                   <button
-                    key={dialog.booking_id}
-                    onClick={() => selectDialog(dialog.booking_id)}
+                    key={`${dialog.type}-${dialog.id}`}
+                    onClick={() => selectDialog(dialog)}
                     className={cn(
                       'w-full p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors text-left',
                       dialog.unread_count > 0 && 'bg-primary/5'
@@ -377,9 +465,13 @@ export default function Messages() {
                   >
                     {/* Avatar */}
                     <div className="relative flex-shrink-0">
-                      {dialog.performer_photo ? (
+                      {dialog.type === 'support' ? (
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Headphones className="h-6 w-6 text-primary" />
+                        </div>
+                      ) : dialog.photo ? (
                         <img 
-                          src={dialog.performer_photo} 
+                          src={dialog.photo} 
                           alt="" 
                           className="w-12 h-12 rounded-full object-cover"
                         />
@@ -412,7 +504,7 @@ export default function Messages() {
                         {dialog.last_message}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Заказ на {format(new Date(dialog.booking_date), 'd MMM', { locale: ru })}
+                        {dialog.subtitle}
                       </p>
                     </div>
                   </button>
@@ -424,7 +516,11 @@ export default function Messages() {
             <div className="flex flex-col h-[calc(100vh-80px)]">
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
-                  {messages.map((msg) => {
+                  {messages.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Начните диалог</p>
+                    </div>
+                  ) : messages.map((msg) => {
                     const isMe = msg.sender_id === user?.id;
                     return (
                       <div
@@ -498,8 +594,8 @@ export default function Messages() {
                 </div>
               </ScrollArea>
 
-              {/* Attachments preview */}
-              {attachments.length > 0 && (
+              {/* Attachments preview - only for booking chats */}
+              {selectedChatType === 'booking' && attachments.length > 0 && (
                 <div className="px-4 py-2 border-t border-border bg-muted/50">
                   <div className="flex flex-wrap gap-2">
                     {attachments.map((file, idx) => (
@@ -533,23 +629,27 @@ export default function Messages() {
                   onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
                   className="flex gap-2"
                 >
-                  <input 
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    multiple
-                    accept="image/*,.pdf,.doc,.docx,.txt"
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={sendingMessage || uploadingFiles}
-                  >
-                    <Paperclip className="h-5 w-5" />
-                  </Button>
+                  {selectedChatType === 'booking' && (
+                    <>
+                      <input 
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileSelect}
+                        multiple
+                        accept="image/*,.pdf,.doc,.docx,.txt"
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={sendingMessage || uploadingFiles}
+                      >
+                        <Paperclip className="h-5 w-5" />
+                      </Button>
+                    </>
+                  )}
                   <Input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
