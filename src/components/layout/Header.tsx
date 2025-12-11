@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, LogIn, LogOut, Briefcase } from 'lucide-react';
+import { Menu, X, User, LogIn, LogOut, Briefcase, Sparkles, Snowflake } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import santaHatLogo from '@/assets/santa-hat-logo.png';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +15,7 @@ import {
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const [isPerformer, setIsPerformer] = useState(false);
@@ -35,45 +36,67 @@ export function Header() {
     checkPerformerRole();
   }, [user]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+    <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+      scrolled 
+        ? 'bg-winter-950/95 backdrop-blur-xl border-b border-magic-gold/10 shadow-lg shadow-magic-purple/5' 
+        : 'bg-transparent'
+    }`}>
+      {/* Decorative top border */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-magic-gold/50 to-transparent" />
+      
+      <div className="container flex h-18 items-center justify-between py-3">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 group">
+        <Link to="/" className="flex items-center gap-3 group">
           <div className="relative">
-            <img src={santaHatLogo} alt="Дед-Морозы.РФ" className="h-8 w-8 transition-transform group-hover:scale-110 duration-300" />
-            <div className="absolute inset-0 bg-accent/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute -inset-2 bg-magic-gold/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
+            <div className="relative p-1 rounded-full bg-gradient-to-br from-magic-gold/20 to-transparent">
+              <img 
+                src={santaHatLogo} 
+                alt="Дед-Морозы.РФ" 
+                className="h-10 w-10 transition-transform group-hover:scale-110 duration-300" 
+              />
+            </div>
+            <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-magic-gold animate-sparkle" />
           </div>
-          <span className="font-display text-xl font-bold text-foreground">
-            Дед-Морозы<span className="text-accent">.РФ</span>
-          </span>
+          <div className="flex flex-col">
+            <span className="font-display text-xl font-bold text-snow-100 leading-tight">
+              Дед-Морозы<span className="text-gradient-gold">.РФ</span>
+            </span>
+            <span className="text-[10px] text-snow-400/60 tracking-wider">ВОЛШЕБСТВО НА ДОМ</span>
+          </div>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6">
-          <Link 
-            to="/catalog" 
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Каталог
-          </Link>
-          <Link 
-            to="/how-it-works" 
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Как это работает
-          </Link>
-          <Link 
-            to="/become-performer" 
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Исполнителям
-          </Link>
+        <nav className="hidden md:flex items-center gap-1">
+          {[
+            { to: '/catalog', label: 'Каталог' },
+            { to: '/how-it-works', label: 'Как это работает' },
+            { to: '/become-performer', label: 'Исполнителям' },
+          ].map((link) => (
+            <Link 
+              key={link.to}
+              to={link.to} 
+              className="relative px-4 py-2 text-sm font-medium text-snow-300 hover:text-snow-100 transition-colors group"
+            >
+              <span className="relative z-10">{link.label}</span>
+              <div className="absolute inset-0 rounded-lg bg-magic-gold/0 group-hover:bg-magic-gold/10 transition-colors" />
+              <div className="absolute bottom-1 left-4 right-4 h-px bg-gradient-to-r from-transparent via-magic-gold/0 group-hover:via-magic-gold/50 to-transparent transition-all" />
+            </Link>
+          ))}
         </nav>
 
         {/* Desktop Actions */}
@@ -83,34 +106,40 @@ export function Header() {
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="gap-2">
-                      <User className="h-4 w-4" />
-                      {user.user_metadata?.full_name || 'Аккаунт'}
-                    </Button>
+                    <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-winter-800/50 border border-magic-gold/20 text-snow-200 hover:border-magic-gold/40 hover:bg-winter-800 transition-all group">
+                      <div className="relative">
+                        <User className="h-4 w-4" />
+                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-magic-gold rounded-full animate-pulse" />
+                      </div>
+                      <span className="text-sm font-medium">{user.user_metadata?.full_name || 'Аккаунт'}</span>
+                    </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuContent align="end" className="w-52 bg-winter-900/95 backdrop-blur-xl border-magic-gold/20">
                     {isPerformer && (
                       <>
-                        <DropdownMenuItem asChild>
-                          <Link to="/performer">
-                            <Briefcase className="h-4 w-4 mr-2" />
+                        <DropdownMenuItem asChild className="hover:bg-magic-gold/10 focus:bg-magic-gold/10">
+                          <Link to="/performer" className="flex items-center text-snow-200">
+                            <Briefcase className="h-4 w-4 mr-2 text-magic-gold" />
                             Кабинет исполнителя
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
+                        <DropdownMenuSeparator className="bg-magic-gold/10" />
                       </>
                     )}
-                    <DropdownMenuItem asChild>
-                      <Link to="/cabinet">Личный кабинет</Link>
+                    <DropdownMenuItem asChild className="hover:bg-magic-gold/10 focus:bg-magic-gold/10">
+                      <Link to="/cabinet" className="text-snow-200">Личный кабинет</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/cabinet/bookings">Мои заказы</Link>
+                    <DropdownMenuItem asChild className="hover:bg-magic-gold/10 focus:bg-magic-gold/10">
+                      <Link to="/cabinet/bookings" className="text-snow-200">Мои заказы</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/cabinet/profile">Профиль</Link>
+                    <DropdownMenuItem asChild className="hover:bg-magic-gold/10 focus:bg-magic-gold/10">
+                      <Link to="/cabinet/profile" className="text-snow-200">Профиль</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                    <DropdownMenuSeparator className="bg-magic-gold/10" />
+                    <DropdownMenuItem 
+                      onClick={handleSignOut} 
+                      className="text-santa-400 hover:bg-santa-500/10 focus:bg-santa-500/10 hover:text-santa-300"
+                    >
                       <LogOut className="h-4 w-4 mr-2" />
                       Выйти
                     </DropdownMenuItem>
@@ -120,16 +149,21 @@ export function Header() {
                 <>
                   <button 
                     onClick={() => navigate('/auth?mode=login')}
-                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold h-9 px-3 text-foreground hover:bg-accent/10 hover:text-accent active:bg-accent/20 transition-all duration-200"
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-snow-300 hover:text-snow-100 border border-transparent hover:border-snow-700/50 transition-all"
                   >
                     <LogIn className="h-4 w-4" />
                     Войти
                   </button>
                   <button 
                     onClick={() => navigate('/auth?mode=register')}
-                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold h-9 px-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-md hover:shadow-lg transition-all duration-200"
+                    className="relative group flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold overflow-hidden"
                   >
-                    Регистрация
+                    <div className="absolute inset-0 bg-gradient-to-r from-magic-gold via-amber-400 to-magic-gold bg-[length:200%_100%] animate-shimmer" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-magic-gold/0 via-white/20 to-magic-gold/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="relative text-winter-950 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      Регистрация
+                    </span>
                   </button>
                 </>
               )}
@@ -139,60 +173,67 @@ export function Header() {
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2 rounded-lg hover:bg-accent/10 transition-colors"
+          className="md:hidden p-2 rounded-lg bg-winter-800/50 border border-magic-gold/20 hover:border-magic-gold/40 transition-colors"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
-          {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          {isMenuOpen ? (
+            <X className="h-6 w-6 text-snow-200" />
+          ) : (
+            <Menu className="h-6 w-6 text-snow-200" />
+          )}
         </button>
       </div>
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background animate-fade-in">
-          <nav className="container py-4 flex flex-col gap-2">
-            <Link 
-              to="/catalog" 
-              className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Каталог
-            </Link>
-            <Link 
-              to="/how-it-works" 
-              className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Как это работает
-            </Link>
-            <Link 
-              to="/become-performer" 
-              className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Исполнителям
-            </Link>
-            <div className="border-t border-border my-2" />
+        <div className="md:hidden border-t border-magic-gold/10 bg-winter-950/98 backdrop-blur-xl animate-fade-in">
+          {/* Decorative snowflakes */}
+          <div className="absolute top-4 right-4 text-magic-gold/10">
+            <Snowflake className="w-12 h-12" />
+          </div>
+          
+          <nav className="container py-6 flex flex-col gap-2 relative">
+            {[
+              { to: '/catalog', label: 'Каталог' },
+              { to: '/how-it-works', label: 'Как это работает' },
+              { to: '/become-performer', label: 'Исполнителям' },
+            ].map((link) => (
+              <Link 
+                key={link.to}
+                to={link.to} 
+                className="px-4 py-3 rounded-xl text-snow-200 hover:bg-magic-gold/10 hover:text-snow-100 transition-colors border border-transparent hover:border-magic-gold/20"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
+            
+            <div className="border-t border-magic-gold/10 my-3" />
+            
             {user ? (
               <>
                 {isPerformer && (
                   <Link 
                     to="/performer" 
-                    className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors font-medium text-primary"
+                    className="px-4 py-3 rounded-xl bg-magic-gold/10 text-magic-gold font-medium border border-magic-gold/20"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Кабинет исполнителя
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="h-4 w-4" />
+                      Кабинет исполнителя
+                    </div>
                   </Link>
                 )}
                 <Link 
                   to="/cabinet" 
-                  className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
+                  className="px-4 py-3 rounded-xl text-snow-200 hover:bg-magic-gold/10 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Личный кабинет
                 </Link>
                 <Link 
                   to="/cabinet/bookings" 
-                  className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
+                  className="px-4 py-3 rounded-xl text-snow-200 hover:bg-magic-gold/10 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Мои заказы
@@ -202,22 +243,23 @@ export function Header() {
                     handleSignOut();
                     setIsMenuOpen(false);
                   }}
-                  className="px-4 py-2 rounded-lg hover:bg-destructive/10 text-destructive text-left transition-colors"
+                  className="px-4 py-3 rounded-xl text-santa-400 hover:bg-santa-500/10 text-left transition-colors flex items-center gap-2"
                 >
+                  <LogOut className="h-4 w-4" />
                   Выйти
                 </button>
               </>
             ) : (
-              <div className="flex gap-2 px-4">
+              <div className="flex gap-3 px-2 pt-2">
                 <button 
                   onClick={() => { navigate('/auth?mode=login'); setIsMenuOpen(false); }}
-                  className="flex-1 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold h-9 px-3 border-2 border-input bg-background text-foreground hover:bg-secondary transition-all"
+                  className="flex-1 py-3 rounded-xl text-sm font-medium border border-snow-700/50 text-snow-200 hover:bg-snow-800/20 transition-all"
                 >
                   Войти
                 </button>
                 <button 
                   onClick={() => { navigate('/auth?mode=register'); setIsMenuOpen(false); }}
-                  className="flex-1 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold h-9 px-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-md transition-all"
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-magic-gold to-amber-400 text-winter-950 hover:shadow-lg hover:shadow-magic-gold/20 transition-all"
                 >
                   Регистрация
                 </button>
