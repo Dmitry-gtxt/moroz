@@ -62,7 +62,7 @@ const faq = [
 ];
 
 export default function HowItWorks() {
-  const [prepaymentPercent, setPrepaymentPercent] = useState(29); // Default fallback
+  const [prepaymentPercent, setPrepaymentPercent] = useState(40); // Default = commission rate
 
   useEffect(() => {
     async function loadCommissionRate() {

@@ -3,7 +3,7 @@ import { Search, Calendar, PartyPopper, Sparkles } from 'lucide-react';
 import { getCommissionRate, getPrepaymentPercentage } from '@/lib/pricing';
 
 export function HowItWorks() {
-  const [prepaymentPercent, setPrepaymentPercent] = useState(29);
+  const [prepaymentPercent, setPrepaymentPercent] = useState(40); // Default = commission rate
 
   useEffect(() => {
     async function loadCommissionRate() {
