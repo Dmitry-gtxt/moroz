@@ -13,7 +13,7 @@ const ImageUsage = () => {
       <main className="flex-1 container py-12">
         <div className="max-w-4xl mx-auto prose prose-headings:font-display prose-headings:text-foreground prose-p:text-muted-foreground prose-li:text-muted-foreground">
           <h1>ОФЕРТА НА ИСПОЛЬЗОВАНИЕ ИЗОБРАЖЕНИЙ / ФОТО</h1>
-          <p className="text-sm text-muted-foreground">Редакция от 01.12.2025 г.</p>
+          <p className="text-sm text-muted-foreground">(Редакция от 01.12.2025 г.)</p>
 
           <p>Настоящая Оферта регулирует использование изображений, фотографий и видеоматериалов, сделанных Заказчиками и Исполнителями при оказании услуги поздравления.</p>
 
