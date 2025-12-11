@@ -1,11 +1,20 @@
+import { useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Sparkles, Users, Calendar, Wallet, CheckCircle, ArrowRight } from 'lucide-react';
+import { Sparkles, Users, Calendar, Wallet, CheckCircle, ArrowRight, Calculator } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
 
 const Students = () => {
+  const [ordersPerDay, setOrdersPerDay] = useState(3);
+  const [workDays, setWorkDays] = useState(15);
+  const [avgPrice, setAvgPrice] = useState(5000);
+
+  const totalOrders = ordersPerDay * workDays;
+  const totalEarnings = totalOrders * avgPrice;
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <SEOHead 
@@ -55,6 +64,79 @@ const Students = () => {
             </div>
           </section>
 
+          {/* Калькулятор заработка */}
+          <section className="mb-12">
+            <h2 className="font-display text-2xl font-semibold text-foreground mb-6 flex items-center gap-3">
+              <Calculator className="w-6 h-6 text-magic-gold" />
+              Калькулятор заработка
+            </h2>
+            <div className="bg-gradient-to-br from-magic-purple/10 to-magic-cyan/10 rounded-xl p-8 border border-magic-gold/20">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <div>
+                  <label className="block text-sm text-muted-foreground mb-3">
+                    Заказов в день: <span className="text-magic-gold font-bold">{ordersPerDay}</span>
+                  </label>
+                  <Slider
+                    value={[ordersPerDay]}
+                    onValueChange={(v) => setOrdersPerDay(v[0])}
+                    min={1}
+                    max={6}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>1</span>
+                    <span>6</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-muted-foreground mb-3">
+                    Рабочих дней: <span className="text-magic-gold font-bold">{workDays}</span>
+                  </label>
+                  <Slider
+                    value={[workDays]}
+                    onValueChange={(v) => setWorkDays(v[0])}
+                    min={5}
+                    max={30}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>5</span>
+                    <span>30</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-muted-foreground mb-3">
+                    Средняя цена заказа: <span className="text-magic-gold font-bold">{avgPrice.toLocaleString()} ₽</span>
+                  </label>
+                  <Slider
+                    value={[avgPrice]}
+                    onValueChange={(v) => setAvgPrice(v[0])}
+                    min={3000}
+                    max={10000}
+                    step={500}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>3 000 ₽</span>
+                    <span>10 000 ₽</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-card/50 rounded-lg p-6 text-center">
+                <p className="text-muted-foreground mb-2">
+                  Всего заказов: <span className="font-semibold text-foreground">{totalOrders}</span>
+                </p>
+                <p className="text-3xl font-bold text-gradient-gold">
+                  {totalEarnings.toLocaleString()} ₽
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">потенциальный заработок</p>
+              </div>
+            </div>
+          </section>
+
           {/* Кого мы ищем */}
           <section className="mb-12">
             <h2 className="font-display text-2xl font-semibold text-foreground mb-6 flex items-center gap-3">
@@ -100,9 +182,9 @@ const Students = () => {
                 },
                 {
                   step: 2,
-                  title: 'Верификация по видеосвязи',
-                  description: 'Обязательный короткий онлайн-звонок:',
-                  list: ['подтверждаем личность', 'оцениваем внешний вид костюма', 'проверяем речь, артистичность и готовность исполнять роль']
+                  title: 'Верификация по телефону',
+                  description: 'Обязательный короткий звонок от менеджера:',
+                  list: ['подтверждаем личность', 'уточняем информацию о костюме', 'проверяем готовность исполнять роль']
                 },
                 {
                   step: 3,
@@ -169,7 +251,7 @@ const Students = () => {
                 Как подать заявку?
               </h2>
               <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-                Зарегистрируйся на сайте, добавь свои данные, фото в костюме – и пройди короткую видео-валидацию.
+                Зарегистрируйся на сайте, добавь свои данные, фото в костюме – и пройди короткую валидацию по телефону.
                 После подтверждения ты сразу получишь доступ к заказам.
               </p>
               <Button asChild size="lg" className="gap-2">
