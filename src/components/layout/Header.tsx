@@ -50,13 +50,9 @@ export function Header() {
   };
 
   return (
-    <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-      scrolled 
-        ? 'bg-winter-950/98 backdrop-blur-xl border-b border-magic-gold/10 shadow-lg shadow-magic-purple/5' 
-        : 'bg-winter-950/90 backdrop-blur-md border-b border-magic-gold/5'
-    }`}>
+    <header className="sticky top-0 z-50 w-full bg-[hsl(220,80%,8%)] border-b border-[hsl(42,95%,55%,0.1)] shadow-lg shadow-[hsl(260,60%,45%,0.1)]">
       {/* Decorative top border */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-magic-gold/50 to-transparent" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(42,95%,55%,0.5)] to-transparent" />
       
       <div className="container flex h-18 items-center justify-between py-3">
         {/* Logo */}
