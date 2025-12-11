@@ -8,6 +8,17 @@ interface SendPushParams {
   tag?: string;
 }
 
+function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray.buffer;
+}
+
 export async function sendPushNotification(params: SendPushParams): Promise<void> {
   try {
     await supabase.functions.invoke('send-push-notification', {
@@ -15,6 +26,67 @@ export async function sendPushNotification(params: SendPushParams): Promise<void
     });
   } catch (error) {
     console.error('Failed to send push notification:', error);
+  }
+}
+
+// Auto-subscribe to push notifications after registration
+export async function autoSubscribeToPush(userId: string): Promise<boolean> {
+  // Check if push is supported
+  if (!('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window)) {
+    console.log('Push notifications not supported');
+    return false;
+  }
+
+  try {
+    // Fetch VAPID key
+    const { data, error: vapidError } = await supabase.functions.invoke('get-vapid-key');
+    if (vapidError || !data?.publicKey) {
+      console.error('Failed to get VAPID key:', vapidError);
+      return false;
+    }
+    const vapidKey = data.publicKey;
+
+    // Request permission
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      console.log('Notification permission denied');
+      return false;
+    }
+
+    // Register service worker
+    const registration = await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+
+    // Subscribe to push
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey)
+    });
+
+    const subscriptionJson = subscription.toJSON();
+
+    // Save to database
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .upsert({
+        user_id: userId,
+        endpoint: subscriptionJson.endpoint!,
+        p256dh: subscriptionJson.keys!.p256dh,
+        auth: subscriptionJson.keys!.auth
+      }, {
+        onConflict: 'user_id,endpoint'
+      });
+
+    if (error) {
+      console.error('Error saving push subscription:', error);
+      return false;
+    }
+
+    console.log('Auto-subscribed to push notifications');
+    return true;
+  } catch (error) {
+    console.error('Auto push subscription failed:', error);
+    return false;
   }
 }
 

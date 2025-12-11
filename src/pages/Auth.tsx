@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Snowflake, Mail, Lock, User, Phone, ArrowLeft, Sparkles, Star } from 'lucide-react';
+import { autoSubscribeToPush } from '@/lib/pushNotifications';
 
 type AuthMode = 'login' | 'register' | 'forgot-password';
 
@@ -93,6 +94,7 @@ const Auth = () => {
         });
         if (error) throw error;
         
+        // Send welcome email
         supabase.functions.invoke('send-notification-email', {
           body: {
             type: 'welcome_email',
@@ -100,6 +102,13 @@ const Auth = () => {
             fullName: formData.fullName,
           },
         }).catch(err => console.error('Failed to send welcome email:', err));
+        
+        // Auto-subscribe to push notifications if user was created
+        if (data.user?.id) {
+          autoSubscribeToPush(data.user.id).catch(err => 
+            console.log('Auto push subscription skipped:', err)
+          );
+        }
         
         toast.success('Регистрация успешна! Добро пожаловать!');
       } else if (mode === 'forgot-password') {
