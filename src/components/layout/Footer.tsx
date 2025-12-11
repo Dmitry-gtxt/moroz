@@ -155,7 +155,7 @@ export function Footer() {
 
         {/* Legal links & Copyright */}
         <div className="border-t border-magic-gold/10 mt-12 pt-6">
-          <div className="flex flex-wrap justify-center gap-x-3 gap-y-2 text-xs text-snow-500 mb-4">
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-2 text-xs text-snow-500 mb-1">
             {[
               { to: '/terms', label: 'Пользовательское соглашение' },
               { to: '/privacy', label: 'Политика конфиденциальности' },
@@ -176,17 +176,13 @@ export function Footer() {
           </div>
           
           {/* Copyright & Requisites */}
-          <div className="text-center space-y-1">
-            <p className="text-sm text-snow-500">
-              © 2025-2026 <span className="text-gradient-gold font-semibold">Дед-Морозы.РФ</span>
-            </p>
-            <p className="text-xs text-snow-600">
-              ИП Шевчук Д.С. • ИНН: 631803547498 • ОГРНИП: 324631300031498
-            </p>
-            <p className="text-xs text-snow-600 flex items-center justify-center gap-1">
-              Сделано с <Heart className="w-3 h-3 text-santa-400 fill-santa-400" /> для волшебных праздников
-            </p>
-          </div>
+          <p className="text-xs text-snow-500 text-center flex flex-wrap items-center justify-center gap-x-2">
+            <span>© 2025-2026 <span className="text-gradient-gold font-semibold">Дед-Морозы.РФ</span></span>
+            <span className="text-snow-600">•</span>
+            <span className="text-snow-600">ИП Шевчук Д.С. • ИНН: 631803547498 • ОГРНИП: 324631300031498</span>
+            <span className="text-snow-600">•</span>
+            <span className="text-snow-600 inline-flex items-center gap-1">Сделано с <Heart className="w-3 h-3 text-santa-400 fill-santa-400" /> для волшебных праздников</span>
+          </p>
         </div>
       </div>
     </footer>
