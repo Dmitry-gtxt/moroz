@@ -548,12 +548,12 @@ export default function PerformerCalendar() {
                           <div className="flex items-center gap-2 mr-2">
                             <span className="text-sm font-medium">
                               {formatPrice(getSlotPrice(slot))}
+                              {commissionRate !== null && (
+                                <span className="text-xs text-muted-foreground ml-1">
+                                  (комиссия {formatPrice(getSlotPrice(slot) * commissionRate / 100)} + на руки {formatPrice(getSlotNetAmount(slot) ?? 0)})
+                                </span>
+                              )}
                             </span>
-                            {slot.price !== null && slot.price !== basePrice && (
-                              <Badge variant="outline" className="text-xs">
-                                Особая цена
-                              </Badge>
-                            )}
                           </div>
                           
                           {isBooked ? (
@@ -616,7 +616,7 @@ export default function PerformerCalendar() {
               {/* Price legend */}
               <div className="mt-4 p-3 bg-muted/50 rounded-lg">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Цена:</strong> {formatPrice(basePrice)} → <strong>На руки:</strong> {commissionRate !== null ? formatPrice(getPerformerNetAmount(basePrice, commissionRate)) : '...'} (после {commissionRate ?? '...'}% комиссии)
+                  Комиссия сервиса {commissionRate ?? '...'}% — оплачивается клиентом в формате бронирования, после подтверждения вами заявки. Остальную сумму клиент оплачивает вам перед или после мероприятия — это ваше фактическое вознаграждение.
                 </p>
               </div>
             </CardContent>
