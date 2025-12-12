@@ -214,10 +214,10 @@ const PerformerProfile = () => {
                       </div>
                     )}
                   </div>
-                  {performer.video_greeting_url && (
+                  {performer.video_greeting_url && performer.video_greeting_url.trim() !== '' && (
                     <Button 
                       variant="outline" 
-                      className="w-full mt-3 gap-2"
+                      className="w-full mt-3 gap-2 border-red-300/60 bg-red-50/30 text-red-600 hover:bg-red-100/50 hover:border-red-400/60 animate-[pulse_3s_ease-in-out_infinite]"
                       onClick={() => window.open(performer.video_greeting_url!, '_blank')}
                     >
                       <Play className="h-4 w-4" />
