@@ -1,5 +1,6 @@
 import { Shield, Star, CreditCard, Clock, Users, Video, Heart, Gift, Sparkles, Snowflake } from 'lucide-react';
 import useEmblaCarousel from 'embla-carousel-react';
+import { SwipeHint } from '@/components/ui/swipe-hint';
 
 const parentFeatures = [
   {
@@ -135,14 +136,17 @@ export function FeaturesSection() {
             </div>
             
             {/* Mobile carousel */}
-            <div className="sm:hidden overflow-hidden" ref={parentEmblaRef}>
-              <div className="flex gap-4">
-                {parentFeatures.map((feature, index) => (
-                  <div key={index} className="flex-[0_0_85%] min-w-0">
-                    <FeatureCard feature={feature} variant="gold" />
-                  </div>
-                ))}
+            <div className="sm:hidden relative">
+              <div className="overflow-hidden" ref={parentEmblaRef}>
+                <div className="flex gap-4">
+                  {parentFeatures.map((feature, index) => (
+                    <div key={index} className="flex-[0_0_85%] min-w-0">
+                      <FeatureCard feature={feature} variant="gold" />
+                    </div>
+                  ))}
+                </div>
               </div>
+              <SwipeHint />
             </div>
           </div>
 
@@ -166,14 +170,17 @@ export function FeaturesSection() {
             </div>
             
             {/* Mobile carousel */}
-            <div className="sm:hidden overflow-hidden" ref={performerEmblaRef}>
-              <div className="flex gap-4">
-                {performerFeatures.map((feature, index) => (
-                  <div key={index} className="flex-[0_0_85%] min-w-0">
-                    <FeatureCard feature={feature} variant="santa" />
-                  </div>
-                ))}
+            <div className="sm:hidden relative">
+              <div className="overflow-hidden" ref={performerEmblaRef}>
+                <div className="flex gap-4">
+                  {performerFeatures.map((feature, index) => (
+                    <div key={index} className="flex-[0_0_85%] min-w-0">
+                      <FeatureCard feature={feature} variant="santa" />
+                    </div>
+                  ))}
+                </div>
               </div>
+              <SwipeHint />
             </div>
           </div>
         </div>
