@@ -133,6 +133,14 @@ export default {
           from: { opacity: "0", transform: "translateX(20px)" },
           to: { opacity: "1", transform: "translateX(0)" },
         },
+        "swipe-hint-blink": {
+          "0%, 100%": { opacity: "1", transform: "translateX(0)" },
+          "50%": { opacity: "0.3", transform: "translateX(5px)" },
+        },
+        "bounce-x": {
+          "0%, 100%": { transform: "translateX(0)" },
+          "50%": { transform: "translateX(4px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -141,6 +149,8 @@ export default {
         "fade-in-up": "fade-in-up 0.6s ease-out forwards",
         "scale-in": "scale-in 0.3s ease-out forwards",
         "slide-in-right": "slide-in-right 0.4s ease-out forwards",
+        "swipe-hint-blink": "swipe-hint-blink 0.6s ease-in-out",
+        "bounce-x": "bounce-x 0.5s ease-in-out infinite",
       },
       backgroundImage: {
         "hero-pattern": "url('/hero-pattern.svg')",
