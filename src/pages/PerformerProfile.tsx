@@ -219,7 +219,7 @@ const PerformerProfile = () => {
                   {performer.video_greeting_url && performer.video_greeting_url.trim() !== '' && (
                     <Button 
                       variant="outline" 
-                      className="w-full mt-3 gap-2 border-red-300/60 bg-red-50/30 text-red-600 hover:bg-red-100/50 hover:border-red-400/60 animate-[pulse_3s_ease-in-out_infinite]"
+                      className="w-full mt-3 gap-2 border-red-300/50 bg-red-50/20 text-red-500 hover:bg-red-100/40 hover:border-red-400/60 shadow-[0_0_12px_rgba(239,68,68,0.25)]"
                       onClick={() => setVideoModalOpen(true)}
                     >
                       <Play className="h-4 w-4" />
