@@ -141,7 +141,7 @@ export function HeroSection() {
           </div>
 
           {/* Magical subtitle */}
-          <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <p className="hidden md:block text-lg md:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             Подарите детям настоящее новогоднее чудо! ✨<br />
             Проверенные исполнители, волшебные программы, незабываемые эмоции
           </p>
