@@ -175,7 +175,7 @@ export function HeroSection() {
                       )}
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-winter-900 border-magic-gold/20" align="start">
+                  <PopoverContent className="w-auto p-0 bg-winter-900 border-magic-gold/20 text-snow-100" align="start">
                     <CalendarComponent
                       mode="single"
                       selected={selectedDate}
@@ -185,6 +185,16 @@ export function HeroSection() {
                       }}
                       disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                       initialFocus
+                      classNames={{
+                        caption_label: "text-sm font-medium text-snow-100",
+                        head_cell: "text-snow-400 rounded-md w-9 font-normal text-[0.8rem]",
+                        day: "h-9 w-9 p-0 font-normal text-snow-100 hover:bg-magic-gold/20 hover:text-snow-100 rounded-md",
+                        day_selected: "bg-magic-gold text-winter-950 hover:bg-magic-gold hover:text-winter-950 focus:bg-magic-gold focus:text-winter-950",
+                        day_today: "bg-magic-gold/20 text-magic-gold",
+                        day_outside: "text-snow-600 opacity-50",
+                        day_disabled: "text-snow-600 opacity-30",
+                        nav_button: "h-7 w-7 bg-transparent p-0 text-snow-400 hover:text-snow-100 hover:bg-magic-gold/20 rounded-md border border-snow-700",
+                      }}
                     />
                   </PopoverContent>
                 </Popover>
