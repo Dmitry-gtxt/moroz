@@ -53,6 +53,7 @@ const PerformerProfile = () => {
   const [commissionRate, setCommissionRate] = useState(40);
   const [loading, setLoading] = useState(true);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [videoWatched, setVideoWatched] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -219,8 +220,11 @@ const PerformerProfile = () => {
                   {performer.video_greeting_url && performer.video_greeting_url.trim() !== '' && (
                     <Button 
                       variant="outline" 
-                      className="w-full mt-3 gap-2 border-red-300/50 bg-red-50/20 text-red-500 hover:bg-red-100/40 hover:border-red-400/60 shadow-[0_0_12px_rgba(239,68,68,0.25)]"
-                      onClick={() => setVideoModalOpen(true)}
+                      className={`w-full mt-3 gap-2 border-red-300/50 bg-red-50/20 text-red-500 hover:bg-red-100/40 hover:border-red-400/60 ${!videoWatched ? 'shadow-[0_0_12px_rgba(239,68,68,0.25)]' : ''}`}
+                      onClick={() => {
+                        setVideoModalOpen(true);
+                        setVideoWatched(true);
+                      }}
                     >
                       <Play className="h-4 w-4" />
                       Смотреть видео
