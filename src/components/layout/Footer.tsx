@@ -68,7 +68,7 @@ export function Footer() {
               <Sparkles className="w-4 h-4 text-magic-gold" />
               Родителям
             </h4>
-            <ul className="space-y-3 text-sm">
+            <ul className="space-y-2 text-sm">
               {[
                 { to: '/catalog', label: 'Каталог исполнителей' },
                 { to: '/how-it-works', label: 'Как заказать' },
@@ -78,7 +78,7 @@ export function Footer() {
                 <li key={link.to}>
                   <Link 
                     to={link.to} 
-                    className="text-snow-400 hover:text-magic-gold transition-colors inline-flex items-center gap-1 group"
+                    className="text-snow-400 hover:text-magic-gold transition-colors inline-flex items-center gap-1 group py-2 min-h-[44px]"
                   >
                     <span className="w-0 group-hover:w-2 h-px bg-magic-gold transition-all" />
                     {link.label}
@@ -94,7 +94,7 @@ export function Footer() {
               <Star className="w-4 h-4 text-magic-gold" />
               Исполнителям
             </h4>
-            <ul className="space-y-3 text-sm">
+            <ul className="space-y-2 text-sm">
               {[
                 { to: '/become-performer', label: 'Стать исполнителем' },
                 { to: '/performer', label: 'Личный кабинет' },
@@ -104,7 +104,7 @@ export function Footer() {
                 <li key={link.to}>
                   <Link 
                     to={link.to} 
-                    className="text-snow-400 hover:text-magic-gold transition-colors inline-flex items-center gap-1 group"
+                    className="text-snow-400 hover:text-magic-gold transition-colors inline-flex items-center gap-1 group py-2 min-h-[44px]"
                   >
                     <span className="w-0 group-hover:w-2 h-px bg-magic-gold transition-all" />
                     {link.label}
@@ -120,11 +120,11 @@ export function Footer() {
               <Heart className="w-4 h-4 text-santa-400" />
               Контакты
             </h4>
-            <ul className="space-y-4 text-sm">
+            <ul className="space-y-3 text-sm">
               <li>
                 <a 
                   href="tel:+79953829736" 
-                  className="flex items-center gap-3 text-snow-400 hover:text-magic-gold transition-colors group"
+                  className="flex items-center gap-3 text-snow-400 hover:text-magic-gold transition-colors group py-2 min-h-[44px]"
                 >
                   <div className="p-2 rounded-lg bg-magic-gold/10 border border-magic-gold/20 group-hover:border-magic-gold/40 transition-colors">
                     <Phone className="h-4 w-4 text-magic-gold" />
@@ -135,7 +135,7 @@ export function Footer() {
               <li>
                 <a 
                   href="mailto:ded-morozy@gtxt.biz" 
-                  className="flex items-center gap-3 text-snow-400 hover:text-magic-gold transition-colors group"
+                  className="flex items-center gap-3 text-snow-400 hover:text-magic-gold transition-colors group py-2 min-h-[44px]"
                 >
                   <div className="p-2 rounded-lg bg-magic-gold/10 border border-magic-gold/20 group-hover:border-magic-gold/40 transition-colors">
                     <Mail className="h-4 w-4 text-magic-gold" />
@@ -143,7 +143,7 @@ export function Footer() {
                   ded-morozy@gtxt.biz
                 </a>
               </li>
-              <li className="flex items-start gap-3 text-snow-400">
+              <li className="flex items-start gap-3 text-snow-400 py-2">
                 <div className="p-2 rounded-lg bg-magic-gold/10 border border-magic-gold/20">
                   <MapPin className="h-4 w-4 text-magic-gold" />
                 </div>
@@ -155,7 +155,7 @@ export function Footer() {
 
         {/* Legal links & Copyright */}
         <div className="border-t border-magic-gold/10 mt-12 pt-2">
-          <div className="flex flex-wrap justify-center gap-x-3 gap-y-2 text-xs text-snow-500 mb-1">
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs sm:text-sm text-snow-500 mb-2">
             {[
               { to: '/terms', label: 'Пользовательское соглашение' },
               { to: '/privacy', label: 'Политика конфиденциальности' },
@@ -169,7 +169,7 @@ export function Footer() {
               <Link 
                 key={link.to}
                 to={link.to} 
-                className="hover:text-magic-gold transition-colors"
+                className="hover:text-magic-gold transition-colors py-2 min-h-[44px] inline-flex items-center"
               >
                 {link.label}
               </Link>
