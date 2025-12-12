@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, MapPin, Star, Video, Trash2, Check } from 'lucide-react';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar, MapPin, Star, Video, Trash2, Check, CalendarIcon } from 'lucide-react';
+import { format, parse } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import type { Database } from '@/integrations/supabase/types';
 import { districtGroups } from '@/data/mockData';
 
@@ -47,6 +52,11 @@ const eventFormats: { value: EventFormat; label: string }[] = [
 ];
 
 export function CatalogFilters({ filters, districts, onFiltersChange, onClear, onApply }: CatalogFiltersProps) {
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  
+  // Parse filter date string to Date object
+  const selectedDate = filters.date ? parse(filters.date, 'yyyy-MM-dd', new Date()) : undefined;
+  
   const handleTypeChange = (type: PerformerType, checked: boolean) => {
     const currentTypes = filters.performerType || [];
     const newTypes = checked
@@ -127,16 +137,38 @@ export function CatalogFilters({ filters, districts, onFiltersChange, onClear, o
       {/* Date */}
       <div className="space-y-3">
         <Label className="flex items-center gap-2 text-sm font-semibold">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <CalendarIcon className="h-4 w-4 text-muted-foreground" />
           Дата
         </Label>
-        <input
-          type="date"
-          value={filters.date || ''}
-          onChange={(e) => onFiltersChange({ ...filters, date: e.target.value || undefined })}
-          min={new Date().toISOString().split('T')[0]}
-          className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
-        />
+        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+          <PopoverTrigger asChild>
+            <button
+              className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm text-left flex items-center gap-2"
+            >
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+              {selectedDate ? (
+                format(selectedDate, 'd MMMM yyyy', { locale: ru })
+              ) : (
+                <span className="text-muted-foreground">Выберите дату</span>
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <CalendarComponent
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => {
+                onFiltersChange({ 
+                  ...filters, 
+                  date: date ? format(date, 'yyyy-MM-dd') : undefined 
+                });
+                setCalendarOpen(false);
+              }}
+              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Time - Grid 4x6 (hours 1-24, multi-select) */}
