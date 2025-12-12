@@ -149,7 +149,7 @@ export function PriceCalendarStrip() {
               </span>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="hidden md:flex gap-2">
             <button
               onClick={() => scroll('left')}
               className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
