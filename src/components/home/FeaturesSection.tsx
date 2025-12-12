@@ -146,7 +146,7 @@ export function FeaturesSection() {
                   ))}
                 </div>
               </div>
-              <SwipeHint />
+              <SwipeHint variant="dark" />
             </div>
           </div>
 
@@ -180,7 +180,7 @@ export function FeaturesSection() {
                   ))}
                 </div>
               </div>
-              <SwipeHint />
+              <SwipeHint variant="dark" />
             </div>
           </div>
         </div>

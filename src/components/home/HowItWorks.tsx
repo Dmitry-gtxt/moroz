@@ -45,7 +45,7 @@ export function HowItWorks() {
       <div className="relative bg-card rounded-3xl p-6 md:p-8 shadow-lg hover:shadow-xl transition-all duration-300 text-center border border-border hover:border-gold/30 group-hover:-translate-y-2 h-full">
         {/* Step number badge - inside card on mobile, outside on desktop */}
         {isMobile ? (
-          <div className="w-10 h-10 rounded-full bg-gradient-gold text-white font-bold flex items-center justify-center text-lg shadow-glow mx-auto mb-3">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gold to-gold-dark text-white font-bold flex items-center justify-center text-xl shadow-lg shadow-gold/30 mx-auto mb-3 border-2 border-gold-light">
             {index + 1}
           </div>
         ) : (
