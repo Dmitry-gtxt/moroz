@@ -271,7 +271,7 @@ export function HeroSection() {
           {/* Trust badges with magical styling */}
           <div 
             className="flex md:flex-wrap md:justify-center gap-3 md:gap-8 text-xs md:text-sm animate-fade-in-up overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible"
-            style={{ animationDelay: '0.5s' }}
+            style={{ animationDelay: '0.5s', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {[
               { icon: '🎅', text: '100+ исполнителей' },
