@@ -36,26 +36,32 @@ export function HowItWorks() {
     },
   ];
 
-  const StepCard = ({ step, index }: { step: typeof steps[0]; index: number }) => (
+  const StepCard = ({ step, index, isMobile = false }: { step: typeof steps[0]; index: number; isMobile?: boolean }) => (
     <div 
       className="relative group animate-fade-in"
       style={{ animationDelay: `${index * 0.2}s` }}
     >
-      <div className="relative bg-card rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 text-center border border-border hover:border-gold/30 group-hover:-translate-y-2 h-full">
-        {/* Step number badge */}
-        <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-gradient-gold text-white font-bold flex items-center justify-center text-lg shadow-glow">
-          {index + 1}
-        </div>
+      <div className="relative bg-card rounded-3xl p-6 md:p-8 shadow-lg hover:shadow-xl transition-all duration-300 text-center border border-border hover:border-gold/30 group-hover:-translate-y-2 h-full">
+        {/* Step number badge - inside card on mobile, outside on desktop */}
+        {isMobile ? (
+          <div className="w-10 h-10 rounded-full bg-gradient-gold text-white font-bold flex items-center justify-center text-lg shadow-glow mx-auto mb-3">
+            {index + 1}
+          </div>
+        ) : (
+          <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-gradient-gold text-white font-bold flex items-center justify-center text-lg shadow-glow">
+            {index + 1}
+          </div>
+        )}
         
         {/* Emoji icon */}
-        <div className="text-6xl mb-6 mt-4 group-hover:scale-110 transition-transform duration-300">
+        <div className={`text-5xl md:text-6xl mb-4 md:mb-6 ${!isMobile ? 'mt-4' : ''} group-hover:scale-110 transition-transform duration-300`}>
           {step.emoji}
         </div>
         
-        <h3 className="font-display text-2xl font-bold mb-4 text-foreground">
+        <h3 className="font-display text-xl md:text-2xl font-bold mb-3 md:mb-4 text-foreground">
           {step.title}
         </h3>
-        <p className="text-muted-foreground leading-relaxed">
+        <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
           {step.description}
         </p>
       </div>
@@ -100,8 +106,8 @@ export function HowItWorks() {
         <div className="md:hidden overflow-hidden" ref={emblaRef}>
           <div className="flex gap-4">
             {steps.map((step, index) => (
-              <div key={index} className="flex-[0_0_85%] min-w-0 pt-6">
-                <StepCard step={step} index={index} />
+              <div key={index} className="flex-[0_0_85%] min-w-0">
+                <StepCard step={step} index={index} isMobile />
               </div>
             ))}
           </div>
