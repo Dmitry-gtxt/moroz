@@ -178,7 +178,7 @@ export default function AdminPartners() {
   }
 
   function getReferralLink(code: string) {
-    return `${window.location.origin}/?ref=${code}`;
+    return `https://Дед-Морозы.РФ/?ref=${code}`;
   }
 
   function getPartnerDashboardLink(token: string) {
