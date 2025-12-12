@@ -116,7 +116,7 @@ export function HeroSection() {
         <div className="max-w-4xl mx-auto text-center space-y-8">
           {/* Magical badge */}
           <div 
-            className="inline-flex items-center gap-3 px-6 py-3 rounded-full animate-fade-in"
+            className="hidden md:inline-flex items-center gap-3 px-6 py-3 rounded-full animate-fade-in"
             style={{
               background: 'rgba(15, 25, 50, 0.6)',
               backdropFilter: 'blur(12px)',
