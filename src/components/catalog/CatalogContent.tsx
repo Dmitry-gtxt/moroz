@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PerformerCard } from '@/components/performers/PerformerCard';
+import { PerformerCardSkeleton } from '@/components/performers/PerformerCardSkeleton';
 import { CatalogFilters, Filters } from '@/components/catalog/CatalogFilters';
 import { supabase } from '@/integrations/supabase/client';
 import { getCommissionRate } from '@/lib/pricing';
@@ -346,8 +347,10 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
           )}
 
           {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <PerformerCardSkeleton key={i} />
+              ))}
             </div>
           ) : filteredPerformers.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
