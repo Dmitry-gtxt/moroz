@@ -112,8 +112,8 @@ export function HeroSection() {
       <div className="absolute top-32 right-16 w-64 h-64 bg-gold/10 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-32 left-16 w-48 h-48 bg-gold-light/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1.5s' }} />
 
-      <div className="container relative z-10 py-10 md:py-20">
-        <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-8">
+      <div className="container relative z-10 pt-4 pb-10 md:py-20">
+        <div className="max-w-4xl mx-auto text-center space-y-4 md:space-y-8">
           {/* Magical badge */}
           <div 
             className="hidden md:inline-flex items-center gap-3 px-6 py-3 rounded-full animate-fade-in"
