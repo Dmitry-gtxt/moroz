@@ -31,6 +31,7 @@ interface Partner {
 }
 
 interface PartnerStats {
+  visits_count: number;
   performers_count: number;
   customers_count: number;
   confirmed_bookings: number;
@@ -84,7 +85,11 @@ export default function AdminPartners() {
     const statsMap: Record<string, PartnerStats> = {};
     
     for (const partner of partnersData || []) {
-      const [regData, bookingsData] = await Promise.all([
+      const [visitsData, regData, bookingsData] = await Promise.all([
+        supabase
+          .from('referral_visits')
+          .select('id', { count: 'exact', head: true })
+          .eq('partner_id', partner.id),
         supabase
           .from('referral_registrations')
           .select('user_type')
@@ -99,6 +104,7 @@ export default function AdminPartners() {
       const bookings = bookingsData.data || [];
 
       statsMap[partner.id] = {
+        visits_count: visitsData.count || 0,
         performers_count: regs.filter(r => r.user_type === 'performer').length,
         customers_count: regs.filter(r => r.user_type === 'customer').length,
         confirmed_bookings: bookings.filter(b => b.status === 'confirmed_paid').length,
@@ -320,6 +326,7 @@ export default function AdminPartners() {
                     <TableHead>Партнёр</TableHead>
                     <TableHead>Тип</TableHead>
                     <TableHead>Код</TableHead>
+                    <TableHead>Переходы</TableHead>
                     <TableHead>Регистрации</TableHead>
                     <TableHead>Брони</TableHead>
                     <TableHead>Сумма</TableHead>
@@ -329,7 +336,11 @@ export default function AdminPartners() {
                 </TableHeader>
                 <TableBody>
                   {partners.map(partner => {
-                    const partnerStats = stats[partner.id] || { performers_count: 0, customers_count: 0, confirmed_bookings: 0, cancelled_bookings: 0, total_amount: 0 };
+                    const partnerStats = stats[partner.id] || { visits_count: 0, performers_count: 0, customers_count: 0, confirmed_bookings: 0, cancelled_bookings: 0, total_amount: 0 };
+                    const totalRegs = partnerStats.performers_count + partnerStats.customers_count;
+                    const conversionRate = partnerStats.visits_count > 0 
+                      ? ((totalRegs / partnerStats.visits_count) * 100).toFixed(1) 
+                      : '0';
                     return (
                       <TableRow key={partner.id}>
                         <TableCell>
@@ -347,6 +358,12 @@ export default function AdminPartners() {
                         </TableCell>
                         <TableCell>
                           <code className="bg-muted px-2 py-1 rounded text-sm">{partner.referral_code}</code>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <span className="font-medium">{partnerStats.visits_count}</span>
+                            <span className="text-muted-foreground text-xs ml-1">→ {conversionRate}%</span>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 text-sm">
