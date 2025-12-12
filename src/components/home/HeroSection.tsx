@@ -62,7 +62,7 @@ export function HeroSection() {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">
+    <section className="relative min-h-[100svh] md:min-h-screen flex items-center overflow-hidden">
       {/* Background Image with overlay */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -112,8 +112,8 @@ export function HeroSection() {
       <div className="absolute top-32 right-16 w-64 h-64 bg-gold/10 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-32 left-16 w-48 h-48 bg-gold-light/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1.5s' }} />
 
-      <div className="container relative z-10 pt-1 pb-10 md:py-20 -mt-10 md:mt-0">
-        <div className="max-w-4xl mx-auto text-center space-y-4 md:space-y-8">
+      <div className="container relative z-10 pt-1 pb-4 md:py-20 -mt-16 md:mt-0">
+        <div className="max-w-4xl mx-auto text-center space-y-3 md:space-y-8">
           {/* Magical badge */}
           <div 
             className="hidden md:inline-flex items-center gap-3 px-6 py-3 rounded-full animate-fade-in"
@@ -130,12 +130,12 @@ export function HeroSection() {
           </div>
 
           {/* Main heading with magical styling */}
-          <div className="space-y-4 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-bold text-white leading-tight">
+          <div className="space-y-2 md:space-y-4 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            <h1 className="font-display text-4xl md:text-7xl lg:text-8xl font-bold text-white leading-tight">
               Закажите
-              <span className="block text-gradient-magic mt-2">Деда Мороза</span>
+              <span className="block text-gradient-magic mt-1 md:mt-2">Деда Мороза</span>
             </h1>
-            <p className="font-heading text-xl md:text-2xl text-gold-light tracking-wider uppercase">
+            <p className="font-heading text-lg md:text-2xl text-gold-light tracking-wider uppercase">
               в Самаре и области
             </p>
           </div>
@@ -148,7 +148,7 @@ export function HeroSection() {
 
           {/* Search Form with glass effect */}
           <div 
-            className="mt-10 p-6 md:p-8 rounded-3xl shadow-2xl animate-fade-in-up"
+            className="mt-4 md:mt-10 p-4 md:p-8 rounded-3xl shadow-2xl animate-fade-in-up"
             style={{ 
               animationDelay: '0.3s',
               background: 'rgba(15, 25, 50, 0.7)',
@@ -158,14 +158,14 @@ export function HeroSection() {
               boxShadow: '0 0 60px rgba(139, 92, 246, 0.2), 0 25px 50px -12px rgba(0, 0, 0, 0.5)'
             }}
           >
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-6">
               {/* Date */}
               <div className="relative">
                 <label className="block text-sm text-gold-light mb-2 text-left font-medium">📅 Дата визита</label>
                 <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                   <PopoverTrigger asChild>
                     <button
-                      className="w-full pl-12 pr-4 py-4 rounded-xl bg-white/10 border border-white/20 text-white text-left focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all relative min-h-[56px]"
+                      className="w-full pl-12 pr-4 py-3 md:py-4 rounded-xl bg-white/10 border border-white/20 text-white text-left focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all relative min-h-[48px] md:min-h-[56px]"
                     >
                       <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gold/70" />
                       {selectedDate ? (
@@ -198,7 +198,7 @@ export function HeroSection() {
                   <select
                     value={selectedTime}
                     onChange={(e) => setSelectedTime(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 rounded-xl bg-white/10 border border-white/20 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all"
+                    className="w-full pl-12 pr-4 py-3 md:py-4 rounded-xl bg-white/10 border border-white/20 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all"
                   >
                     <option value="" className="bg-slate-800 text-white">Любое время</option>
                     {Array.from({ length: 24 }, (_, i) => i + 1).map((hour) => {
@@ -221,7 +221,7 @@ export function HeroSection() {
                   <select
                     value={selectedDistrict}
                     onChange={(e) => setSelectedDistrict(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 rounded-xl bg-white/10 border border-white/20 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all"
+                    className="w-full pl-12 pr-4 py-3 md:py-4 rounded-xl bg-white/10 border border-white/20 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all"
                   >
                     <option value="" className="bg-slate-800 text-white">Все районы</option>
                     <optgroup label="Самара" className="bg-slate-800 text-white">
@@ -260,7 +260,7 @@ export function HeroSection() {
               <div className="flex items-end">
                 <button 
                   onClick={handleSearch}
-                  className="w-full h-[52px] md:h-[58px] px-4 md:px-6 rounded-xl bg-gradient-to-r from-magic-gold via-amber-400 to-magic-gold text-winter-950 font-bold text-lg md:text-xl shadow-lg shadow-magic-gold/30 hover:shadow-xl hover:shadow-magic-gold/40 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105 min-h-[44px]"
+                  className="w-full h-[48px] md:h-[58px] px-4 md:px-6 rounded-xl bg-gradient-to-r from-magic-gold via-amber-400 to-magic-gold text-winter-950 font-bold text-base md:text-xl shadow-lg shadow-magic-gold/30 hover:shadow-xl hover:shadow-magic-gold/40 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105 min-h-[44px]"
                 >
                   ✨ Вжухх!
                 </button>
