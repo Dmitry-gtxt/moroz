@@ -54,6 +54,7 @@ const CustomerRules = lazy(() => import("./pages/CustomerRules"));
 const ImageUsage = lazy(() => import("./pages/ImageUsage"));
 const BankInfo = lazy(() => import("./pages/BankInfo"));
 const Students = lazy(() => import("./pages/Students"));
+const InternalStatistics = lazy(() => import("./pages/InternalStatistics"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -117,6 +118,8 @@ const App = () => (
               <Route path="/image-usage" element={<ImageUsage />} />
               <Route path="/bank-info" element={<BankInfo />} />
               <Route path="/students" element={<Students />} />
+              {/* Internal statistics - secret URL */}
+              <Route path="/x7k9m2p4-q8r1-s5t3-u6v0-w8y4z1a2b3c4d5e6f7g8h9j" element={<InternalStatistics />} />
               {/* Messages */}
               <Route path="/messages" element={<Messages />} />
               {/* Customer cabinet routes */}
