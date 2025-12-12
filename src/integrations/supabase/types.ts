@@ -597,6 +597,44 @@ export type Database = {
           },
         ]
       }
+      referral_visits: {
+        Row: {
+          created_at: string
+          id: string
+          landing_page: string | null
+          partner_id: string
+          referrer_url: string | null
+          user_agent: string | null
+          visitor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          landing_page?: string | null
+          partner_id: string
+          referrer_url?: string | null
+          user_agent?: string | null
+          visitor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          landing_page?: string | null
+          partner_id?: string
+          referrer_url?: string | null
+          user_agent?: string | null
+          visitor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_visits_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           booking_id: string

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, ShoppingCart, TrendingUp, AlertCircle, Copy, ArrowLeft } from 'lucide-react';
+import { Users, ShoppingCart, TrendingUp, AlertCircle, Copy, ArrowLeft, MousePointerClick, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -39,6 +39,7 @@ export default function PartnerDashboard() {
   const [partner, setPartner] = useState<Partner | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [bookings, setBookings] = useState<ReferralBooking[]>([]);
+  const [visitsCount, setVisitsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -58,7 +59,7 @@ export default function PartnerDashboard() {
       .from('partners')
       .select('*')
       .eq('access_token', token)
-      .single();
+      .maybeSingle();
 
     if (partnerError || !partnerData) {
       setNotFound(true);
@@ -68,23 +69,27 @@ export default function PartnerDashboard() {
 
     setPartner(partnerData);
 
-    // Fetch registrations
-    const { data: regsData } = await supabase
-      .from('referral_registrations')
-      .select('*')
-      .eq('partner_id', partnerData.id)
-      .order('registered_at', { ascending: false });
+    // Fetch all data in parallel
+    const [visitsResult, regsData, bookingsData] = await Promise.all([
+      supabase
+        .from('referral_visits')
+        .select('id', { count: 'exact', head: true })
+        .eq('partner_id', partnerData.id),
+      supabase
+        .from('referral_registrations')
+        .select('*')
+        .eq('partner_id', partnerData.id)
+        .order('registered_at', { ascending: false }),
+      supabase
+        .from('referral_bookings')
+        .select('*')
+        .eq('partner_id', partnerData.id)
+        .order('created_at', { ascending: false }),
+    ]);
 
-    setRegistrations(regsData || []);
-
-    // Fetch bookings
-    const { data: bookingsData } = await supabase
-      .from('referral_bookings')
-      .select('*')
-      .eq('partner_id', partnerData.id)
-      .order('created_at', { ascending: false });
-
-    setBookings(bookingsData || []);
+    setVisitsCount(visitsResult.count || 0);
+    setRegistrations(regsData.data || []);
+    setBookings(bookingsData.data || []);
     setLoading(false);
   }
 
@@ -183,58 +188,94 @@ export default function PartnerDashboard() {
           </CardContent>
         </Card>
 
-        {/* Stats cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card className="bg-winter-900/50 border-snow-700/20">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-snow-400 flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Исполнители
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-snow-100">{performersCount}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-winter-900/50 border-snow-700/20">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-snow-400 flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Клиенты
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-snow-100">{customersCount}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-winter-900/50 border-snow-700/20">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-snow-400 flex items-center gap-2">
-                <ShoppingCart className="h-4 w-4" />
-                Оплаченные брони
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-green-500">{confirmedBookings.length}</div>
-              {cancelledBookings.length > 0 && (
-                <div className="text-sm text-red-400 flex items-center gap-1 mt-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {cancelledBookings.length} отменено
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          <Card className="bg-winter-900/50 border-snow-700/20">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-snow-400 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Общая сумма
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-magic-gold">
-                {totalAmount.toLocaleString('ru-RU')} ₽
+        {/* Funnel visualization */}
+        <Card className="mb-6 bg-winter-900/50 border-snow-700/20">
+          <CardHeader>
+            <CardTitle className="text-snow-100">Воронка конверсии</CardTitle>
+            <CardDescription className="text-snow-400">
+              Путь пользователя: переход → регистрация → бронирование
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              {/* Visits */}
+              <div className="flex-1 min-w-[120px] text-center p-4 bg-winter-800/50 rounded-lg">
+                <MousePointerClick className="h-6 w-6 mx-auto mb-2 text-blue-400" />
+                <div className="text-3xl font-bold text-snow-100">{visitsCount}</div>
+                <div className="text-xs text-snow-400 mt-1">Переходы</div>
               </div>
+              
+              <ArrowRight className="h-5 w-5 text-snow-600 hidden md:block" />
+              
+              {/* Registrations */}
+              <div className="flex-1 min-w-[120px] text-center p-4 bg-winter-800/50 rounded-lg">
+                <Users className="h-6 w-6 mx-auto mb-2 text-purple-400" />
+                <div className="text-3xl font-bold text-snow-100">{performersCount + customersCount}</div>
+                <div className="text-xs text-snow-400 mt-1">Регистрации</div>
+                {visitsCount > 0 && (
+                  <div className="text-xs text-magic-gold mt-1">
+                    {(((performersCount + customersCount) / visitsCount) * 100).toFixed(1)}%
+                  </div>
+                )}
+              </div>
+              
+              <ArrowRight className="h-5 w-5 text-snow-600 hidden md:block" />
+              
+              {/* Bookings */}
+              <div className="flex-1 min-w-[120px] text-center p-4 bg-winter-800/50 rounded-lg">
+                <ShoppingCart className="h-6 w-6 mx-auto mb-2 text-green-400" />
+                <div className="text-3xl font-bold text-green-500">{confirmedBookings.length}</div>
+                <div className="text-xs text-snow-400 mt-1">Оплаченные брони</div>
+                {(performersCount + customersCount) > 0 && (
+                  <div className="text-xs text-magic-gold mt-1">
+                    {((confirmedBookings.length / (performersCount + customersCount)) * 100).toFixed(1)}%
+                  </div>
+                )}
+              </div>
+              
+              <ArrowRight className="h-5 w-5 text-snow-600 hidden md:block" />
+              
+              {/* Revenue */}
+              <div className="flex-1 min-w-[120px] text-center p-4 bg-winter-800/50 rounded-lg">
+                <TrendingUp className="h-6 w-6 mx-auto mb-2 text-magic-gold" />
+                <div className="text-2xl font-bold text-magic-gold">{totalAmount.toLocaleString('ru-RU')} ₽</div>
+                <div className="text-xs text-snow-400 mt-1">Общая сумма</div>
+              </div>
+            </div>
+            
+            {cancelledBookings.length > 0 && (
+              <div className="mt-4 p-3 bg-red-950/30 border border-red-800/30 rounded-lg flex items-center gap-2 text-red-400 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                {cancelledBookings.length} бронирований отменено после оплаты
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Stats cards - breakdown */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Card className="bg-winter-900/50 border-snow-700/20">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-snow-100">{performersCount}</div>
+              <div className="text-xs text-snow-400">Исполнителей</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-winter-900/50 border-snow-700/20">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-snow-100">{customersCount}</div>
+              <div className="text-xs text-snow-400">Клиентов</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-winter-900/50 border-snow-700/20">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-green-500">{confirmedBookings.length}</div>
+              <div className="text-xs text-snow-400">Оплаченных броней</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-winter-900/50 border-snow-700/20">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-red-400">{cancelledBookings.length}</div>
+              <div className="text-xs text-snow-400">Отменено после оплаты</div>
             </CardContent>
           </Card>
         </div>
