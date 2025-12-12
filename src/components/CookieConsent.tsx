@@ -35,14 +35,14 @@ export function CookieConsent() {
         <div className="bg-card border border-border rounded-2xl shadow-xl p-4 md:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="flex-1 pr-8 sm:pr-0">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                 Мы используем файлы cookie для обеспечения работы сайта и улучшения вашего опыта. 
                 Продолжая использовать сайт, вы соглашаетесь с{' '}
-                <Link to="/cookies" className="text-accent hover:underline">
+                <Link to="/cookies" className="text-accent hover:underline underline-offset-2 py-1 inline-block min-h-[44px] leading-relaxed">
                   Политикой использования cookie
                 </Link>{' '}
                 и{' '}
-                <Link to="/privacy" className="text-accent hover:underline">
+                <Link to="/privacy" className="text-accent hover:underline underline-offset-2 py-1 inline-block min-h-[44px] leading-relaxed">
                   Политикой конфиденциальности
                 </Link>.
               </p>
