@@ -28,8 +28,8 @@ const statusLabels: Record<string, { label: string; variant: 'default' | 'second
 
 const paymentLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   not_paid: { label: 'Не оплачен', variant: 'outline' },
-  prepaid: { label: 'Предоплата', variant: 'secondary' },
-  paid: { label: 'Оплачен', variant: 'default' },
+  prepayment_paid: { label: 'Предоплата', variant: 'secondary' },
+  fully_paid: { label: 'Оплачен', variant: 'default' },
   refunded: { label: 'Возврат', variant: 'destructive' },
 };
 
@@ -82,6 +82,20 @@ export default function AdminOrders() {
       toast.error('Ошибка обновления статуса');
     } else {
       toast.success('Статус заказа обновлён');
+      fetchBookings();
+    }
+  }
+
+  async function updatePaymentStatus(id: string, newStatus: Database['public']['Enums']['payment_status']) {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ payment_status: newStatus })
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Ошибка обновления статуса оплаты');
+    } else {
+      toast.success('Статус оплаты обновлён');
       fetchBookings();
     }
   }
@@ -155,7 +169,20 @@ export default function AdminOrders() {
                         <TableCell>{eventTypeLabels[booking.event_type] ?? booking.event_type}</TableCell>
                         <TableCell className="font-medium">{booking.price_total} ₽</TableCell>
                         <TableCell>
-                          <Badge variant={payment.variant}>{payment.label}</Badge>
+                          <Select
+                            value={booking.payment_status}
+                            onValueChange={(value) => updatePaymentStatus(booking.id, value as Database['public']['Enums']['payment_status'])}
+                          >
+                            <SelectTrigger className="w-32">
+                              <Badge variant={payment.variant}>{payment.label}</Badge>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="not_paid">Не оплачен</SelectItem>
+                              <SelectItem value="prepayment_paid">Предоплата</SelectItem>
+                              <SelectItem value="fully_paid">Оплачен</SelectItem>
+                              <SelectItem value="refunded">Возврат</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>
                           <Select
