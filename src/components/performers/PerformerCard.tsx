@@ -4,6 +4,7 @@ import { Star, MapPin, Video, CheckCircle, Clock, Calendar, Play, X, Timer } fro
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { OptimizedImage } from '@/components/ui/optimized-image';
 import { getCustomerPrice, getPerformerNetAmount } from '@/lib/pricing';
 import { useAuth } from '@/hooks/useAuth';
 import type { Database } from '@/integrations/supabase/types';
@@ -95,11 +96,10 @@ export function PerformerCard({
     <div className="group bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden">
-        <img
+        <OptimizedImage
           src={photoUrl}
           alt={performer.display_name}
-          loading="lazy"
-          decoding="async"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         
