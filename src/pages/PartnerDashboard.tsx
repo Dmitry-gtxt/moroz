@@ -95,7 +95,7 @@ export default function PartnerDashboard() {
 
   function getReferralLink() {
     if (!partner) return '';
-    return `${window.location.origin}/?ref=${partner.referral_code}`;
+    return `https://Дед-Морозы.РФ/?ref=${partner.referral_code}`;
   }
 
   function copyToClipboard(text: string) {
