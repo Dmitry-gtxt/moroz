@@ -56,6 +56,37 @@ const PerformerProfile = () => {
   const [videoWatched, setVideoWatched] = useState(false);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd || !performer?.photo_urls) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      setCurrentPhotoIndex(prev => 
+        prev === performer.photo_urls!.length - 1 ? 0 : prev + 1
+      );
+    }
+    if (isRightSwipe) {
+      setCurrentPhotoIndex(prev => 
+        prev === 0 ? performer.photo_urls!.length - 1 : prev - 1
+      );
+    }
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -207,18 +238,25 @@ const PerformerProfile = () => {
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Photo */}
                 <div className="flex-shrink-0">
-                  <div className="relative w-full md:w-64 aspect-square rounded-2xl overflow-hidden">
+                  <button 
+                    className="relative w-full md:w-64 aspect-square rounded-2xl overflow-hidden cursor-zoom-in group"
+                    onClick={() => {
+                      setCurrentPhotoIndex(0);
+                      setPhotoModalOpen(true);
+                    }}
+                  >
                     <img
                       src={photoUrl}
                       alt={performer.display_name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
                     />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                     {performer.verification_status === 'verified' && (
                       <div className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
                         <CheckCircle className="h-6 w-6 text-white" />
                       </div>
                     )}
-                  </div>
+                  </button>
                   {performer.video_greeting_url && performer.video_greeting_url.trim() !== '' && (
                     <Button 
                       variant="outline" 
@@ -295,11 +333,17 @@ const PerformerProfile = () => {
                         </>
                       )}
                       
-                      <div className="flex items-center justify-center min-h-[60vh]">
+                      <div 
+                        className="flex items-center justify-center min-h-[60vh]"
+                        onTouchStart={onTouchStart}
+                        onTouchMove={onTouchMove}
+                        onTouchEnd={onTouchEnd}
+                      >
                         <img
                           src={performer.photo_urls?.[currentPhotoIndex] || photoUrl}
                           alt={`${performer.display_name} - фото ${currentPhotoIndex + 1}`}
-                          className="max-w-full max-h-[80vh] object-contain"
+                          className="max-w-full max-h-[80vh] object-contain select-none pointer-events-none"
+                          draggable={false}
                         />
                       </div>
                       
