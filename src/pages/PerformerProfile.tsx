@@ -54,6 +54,8 @@ const PerformerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [videoWatched, setVideoWatched] = useState(false);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   useEffect(() => {
     async function fetchData() {
@@ -230,6 +232,92 @@ const PerformerProfile = () => {
                       Смотреть видео
                     </Button>
                   )}
+
+                  {/* Photo Gallery */}
+                  {performer.photo_urls && performer.photo_urls.length > 1 && (
+                    <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
+                      {performer.photo_urls.map((url, index) => (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            setCurrentPhotoIndex(index);
+                            setPhotoModalOpen(true);
+                          }}
+                          className={`relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${
+                            index === 0 ? 'border-primary' : 'border-transparent hover:border-primary/50'
+                          }`}
+                        >
+                          <img
+                            src={url}
+                            alt={`Фото ${index + 1}`}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Photo Modal */}
+                  <Dialog open={photoModalOpen} onOpenChange={setPhotoModalOpen}>
+                    <DialogContent className="max-w-4xl p-0 bg-black/95 border-none">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 z-10 text-white hover:bg-white/20"
+                        onClick={() => setPhotoModalOpen(false)}
+                      >
+                        <X className="h-6 w-6" />
+                      </Button>
+                      
+                      {performer.photo_urls && performer.photo_urls.length > 1 && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-white/20"
+                            onClick={() => setCurrentPhotoIndex(prev => 
+                              prev === 0 ? performer.photo_urls!.length - 1 : prev - 1
+                            )}
+                          >
+                            <ChevronLeft className="h-8 w-8" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-white/20"
+                            onClick={() => setCurrentPhotoIndex(prev => 
+                              prev === performer.photo_urls!.length - 1 ? 0 : prev + 1
+                            )}
+                          >
+                            <ChevronRight className="h-8 w-8" />
+                          </Button>
+                        </>
+                      )}
+                      
+                      <div className="flex items-center justify-center min-h-[60vh]">
+                        <img
+                          src={performer.photo_urls?.[currentPhotoIndex] || photoUrl}
+                          alt={`${performer.display_name} - фото ${currentPhotoIndex + 1}`}
+                          className="max-w-full max-h-[80vh] object-contain"
+                        />
+                      </div>
+                      
+                      {performer.photo_urls && performer.photo_urls.length > 1 && (
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                          {performer.photo_urls.map((_, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setCurrentPhotoIndex(index)}
+                              className={`w-2 h-2 rounded-full transition-all ${
+                                index === currentPhotoIndex ? 'bg-white w-4' : 'bg-white/50 hover:bg-white/70'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </DialogContent>
+                  </Dialog>
 
                   {/* Video Modal */}
                   <Dialog open={videoModalOpen} onOpenChange={setVideoModalOpen}>
