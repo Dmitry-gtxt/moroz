@@ -306,6 +306,48 @@ export type Database = {
           },
         ]
       }
+      partners: {
+        Row: {
+          access_token: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          organization_type: string | null
+          referral_code: string
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          organization_type?: string | null
+          referral_code: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          organization_type?: string | null
+          referral_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       performer_profiles: {
         Row: {
           age: number | null
@@ -473,6 +515,87 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      referral_bookings: {
+        Row: {
+          booking_amount: number
+          booking_id: string
+          created_at: string
+          id: string
+          partner_id: string
+          status: string
+        }
+        Insert: {
+          booking_amount: number
+          booking_id: string
+          created_at?: string
+          id?: string
+          partner_id: string
+          status: string
+        }
+        Update: {
+          booking_amount?: number
+          booking_id?: string
+          created_at?: string
+          id?: string
+          partner_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_bookings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_bookings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "secure_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_bookings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_registrations: {
+        Row: {
+          id: string
+          partner_id: string
+          registered_at: string
+          user_id: string
+          user_type: string
+        }
+        Insert: {
+          id?: string
+          partner_id: string
+          registered_at?: string
+          user_id: string
+          user_type: string
+        }
+        Update: {
+          id?: string
+          partner_id?: string
+          registered_at?: string
+          user_id?: string
+          user_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_registrations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reviews: {
         Row: {

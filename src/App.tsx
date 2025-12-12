@@ -6,7 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CookieConsent } from "@/components/CookieConsent";
 import { MessageNotificationBubble } from "@/components/notifications/MessageNotificationBubble";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import { checkAndSaveReferralFromUrl } from "@/lib/referral";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Critical pages - loaded immediately
@@ -29,6 +30,8 @@ const AdminPaidBookings = lazy(() => import("./pages/admin/AdminPaidBookings"));
 const AdminAuditLog = lazy(() => import("./pages/admin/AdminAuditLog"));
 const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
 const AdminReviews = lazy(() => import("./pages/admin/AdminReviews"));
+const AdminPartners = lazy(() => import("./pages/admin/AdminPartners"));
+const PartnerDashboard = lazy(() => import("./pages/PartnerDashboard"));
 const PerformerRegistration = lazy(() => import("./pages/PerformerRegistration"));
 const PerformerDashboard = lazy(() => import("./pages/performer/PerformerDashboard"));
 const PerformerProfilePage = lazy(() => import("./pages/performer/PerformerProfile"));
@@ -73,6 +76,14 @@ const PageLoader = () => (
   </div>
 );
 
+// Check referral on app load
+function ReferralTracker() {
+  useEffect(() => {
+    checkAndSaveReferralFromUrl();
+  }, []);
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -80,6 +91,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ReferralTracker />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -90,6 +102,8 @@ const App = () => (
               <Route path="/login" element={<Auth />} />
               <Route path="/register" element={<Auth />} />
               <Route path="/become-performer" element={<PerformerRegistration />} />
+              {/* Partner dashboard */}
+              <Route path="/partner/:token" element={<PartnerDashboard />} />
               {/* Info pages */}
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/privacy" element={<Privacy />} />
@@ -125,6 +139,7 @@ const App = () => (
               <Route path="/admin/orders" element={<AdminOrders />} />
               <Route path="/admin/history" element={<AdminBookingHistory />} />
               <Route path="/admin/paid" element={<AdminPaidBookings />} />
+              <Route path="/admin/partners" element={<AdminPartners />} />
               <Route path="/admin/audit" element={<AdminAuditLog />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
               <Route path="/admin/performer/:id" element={<AdminPerformerView />} />

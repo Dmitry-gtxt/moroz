@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Snowflake, Mail, Lock, User, Phone, ArrowLeft, Sparkles, Star } from 'lucide-react';
 import { autoSubscribeToPush } from '@/lib/pushNotifications';
+import { getReferralCode, clearReferralCode } from '@/lib/referral';
 
 type AuthMode = 'login' | 'register' | 'forgot-password';
 
@@ -103,8 +104,37 @@ const Auth = () => {
           },
         }).catch(err => console.error('Failed to send welcome email:', err));
         
-        // Auto-subscribe to push notifications if user was created
+        // Track referral registration if applicable
         if (data.user?.id) {
+          const refCode = getReferralCode();
+          if (refCode) {
+            // Find partner by referral code and create registration record
+            (async () => {
+              try {
+                const { data: partner } = await supabase
+                  .from('partners')
+                  .select('id')
+                  .eq('referral_code', refCode)
+                  .eq('is_active', true)
+                  .single();
+                
+                if (partner) {
+                  await supabase
+                    .from('referral_registrations')
+                    .insert({
+                      partner_id: partner.id,
+                      user_id: data.user!.id,
+                      user_type: 'customer',
+                    });
+                  clearReferralCode();
+                }
+              } catch (err) {
+                console.log('Referral tracking skipped:', err);
+              }
+            })();
+          }
+          
+          // Auto-subscribe to push notifications
           autoSubscribeToPush(data.user.id).then(success => {
             if (success) {
               toast.success('Push-уведомления включены! Вы будете получать уведомления о заказах и сообщениях.');

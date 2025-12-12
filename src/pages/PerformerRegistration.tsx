@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { toast } from 'sonner';
 import { Upload, X, Check, Loader2, Phone } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
+import { getReferralCode, clearReferralCode } from '@/lib/referral';
 
 type PerformerType = Database['public']['Enums']['performer_type'];
 type EventFormat = Database['public']['Enums']['event_format'];
@@ -386,6 +387,32 @@ export default function PerformerRegistration() {
           performerName: displayName,
         },
       }).catch(err => console.error('Failed to send admin notification:', err));
+
+      // 6. Track referral registration if applicable
+      const refCode = getReferralCode();
+      if (refCode) {
+        try {
+          const { data: partner } = await supabase
+            .from('partners')
+            .select('id')
+            .eq('referral_code', refCode)
+            .eq('is_active', true)
+            .single();
+          
+          if (partner) {
+            await supabase
+              .from('referral_registrations')
+              .insert({
+                partner_id: partner.id,
+                user_id: user.id,
+                user_type: 'performer',
+              });
+            clearReferralCode();
+          }
+        } catch (err) {
+          console.log('Referral tracking skipped:', err);
+        }
+      }
 
       toast.success('Анкета отправлена! Наш менеджер свяжется с вами для верификации в течение 24 часов.');
       navigate('/performer');
