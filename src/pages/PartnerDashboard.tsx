@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, ShoppingCart, TrendingUp, AlertCircle, Copy, ArrowLeft, MousePointerClick, ArrowRight } from 'lucide-react';
+import { Users, ShoppingCart, AlertCircle, Copy, ArrowLeft, MousePointerClick, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -108,7 +108,7 @@ export default function PartnerDashboard() {
   const customersCount = registrations.filter(r => r.user_type === 'customer').length;
   const confirmedBookings = bookings.filter(b => b.status === 'confirmed_paid');
   const cancelledBookings = bookings.filter(b => b.status === 'cancelled_after_payment');
-  const totalAmount = confirmedBookings.reduce((sum, b) => sum + (b.booking_amount || 0), 0);
+  
 
   if (loading) {
     return (
@@ -233,14 +233,6 @@ export default function PartnerDashboard() {
                 )}
               </div>
               
-              <ArrowRight className="h-5 w-5 text-snow-600 hidden md:block" />
-              
-              {/* Revenue */}
-              <div className="flex-1 min-w-[120px] text-center p-4 bg-winter-800/50 rounded-lg">
-                <TrendingUp className="h-6 w-6 mx-auto mb-2 text-magic-gold" />
-                <div className="text-2xl font-bold text-magic-gold">{totalAmount.toLocaleString('ru-RU')} ₽</div>
-                <div className="text-xs text-snow-400 mt-1">Общая сумма</div>
-              </div>
             </div>
             
             {cancelledBookings.length > 0 && (
@@ -346,7 +338,6 @@ export default function PartnerDashboard() {
                     <TableHeader>
                       <TableRow className="border-snow-700/20">
                         <TableHead className="text-snow-400">Статус</TableHead>
-                        <TableHead className="text-snow-400">Сумма</TableHead>
                         <TableHead className="text-snow-400">Дата</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -357,9 +348,6 @@ export default function PartnerDashboard() {
                             <Badge variant={booking.status === 'confirmed_paid' ? 'default' : 'destructive'}>
                               {booking.status === 'confirmed_paid' ? 'Оплачено' : 'Отменено'}
                             </Badge>
-                          </TableCell>
-                          <TableCell className="text-snow-300 font-medium">
-                            {booking.booking_amount.toLocaleString('ru-RU')} ₽
                           </TableCell>
                           <TableCell className="text-snow-300">
                             {format(new Date(booking.created_at), 'd MMMM yyyy, HH:mm', { locale: ru })}
