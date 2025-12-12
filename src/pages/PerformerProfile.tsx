@@ -5,11 +5,12 @@ import { Footer } from '@/components/layout/Footer';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { getCustomerPrice, getCommissionRate } from '@/lib/pricing';
 import { 
   Star, MapPin, Clock, Users, Video, CheckCircle, 
-  ChevronLeft, ChevronRight, Calendar, Play, MessageCircle, Loader2
+  ChevronLeft, ChevronRight, Calendar, Play, MessageCircle, Loader2, X
 } from 'lucide-react';
 import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isBefore, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -51,6 +52,7 @@ const PerformerProfile = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [commissionRate, setCommissionRate] = useState(40);
   const [loading, setLoading] = useState(true);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -218,12 +220,34 @@ const PerformerProfile = () => {
                     <Button 
                       variant="outline" 
                       className="w-full mt-3 gap-2 border-red-300/60 bg-red-50/30 text-red-600 hover:bg-red-100/50 hover:border-red-400/60 animate-[pulse_3s_ease-in-out_infinite]"
-                      onClick={() => window.open(performer.video_greeting_url!, '_blank')}
+                      onClick={() => setVideoModalOpen(true)}
                     >
                       <Play className="h-4 w-4" />
                       Смотреть видео
                     </Button>
                   )}
+
+                  {/* Video Modal */}
+                  <Dialog open={videoModalOpen} onOpenChange={setVideoModalOpen}>
+                    <DialogContent className="max-w-4xl p-0 bg-black/95 border-none">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 z-10 text-white hover:bg-white/20"
+                        onClick={() => setVideoModalOpen(false)}
+                      >
+                        <X className="h-6 w-6" />
+                      </Button>
+                      <div className="aspect-video w-full">
+                        <video
+                          src={performer.video_greeting_url!}
+                          controls
+                          autoPlay
+                          className="w-full h-full"
+                        />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 {/* Info */}
