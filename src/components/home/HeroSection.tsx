@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, MapPin, Search, Sparkles, Star } from 'lucide-react';
+import { Calendar, Clock, MapPin, Search, Sparkles, Star, CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { districtGroups } from '@/data/mockData';
 import heroImage from '@/assets/magical-winter-hero.jpg';
 
@@ -21,11 +25,12 @@ const TwinklingStar = ({ style }: { style: React.CSSProperties }) => (
 
 export function HeroSection() {
   const navigate = useNavigate();
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [snowflakes, setSnowflakes] = useState<React.CSSProperties[]>([]);
   const [stars, setStars] = useState<React.CSSProperties[]>([]);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
     // Generate snowflakes
@@ -50,7 +55,7 @@ export function HeroSection() {
 
   const handleSearch = () => {
     const params = new URLSearchParams();
-    if (selectedDate) params.set('date', selectedDate);
+    if (selectedDate) params.set('date', format(selectedDate, 'yyyy-MM-dd'));
     if (selectedTime) params.set('time', selectedTime);
     if (selectedDistrict) params.set('district', selectedDistrict);
     navigate(`/catalog?${params.toString()}`);
@@ -157,16 +162,32 @@ export function HeroSection() {
               {/* Date */}
               <div className="relative">
                 <label className="block text-sm text-gold-light mb-2 text-left font-medium">📅 Дата визита</label>
-                <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gold/70" />
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                    className="w-full pl-12 pr-4 py-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all"
-                  />
-                </div>
+                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="w-full pl-12 pr-4 py-4 rounded-xl bg-white/10 border border-white/20 text-white text-left focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all relative min-h-[56px]"
+                    >
+                      <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gold/70" />
+                      {selectedDate ? (
+                        format(selectedDate, 'd MMMM', { locale: ru })
+                      ) : (
+                        <span className="text-white/50">Выберите дату</span>
+                      )}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-winter-900 border-magic-gold/20" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => {
+                        setSelectedDate(date);
+                        setCalendarOpen(false);
+                      }}
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Time */}
