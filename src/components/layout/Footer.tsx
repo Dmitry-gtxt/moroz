@@ -5,9 +5,8 @@ import santaHatLogo from '@/assets/santa-hat-logo.png';
 export function Footer() {
   return (
     <footer className="relative bg-gradient-to-b from-winter-950 to-winter-900 text-snow-200 overflow-hidden">
-      {/* Decorative elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Snowflakes */}
+      {/* Decorative elements - hidden on mobile */}
+      <div className="absolute inset-0 pointer-events-none hidden md:block">
         {[...Array(15)].map((_, i) => (
           <Snowflake
             key={i}
@@ -21,8 +20,6 @@ export function Footer() {
             }}
           />
         ))}
-        
-        {/* Gradient orbs */}
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-magic-purple/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-magic-cyan/5 rounded-full blur-3xl" />
       </div>
@@ -30,8 +27,40 @@ export function Footer() {
       {/* Top decorative border */}
       <div className="h-px bg-gradient-to-r from-transparent via-magic-gold/30 to-transparent" />
       
-      <div className="container relative z-10 pt-16 pb-5">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+      <div className="container relative z-10 pt-6 md:pt-16 pb-4 md:pb-5">
+        {/* Mobile: Compact layout */}
+        <div className="md:hidden space-y-4">
+          {/* Brand - compact */}
+          <div className="flex items-center justify-center gap-2">
+            <img src={santaHatLogo} alt="Дед-Морозы.РФ" className="h-8 w-8" />
+            <span className="font-display text-lg font-bold text-snow-100">
+              Дед-Морозы<span className="text-gradient-gold">.РФ</span>
+            </span>
+          </div>
+          
+          {/* Contact - horizontal */}
+          <div className="flex justify-center gap-4 text-xs">
+            <a href="tel:+79953829736" className="flex items-center gap-1.5 text-snow-400">
+              <Phone className="h-3.5 w-3.5 text-magic-gold" />
+              +7 (995) 382-97-36
+            </a>
+            <a href="mailto:ded-morozy@gtxt.biz" className="flex items-center gap-1.5 text-snow-400">
+              <Mail className="h-3.5 w-3.5 text-magic-gold" />
+              ded-morozy@gtxt.biz
+            </a>
+          </div>
+          
+          {/* Quick links - grid */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-center">
+            <Link to="/catalog" className="text-snow-400 py-1">Каталог</Link>
+            <Link to="/become-performer" className="text-snow-400 py-1">Стать исполнителем</Link>
+            <Link to="/how-it-works" className="text-snow-400 py-1">Как заказать</Link>
+            <Link to="/performer-code" className="text-snow-400 py-1">Кодекс исполнителя</Link>
+          </div>
+        </div>
+
+        {/* Desktop: Full layout */}
+        <div className="hidden md:grid grid-cols-4 gap-10">
           {/* Brand */}
           <div className="space-y-5">
             <Link to="/" className="inline-flex items-center gap-3 group">
@@ -50,8 +79,6 @@ export function Footer() {
               Лучший сервис для заказа Деда Мороза и Снегурочки в Самаре и Самарской области. 
               Проверенные исполнители, честные отзывы.
             </p>
-            
-            {/* Social proof */}
             <div className="flex items-center gap-2 text-sm text-snow-400">
               <div className="flex -space-x-0.5">
                 {[...Array(5)].map((_, i) => (
@@ -154,22 +181,21 @@ export function Footer() {
         </div>
 
         {/* Legal links & Copyright */}
-        <div className="border-t border-magic-gold/10 mt-12 pt-2">
-          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs sm:text-sm text-snow-500 mb-2">
+        <div className="border-t border-magic-gold/10 mt-4 md:mt-12 pt-2">
+          <div className="flex flex-wrap justify-center gap-x-3 md:gap-x-4 gap-y-0 text-[10px] md:text-sm text-snow-500 mb-2">
             {[
-              { to: '/terms', label: 'Пользовательское соглашение' },
-              { to: '/privacy', label: 'Политика конфиденциальности' },
-              { to: '/offer', label: 'Публичная оферта' },
-              { to: '/refund-policy', label: 'Правила возврата' },
+              { to: '/terms', label: 'Соглашение' },
+              { to: '/privacy', label: 'Конфиденциальность' },
+              { to: '/offer', label: 'Оферта' },
+              { to: '/refund-policy', label: 'Возврат' },
               { to: '/cookies', label: 'Cookie' },
-              { to: '/image-usage', label: 'Использование изображений' },
-              { to: '/students', label: 'Для студентов' },
-              { to: '/bank-info', label: 'Информация для банка' },
+              { to: '/students', label: 'Студентам' },
+              { to: '/bank-info', label: 'Для банка' },
             ].map((link) => (
               <Link 
                 key={link.to}
                 to={link.to} 
-                className="hover:text-magic-gold transition-colors py-2 min-h-[44px] inline-flex items-center"
+                className="hover:text-magic-gold transition-colors py-1 md:py-2 md:min-h-[44px] inline-flex items-center"
               >
                 {link.label}
               </Link>
@@ -177,12 +203,11 @@ export function Footer() {
           </div>
           
           {/* Copyright & Requisites */}
-          <p className="text-xs text-snow-500 text-center flex flex-wrap items-center justify-center gap-x-2">
-            <span>© 2025-2026 <span className="text-gradient-gold font-semibold">Дед-Морозы.РФ</span></span>
-            <span className="text-snow-600">•</span>
-            <span className="text-snow-600">ИП Шевчук Д.С. • ИНН: 631803547498 • ОГРНИП: 324631300031498</span>
-            <span className="text-snow-600">•</span>
-            <span className="text-snow-600 inline-flex items-center gap-1">Сделано с <Heart className="w-3 h-3 text-santa-400 fill-santa-400" /> для волшебных праздников</span>
+          <p className="text-[10px] md:text-xs text-snow-500 text-center flex flex-wrap items-center justify-center gap-x-1 md:gap-x-2">
+            <span>© 2025 <span className="text-gradient-gold font-semibold">Дед-Морозы.РФ</span></span>
+            <span className="hidden md:inline text-snow-600">•</span>
+            <span className="hidden md:inline text-snow-600">ИП Шевчук Д.С. • ИНН: 631803547498 • ОГРНИП: 324631300031498</span>
+            <span className="md:hidden text-snow-600">• ИП Шевчук Д.С.</span>
           </p>
         </div>
       </div>
