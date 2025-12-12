@@ -237,7 +237,7 @@ const PerformerProfile = () => {
               {/* Header */}
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Photo */}
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 w-full md:w-64">
                   <button 
                     className="relative w-full md:w-64 aspect-square rounded-2xl overflow-hidden cursor-zoom-in group"
                     onClick={() => {
