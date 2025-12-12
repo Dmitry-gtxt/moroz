@@ -105,7 +105,11 @@ const Auth = () => {
         
         // Auto-subscribe to push notifications if user was created
         if (data.user?.id) {
-          autoSubscribeToPush(data.user.id).catch(err => 
+          autoSubscribeToPush(data.user.id).then(success => {
+            if (success) {
+              toast.success('Push-уведомления включены! Вы будете получать уведомления о заказах и сообщениях.');
+            }
+          }).catch(err => 
             console.log('Auto push subscription skipped:', err)
           );
         }
