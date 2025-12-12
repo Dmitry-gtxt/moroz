@@ -6,48 +6,72 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CookieConsent } from "@/components/CookieConsent";
 import { MessageNotificationBubble } from "@/components/notifications/MessageNotificationBubble";
+import { lazy, Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Critical pages - loaded immediately
 import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import PerformerProfile from "./pages/PerformerProfile";
-import Booking from "./pages/Booking";
 import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminPerformers from "./pages/admin/AdminPerformers";
-import AdminVerification from "./pages/admin/AdminVerification";
-import AdminModeration from "./pages/admin/AdminModeration";
-import AdminOrders from "./pages/admin/AdminOrders";
-import AdminPerformerView from "./pages/admin/AdminPerformerView";
-import AdminBookingHistory from "./pages/admin/AdminBookingHistory";
-import AdminPaidBookings from "./pages/admin/AdminPaidBookings";
-import AdminAuditLog from "./pages/admin/AdminAuditLog";
-import AdminMessages from "./pages/admin/AdminMessages";
-import PerformerRegistration from "./pages/PerformerRegistration";
-import PerformerDashboard from "./pages/performer/PerformerDashboard";
-import PerformerProfilePage from "./pages/performer/PerformerProfile";
-import PerformerCalendar from "./pages/performer/PerformerCalendar";
-import PerformerBookings from "./pages/performer/PerformerBookings";
-import CustomerDashboard from "./pages/customer/CustomerDashboard";
-import CustomerBookings from "./pages/customer/CustomerBookings";
-import CustomerProfile from "./pages/customer/CustomerProfile";
-import CustomerCatalog from "./pages/customer/CustomerCatalog";
-import Messages from "./pages/Messages";
-import HowItWorks from "./pages/HowItWorks";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import Offer from "./pages/Offer";
-import RefundPolicy from "./pages/RefundPolicy";
-import Cookies from "./pages/Cookies";
-import PerformerAgreement from "./pages/PerformerAgreement";
-import PerformerCode from "./pages/PerformerCode";
-import CustomerRules from "./pages/CustomerRules";
-import ImageUsage from "./pages/ImageUsage";
-import BankInfo from "./pages/BankInfo";
-import Students from "./pages/Students";
 
-import AdminReviews from "./pages/admin/AdminReviews";
+// Lazy loaded pages - loaded on demand
+const Booking = lazy(() => import("./pages/Booking"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminPerformers = lazy(() => import("./pages/admin/AdminPerformers"));
+const AdminVerification = lazy(() => import("./pages/admin/AdminVerification"));
+const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
+const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminPerformerView = lazy(() => import("./pages/admin/AdminPerformerView"));
+const AdminBookingHistory = lazy(() => import("./pages/admin/AdminBookingHistory"));
+const AdminPaidBookings = lazy(() => import("./pages/admin/AdminPaidBookings"));
+const AdminAuditLog = lazy(() => import("./pages/admin/AdminAuditLog"));
+const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
+const AdminReviews = lazy(() => import("./pages/admin/AdminReviews"));
+const PerformerRegistration = lazy(() => import("./pages/PerformerRegistration"));
+const PerformerDashboard = lazy(() => import("./pages/performer/PerformerDashboard"));
+const PerformerProfilePage = lazy(() => import("./pages/performer/PerformerProfile"));
+const PerformerCalendar = lazy(() => import("./pages/performer/PerformerCalendar"));
+const PerformerBookings = lazy(() => import("./pages/performer/PerformerBookings"));
+const CustomerDashboard = lazy(() => import("./pages/customer/CustomerDashboard"));
+const CustomerBookings = lazy(() => import("./pages/customer/CustomerBookings"));
+const CustomerProfile = lazy(() => import("./pages/customer/CustomerProfile"));
+const CustomerCatalog = lazy(() => import("./pages/customer/CustomerCatalog"));
+const Messages = lazy(() => import("./pages/Messages"));
+const HowItWorks = lazy(() => import("./pages/HowItWorks"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Offer = lazy(() => import("./pages/Offer"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
+const Cookies = lazy(() => import("./pages/Cookies"));
+const PerformerAgreement = lazy(() => import("./pages/PerformerAgreement"));
+const PerformerCode = lazy(() => import("./pages/PerformerCode"));
+const CustomerRules = lazy(() => import("./pages/CustomerRules"));
+const ImageUsage = lazy(() => import("./pages/ImageUsage"));
+const BankInfo = lazy(() => import("./pages/BankInfo"));
+const Students = lazy(() => import("./pages/Students"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    },
+  },
+});
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="space-y-4 w-full max-w-md px-4">
+      <Skeleton className="h-8 w-3/4 mx-auto" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+      <Skeleton className="h-32 w-full" />
+    </div>
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -56,56 +80,58 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/catalog" element={<Catalog />} />
-            <Route path="/performer/:id" element={<PerformerProfile />} />
-            <Route path="/booking/:performerId" element={<Booking />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/login" element={<Auth />} />
-            <Route path="/register" element={<Auth />} />
-            <Route path="/become-performer" element={<PerformerRegistration />} />
-            {/* Info pages */}
-            <Route path="/how-it-works" element={<HowItWorks />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/offer" element={<Offer />} />
-            <Route path="/refund-policy" element={<RefundPolicy />} />
-            <Route path="/cookies" element={<Cookies />} />
-            <Route path="/performer-agreement" element={<PerformerAgreement />} />
-            <Route path="/performer-code" element={<PerformerCode />} />
-            <Route path="/customer-rules" element={<CustomerRules />} />
-            <Route path="/image-usage" element={<ImageUsage />} />
-            <Route path="/bank-info" element={<BankInfo />} />
-            <Route path="/students" element={<Students />} />
-            {/* Messages */}
-            <Route path="/messages" element={<Messages />} />
-            {/* Customer cabinet routes */}
-            <Route path="/cabinet" element={<CustomerDashboard />} />
-            <Route path="/cabinet/catalog" element={<CustomerCatalog />} />
-            <Route path="/cabinet/bookings" element={<CustomerBookings />} />
-            <Route path="/cabinet/profile" element={<CustomerProfile />} />
-            <Route path="/my-bookings" element={<CustomerBookings />} />
-            {/* Performer dashboard routes */}
-            <Route path="/performer" element={<PerformerDashboard />} />
-            <Route path="/performer/profile" element={<PerformerProfilePage />} />
-            <Route path="/performer/calendar" element={<PerformerCalendar />} />
-            <Route path="/performer/bookings" element={<PerformerBookings />} />
-            {/* Admin routes */}
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/performers" element={<AdminPerformers />} />
-            <Route path="/admin/verification" element={<AdminVerification />} />
-            <Route path="/admin/moderation" element={<AdminModeration />} />
-            <Route path="/admin/reviews" element={<AdminReviews />} />
-            <Route path="/admin/orders" element={<AdminOrders />} />
-            <Route path="/admin/history" element={<AdminBookingHistory />} />
-            <Route path="/admin/paid" element={<AdminPaidBookings />} />
-            <Route path="/admin/audit" element={<AdminAuditLog />} />
-            <Route path="/admin/messages" element={<AdminMessages />} />
-            <Route path="/admin/performer/:id" element={<AdminPerformerView />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/catalog" element={<Catalog />} />
+              <Route path="/performer/:id" element={<PerformerProfile />} />
+              <Route path="/booking/:performerId" element={<Booking />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/login" element={<Auth />} />
+              <Route path="/register" element={<Auth />} />
+              <Route path="/become-performer" element={<PerformerRegistration />} />
+              {/* Info pages */}
+              <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/offer" element={<Offer />} />
+              <Route path="/refund-policy" element={<RefundPolicy />} />
+              <Route path="/cookies" element={<Cookies />} />
+              <Route path="/performer-agreement" element={<PerformerAgreement />} />
+              <Route path="/performer-code" element={<PerformerCode />} />
+              <Route path="/customer-rules" element={<CustomerRules />} />
+              <Route path="/image-usage" element={<ImageUsage />} />
+              <Route path="/bank-info" element={<BankInfo />} />
+              <Route path="/students" element={<Students />} />
+              {/* Messages */}
+              <Route path="/messages" element={<Messages />} />
+              {/* Customer cabinet routes */}
+              <Route path="/cabinet" element={<CustomerDashboard />} />
+              <Route path="/cabinet/catalog" element={<CustomerCatalog />} />
+              <Route path="/cabinet/bookings" element={<CustomerBookings />} />
+              <Route path="/cabinet/profile" element={<CustomerProfile />} />
+              <Route path="/my-bookings" element={<CustomerBookings />} />
+              {/* Performer dashboard routes */}
+              <Route path="/performer" element={<PerformerDashboard />} />
+              <Route path="/performer/profile" element={<PerformerProfilePage />} />
+              <Route path="/performer/calendar" element={<PerformerCalendar />} />
+              <Route path="/performer/bookings" element={<PerformerBookings />} />
+              {/* Admin routes */}
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/performers" element={<AdminPerformers />} />
+              <Route path="/admin/verification" element={<AdminVerification />} />
+              <Route path="/admin/moderation" element={<AdminModeration />} />
+              <Route path="/admin/reviews" element={<AdminReviews />} />
+              <Route path="/admin/orders" element={<AdminOrders />} />
+              <Route path="/admin/history" element={<AdminBookingHistory />} />
+              <Route path="/admin/paid" element={<AdminPaidBookings />} />
+              <Route path="/admin/audit" element={<AdminAuditLog />} />
+              <Route path="/admin/messages" element={<AdminMessages />} />
+              <Route path="/admin/performer/:id" element={<AdminPerformerView />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
           <CookieConsent />
           <MessageNotificationBubble />
         </BrowserRouter>
