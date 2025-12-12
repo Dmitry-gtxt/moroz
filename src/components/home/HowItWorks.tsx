@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Search, Calendar, PartyPopper, Sparkles } from 'lucide-react';
 import { getCommissionRate, getPrepaymentPercentage } from '@/lib/pricing';
 import useEmblaCarousel from 'embla-carousel-react';
-import { SwipeHint } from '@/components/ui/swipe-hint';
 
 export function HowItWorks() {
   const [prepaymentPercent, setPrepaymentPercent] = useState<number | null>(null);
@@ -104,17 +103,14 @@ export function HowItWorks() {
         </div>
 
         {/* Mobile carousel */}
-        <div className="md:hidden relative">
-          <div className="overflow-hidden" ref={emblaRef}>
-            <div className="flex gap-4">
-              {steps.map((step, index) => (
-                <div key={index} className="flex-[0_0_85%] min-w-0">
-                  <StepCard step={step} index={index} isMobile />
-                </div>
-              ))}
-            </div>
+        <div className="md:hidden overflow-hidden" ref={emblaRef}>
+          <div className="flex gap-4">
+            {steps.map((step, index) => (
+              <div key={index} className="flex-[0_0_85%] min-w-0">
+                <StepCard step={step} index={index} isMobile />
+              </div>
+            ))}
           </div>
-          <SwipeHint />
         </div>
       </div>
     </section>
