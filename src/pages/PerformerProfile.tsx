@@ -201,16 +201,28 @@ const PerformerProfile = () => {
               {/* Header */}
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Photo */}
-                <div className="relative w-full md:w-64 aspect-square rounded-2xl overflow-hidden flex-shrink-0">
-                  <img
-                    src={photoUrl}
-                    alt={performer.display_name}
-                    className="w-full h-full object-cover"
-                  />
-                  {performer.verification_status === 'verified' && (
-                    <div className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
-                      <CheckCircle className="h-6 w-6 text-white" />
-                    </div>
+                <div className="flex-shrink-0">
+                  <div className="relative w-full md:w-64 aspect-square rounded-2xl overflow-hidden">
+                    <img
+                      src={photoUrl}
+                      alt={performer.display_name}
+                      className="w-full h-full object-cover"
+                    />
+                    {performer.verification_status === 'verified' && (
+                      <div className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+                        <CheckCircle className="h-6 w-6 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  {performer.video_greeting_url && (
+                    <Button 
+                      variant="outline" 
+                      className="w-full mt-3 gap-2"
+                      onClick={() => window.open(performer.video_greeting_url!, '_blank')}
+                    >
+                      <Play className="h-4 w-4" />
+                      Смотреть видео
+                    </Button>
                   )}
                 </div>
 
@@ -284,21 +296,6 @@ const PerformerProfile = () => {
                 </div>
               )}
 
-              {/* Video */}
-              {performer.video_greeting_url && (
-                <div className="bg-card rounded-2xl p-6 border border-border">
-                  <h2 className="font-display text-xl font-semibold mb-4 flex items-center gap-2">
-                    <Video className="h-5 w-5 text-accent" />
-                    Видео-приветствие
-                  </h2>
-                  <div className="aspect-video rounded-xl bg-secondary flex items-center justify-center">
-                    <Button variant="gold" size="lg" className="gap-2">
-                      <Play className="h-5 w-5" />
-                      Смотреть видео
-                    </Button>
-                  </div>
-                </div>
-              )}
 
               {/* Reviews */}
               <div className="bg-card rounded-2xl p-6 border border-border">
