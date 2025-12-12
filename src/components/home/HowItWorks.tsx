@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Search, Calendar, PartyPopper, Sparkles } from 'lucide-react';
 import { getCommissionRate, getPrepaymentPercentage } from '@/lib/pricing';
+import useEmblaCarousel from 'embla-carousel-react';
 
 export function HowItWorks() {
   const [prepaymentPercent, setPrepaymentPercent] = useState<number | null>(null);
+  const [emblaRef] = useEmblaCarousel({ align: 'start', containScroll: 'trimSnaps' });
 
   useEffect(() => {
     async function loadCommissionRate() {
@@ -33,6 +35,33 @@ export function HowItWorks() {
       description: 'Дед Мороз приедет к вам домой и подарит детям незабываемые эмоции и веру в волшебство!',
     },
   ];
+
+  const StepCard = ({ step, index }: { step: typeof steps[0]; index: number }) => (
+    <div 
+      className="relative group animate-fade-in"
+      style={{ animationDelay: `${index * 0.2}s` }}
+    >
+      <div className="relative bg-card rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 text-center border border-border hover:border-gold/30 group-hover:-translate-y-2 h-full">
+        {/* Step number badge */}
+        <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-gradient-gold text-white font-bold flex items-center justify-center text-lg shadow-glow">
+          {index + 1}
+        </div>
+        
+        {/* Emoji icon */}
+        <div className="text-6xl mb-6 mt-4 group-hover:scale-110 transition-transform duration-300">
+          {step.emoji}
+        </div>
+        
+        <h3 className="font-display text-2xl font-bold mb-4 text-foreground">
+          {step.title}
+        </h3>
+        <p className="text-muted-foreground leading-relaxed">
+          {step.description}
+        </p>
+      </div>
+    </div>
+  );
+
   return (
     <section className="py-24 bg-gradient-frost relative overflow-hidden">
       {/* Decorative elements */}
@@ -54,38 +83,28 @@ export function HowItWorks() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+        {/* Desktop grid */}
+        <div className="hidden md:grid grid-cols-3 gap-8 lg:gap-12">
           {steps.map((step, index) => (
-            <div 
-              key={index}
-              className="relative group animate-fade-in"
-              style={{ animationDelay: `${index * 0.2}s` }}
-            >
+            <div key={index} className="relative">
               {/* Connector line */}
               {index < steps.length - 1 && (
                 <div className="hidden md:block absolute top-16 left-1/2 w-full h-0.5 bg-gradient-to-r from-gold/50 to-gold/20" />
               )}
-              
-              <div className="relative bg-card rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 text-center border border-border hover:border-gold/30 group-hover:-translate-y-2">
-                {/* Step number badge */}
-                <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-gradient-gold text-white font-bold flex items-center justify-center text-lg shadow-glow">
-                  {index + 1}
-                </div>
-                
-                {/* Emoji icon */}
-                <div className="text-6xl mb-6 mt-4 group-hover:scale-110 transition-transform duration-300">
-                  {step.emoji}
-                </div>
-                
-                <h3 className="font-display text-2xl font-bold mb-4 text-foreground">
-                  {step.title}
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  {step.description}
-                </p>
-              </div>
+              <StepCard step={step} index={index} />
             </div>
           ))}
+        </div>
+
+        {/* Mobile carousel */}
+        <div className="md:hidden overflow-hidden" ref={emblaRef}>
+          <div className="flex gap-4">
+            {steps.map((step, index) => (
+              <div key={index} className="flex-[0_0_85%] min-w-0 pt-6">
+                <StepCard step={step} index={index} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

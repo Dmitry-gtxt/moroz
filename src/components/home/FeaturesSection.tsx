@@ -1,4 +1,5 @@
 import { Shield, Star, CreditCard, Clock, Users, Video, Heart, Gift, Sparkles, Snowflake } from 'lucide-react';
+import useEmblaCarousel from 'embla-carousel-react';
 
 const parentFeatures = [
   {
@@ -54,7 +55,43 @@ const performerFeatures = [
   },
 ];
 
+type Feature = {
+  icon: typeof Star;
+  emoji: string;
+  title: string;
+  description: string;
+};
+
+const FeatureCard = ({ feature, variant }: { feature: Feature; variant: 'gold' | 'santa' }) => (
+  <div 
+    className={`group flex gap-4 p-5 rounded-2xl glass-card border ${
+      variant === 'gold' 
+        ? 'border-magic-gold/10 hover:border-magic-gold/30 hover:shadow-lg hover:shadow-magic-gold/10' 
+        : 'border-santa-400/10 hover:border-santa-400/30 hover:shadow-lg hover:shadow-santa-400/10'
+    } transition-all duration-300 h-full`}
+  >
+    <div className={`flex-shrink-0 w-14 h-14 rounded-2xl ${
+      variant === 'gold' 
+        ? 'bg-magic-gold/10 border border-magic-gold/20' 
+        : 'bg-santa-500/10 border border-santa-400/20'
+    } flex items-center justify-center text-2xl group-hover:scale-110 transition-transform`}>
+      {feature.emoji}
+    </div>
+    <div>
+      <h3 className="font-semibold text-snow-100 mb-1 text-lg">
+        {feature.title}
+      </h3>
+      <p className="text-sm text-snow-400 leading-relaxed">
+        {feature.description}
+      </p>
+    </div>
+  </div>
+);
+
 export function FeaturesSection() {
+  const [parentEmblaRef] = useEmblaCarousel({ align: 'start', containScroll: 'trimSnaps' });
+  const [performerEmblaRef] = useEmblaCarousel({ align: 'start', containScroll: 'trimSnaps' });
+
   return (
     <section className="py-24 relative overflow-hidden bg-gradient-to-b from-winter-950 via-winter-900 to-winter-950">
       {/* Decorative background */}
@@ -89,25 +126,23 @@ export function FeaturesSection() {
                 Почему выбирают <span className="text-gradient-gold">нас</span>
               </h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            
+            {/* Desktop grid */}
+            <div className="hidden sm:grid grid-cols-2 gap-5">
               {parentFeatures.map((feature, index) => (
-                <div 
-                  key={index}
-                  className="group flex gap-4 p-5 rounded-2xl glass-card border border-magic-gold/10 hover:border-magic-gold/30 hover:shadow-lg hover:shadow-magic-gold/10 transition-all duration-300"
-                >
-                  <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-magic-gold/10 border border-magic-gold/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                    {feature.emoji}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-snow-100 mb-1 text-lg">
-                      {feature.title}
-                    </h3>
-                    <p className="text-sm text-snow-400 leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </div>
-                </div>
+                <FeatureCard key={index} feature={feature} variant="gold" />
               ))}
+            </div>
+            
+            {/* Mobile carousel */}
+            <div className="sm:hidden overflow-hidden" ref={parentEmblaRef}>
+              <div className="flex gap-4">
+                {parentFeatures.map((feature, index) => (
+                  <div key={index} className="flex-[0_0_85%] min-w-0">
+                    <FeatureCard feature={feature} variant="gold" />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -122,25 +157,23 @@ export function FeaturesSection() {
                 Зарабатывайте <span className="text-santa-400">с нами</span>
               </h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            
+            {/* Desktop grid */}
+            <div className="hidden sm:grid grid-cols-2 gap-5">
               {performerFeatures.map((feature, index) => (
-                <div 
-                  key={index}
-                  className="group flex gap-4 p-5 rounded-2xl glass-card border border-santa-400/10 hover:border-santa-400/30 hover:shadow-lg hover:shadow-santa-400/10 transition-all duration-300"
-                >
-                  <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-santa-500/10 border border-santa-400/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                    {feature.emoji}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-snow-100 mb-1 text-lg">
-                      {feature.title}
-                    </h3>
-                    <p className="text-sm text-snow-400 leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </div>
-                </div>
+                <FeatureCard key={index} feature={feature} variant="santa" />
               ))}
+            </div>
+            
+            {/* Mobile carousel */}
+            <div className="sm:hidden overflow-hidden" ref={performerEmblaRef}>
+              <div className="flex gap-4">
+                {performerFeatures.map((feature, index) => (
+                  <div key={index} className="flex-[0_0_85%] min-w-0">
+                    <FeatureCard feature={feature} variant="santa" />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
