@@ -112,8 +112,8 @@ export function HeroSection() {
       <div className="absolute top-32 right-16 w-64 h-64 bg-gold/10 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-32 left-16 w-48 h-48 bg-gold-light/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1.5s' }} />
 
-      <div className="container relative z-10 py-20">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
+      <div className="container relative z-10 py-10 md:py-20">
+        <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-8">
           {/* Magical badge */}
           <div 
             className="hidden md:inline-flex items-center gap-3 px-6 py-3 rounded-full animate-fade-in"
@@ -270,7 +270,7 @@ export function HeroSection() {
 
           {/* Trust badges with magical styling */}
           <div 
-            className="flex flex-wrap justify-center gap-3 md:gap-8 text-xs md:text-sm animate-fade-in-up"
+            className="flex md:flex-wrap md:justify-center gap-3 md:gap-8 text-xs md:text-sm animate-fade-in-up overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible"
             style={{ animationDelay: '0.5s' }}
           >
             {[
@@ -281,7 +281,7 @@ export function HeroSection() {
             ].map((badge, i) => (
               <div 
                 key={i}
-                className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 rounded-full transition-all duration-300 hover:scale-105"
+                className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 rounded-full transition-all duration-300 hover:scale-105 flex-shrink-0"
                 style={{
                   background: 'rgba(15, 25, 50, 0.5)',
                   backdropFilter: 'blur(8px)',
