@@ -42,6 +42,9 @@ interface PartnerStats {
 const organizationTypes = [
   { value: 'event_agency', label: 'Event-агентство' },
   { value: 'kids_center', label: 'Детский центр' },
+  { value: 'kindergarten', label: 'Садик' },
+  { value: 'school', label: 'Школа' },
+  { value: 'educational', label: 'Образовательное учреждение' },
   { value: 'individual', label: 'Физическое лицо' },
   { value: 'other', label: 'Другое' },
 ];
