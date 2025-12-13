@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { autoSubscribeToPush } from '@/lib/pushNotifications';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -13,12 +14,19 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { isAdmin, loading } = useAdmin();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const location = useLocation();
   
   const [verificationCount, setVerificationCount] = useState(0);
   const [moderationCount, setModerationCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
+  // Auto-subscribe admin to push notifications
+  useEffect(() => {
+    if (user && isAdmin) {
+      autoSubscribeToPush(user.id);
+    }
+  }, [user, isAdmin]);
 
   useEffect(() => {
     async function fetchCounts() {

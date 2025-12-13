@@ -52,6 +52,7 @@ export default function Messages() {
   const selectedChatId = searchParams.get('chat');
   const selectedChatType = searchParams.get('type') as 'booking' | 'support' | null;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [dialogs, setDialogs] = useState<Dialog[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -279,6 +280,11 @@ export default function Messages() {
       supabase.removeChannel(channel);
     };
   }, [selectedChatId, selectedChatType, user, dialogs]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -625,6 +631,7 @@ export default function Messages() {
                     </div>
                   );
                 })}
+                <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
 
