@@ -293,7 +293,7 @@ const handler = async (req: Request): Promise<Response> => {
         title: "Новое сообщение",
         body: `${senderName || "Пользователь"}: Новое сообщение в чате заказа`,
         icon: "/favicon.png",
-        url: `/messages?booking=${payload.bookingId}`,
+        url: `/messages?chat=${payload.bookingId}&type=booking`,
         tag: `message-${payload.bookingId}`
       };
 
@@ -309,7 +309,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p>Здравствуйте, ${booking.customer_name}!</p>
             <p>Вы получили новое сообщение от <strong>${performer?.display_name || 'исполнителя'}</strong>.</p>
             <p style="margin-top: 20px;">
-              <a href="https://moroz.lovable.app/messages?booking=${booking.id}" 
+              <a href="https://moroz.lovable.app/messages?chat=${booking.id}&type=booking" 
                  style="background-color: #1a1a2e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px;">
                 Перейти к диалогу
               </a>
