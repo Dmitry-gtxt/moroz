@@ -69,6 +69,7 @@ interface ReviewNotificationRequest {
 
 interface BookingCancelledRequest {
   type: "booking_cancelled";
+  bookingId?: string;
   customerEmail?: string;
   performerEmail?: string;
   customerName: string;
@@ -447,16 +448,50 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (payload.type === "booking_cancelled") {
-      const { customerEmail, performerEmail, customerName, performerName, bookingDate, bookingTime, cancellationReason, cancelledBy } = payload as BookingCancelledRequest;
+      const { bookingId, customerEmail, performerEmail, customerName, performerName, bookingDate, bookingTime, cancellationReason, cancelledBy } = payload as BookingCancelledRequest;
+
+      let finalCustomerEmail = customerEmail;
+      let finalPerformerEmail = performerEmail;
+
+      // Fetch emails from database if not provided
+      if ((!finalCustomerEmail || !finalPerformerEmail) && bookingId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        
+        const { data: booking } = await supabase
+          .from('bookings')
+          .select('customer_email, performer_id')
+          .eq('id', bookingId)
+          .single();
+
+        if (booking) {
+          if (!finalCustomerEmail) {
+            finalCustomerEmail = booking.customer_email || undefined;
+          }
+          
+          if (!finalPerformerEmail && booking.performer_id) {
+            // Get performer's user_id then email
+            const { data: performer } = await supabase
+              .from('performer_profiles')
+              .select('user_id')
+              .eq('id', booking.performer_id)
+              .single();
+
+            if (performer?.user_id) {
+              const { data: userData } = await supabase.auth.admin.getUserById(performer.user_id);
+              finalPerformerEmail = userData?.user?.email || undefined;
+            }
+          }
+        }
+      }
 
       const emails: Promise<Response>[] = [];
 
       // Send to customer if performer cancelled
-      if (cancelledBy === "performer" && customerEmail) {
-        console.log("Sending cancellation notice to customer:", customerEmail);
+      if (cancelledBy === "performer" && finalCustomerEmail) {
+        console.log("Sending cancellation notice to customer:", finalCustomerEmail);
         emails.push(
           sendEmail(
-            [customerEmail],
+            [finalCustomerEmail],
             "❌ Заказ отменён исполнителем",
             `
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -478,7 +513,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <p style="font-size: 14px; color: #666;">Вы можете выбрать другого исполнителя в нашем каталоге. Предоплата будет возвращена.</p>
                 
                 <div style="text-align: center; margin-top: 24px;">
-                  <a href="https://dedmoroz63.рф/catalog" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">🎅 Найти другого исполнителя</a>
+                  <a href="https://moroz.lovable.app/catalog" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">🎅 Найти другого исполнителя</a>
                 </div>
               </div>
             `
@@ -487,11 +522,11 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       // Send to performer if customer cancelled
-      if (cancelledBy === "customer" && performerEmail) {
-        console.log("Sending cancellation notice to performer:", performerEmail);
+      if (cancelledBy === "customer" && finalPerformerEmail) {
+        console.log("Sending cancellation notice to performer:", finalPerformerEmail);
         emails.push(
           sendEmail(
-            [performerEmail],
+            [finalPerformerEmail],
             "❌ Клиент отменил заказ",
             `
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -518,7 +553,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       if (emails.length === 0) {
-        console.log("No recipient emails provided, skipping notification");
+        console.log("No recipient emails provided or found, skipping notification");
         return new Response(JSON.stringify({ success: true, skipped: true }), {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
