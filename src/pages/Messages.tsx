@@ -384,6 +384,19 @@ export default function Messages() {
       } else {
         setNewMessage('');
         setAttachments([]);
+        
+        // Send push notification to admins
+        try {
+          await supabase.functions.invoke('send-push-notification', {
+            body: {
+              type: 'new_support_message',
+              chatId: selectedChatId,
+              senderType: 'performer'
+            }
+          });
+        } catch (e) {
+          console.error('Error sending push notification:', e);
+        }
       }
     }
     
