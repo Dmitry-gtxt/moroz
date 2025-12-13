@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CancelBookingDialog } from '@/components/bookings/CancelBookingDialog';
-import { notifyBookingConfirmed, scheduleBookingReminders } from '@/lib/pushNotifications';
+import { notifyBookingConfirmed, notifyBookingRejected, notifyBookingCancelled, scheduleBookingReminders } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -190,6 +190,13 @@ export default function PerformerBookings() {
       });
     }
 
+    // Send push notification to customer
+    notifyBookingRejected(
+      booking.customer_id,
+      performerName,
+      format(new Date(booking.booking_date), 'd MMMM', { locale: ru })
+    );
+
     toast.success('Заявка отклонена');
     setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'cancelled', cancellation_reason: reason, cancelled_by: 'performer' } : b));
   };
@@ -235,6 +242,14 @@ export default function PerformerBookings() {
         },
       });
     }
+
+    // Send push notification to customer
+    notifyBookingCancelled(
+      booking.customer_id,
+      performerName,
+      format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+      'performer'
+    );
 
     toast.success('Заказ отменён');
     setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'cancelled', cancellation_reason: reason, cancelled_by: 'performer' } : b));

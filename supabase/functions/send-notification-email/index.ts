@@ -163,6 +163,17 @@ interface TestEmailRequest {
   };
 }
 
+interface PaymentReceivedRequest {
+  type: "payment_received";
+  performerEmail: string;
+  performerName: string;
+  customerName: string;
+  bookingDate: string;
+  bookingTime: string;
+  amount: number;
+  paymentStatus: string;
+}
+
 type NotificationRequest = 
   | BookingNotificationRequest 
   | BookingConfirmedRequest 
@@ -180,6 +191,7 @@ type NotificationRequest =
   | VerificationSubmittedAdminRequest
   | ModerationApprovedRequest
   | ModerationRejectedRequest
+  | PaymentReceivedRequest
   | TestEmailRequest;
 
 const eventTypeLabels: Record<string, string> = {
@@ -1051,6 +1063,60 @@ const handler = async (req: Request): Promise<Response> => {
         `);
       }
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders } });
+    }
+
+    // Handle payment received notification
+    if (payload.type === "payment_received") {
+      const { performerEmail, performerName, customerName, bookingDate, bookingTime, amount, paymentStatus } = payload as PaymentReceivedRequest;
+
+      if (!performerEmail) {
+        console.log("No performer email provided, skipping notification");
+        return new Response(JSON.stringify({ success: true, skipped: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      const paymentStatusLabels: Record<string, string> = {
+        prepayment_paid: "Предоплата получена",
+        fully_paid: "Полная оплата получена",
+      };
+
+      console.log("Sending payment notification to performer:", performerEmail);
+
+      const res = await sendEmail(
+        [performerEmail],
+        `💰 ${paymentStatusLabels[paymentStatus] || 'Оплата получена'}!`,
+        `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #2e7d32; margin-bottom: 24px;">💰 Оплата получена!</h1>
+            <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${escapeHtml(performerName)}</strong>!</p>
+            <p style="font-size: 16px; color: #333;">Клиент <strong>${escapeHtml(customerName)}</strong> оплатил заказ.</p>
+            
+            <div style="background: #e8f5e9; border-radius: 12px; padding: 20px; margin: 24px 0;">
+              <h3 style="margin-top: 0; color: #333;">💳 Детали оплаты:</h3>
+              <p><strong>📅 Дата визита:</strong> ${escapeHtml(bookingDate)}</p>
+              <p><strong>⏰ Время:</strong> ${escapeHtml(bookingTime)}</p>
+              <p><strong>💵 Сумма:</strong> <span style="color: #2e7d32; font-weight: bold; font-size: 18px;">${amount.toLocaleString()} ₽</span></p>
+              <p><strong>📋 Статус:</strong> ${escapeHtml(paymentStatusLabels[paymentStatus] || paymentStatus)}</p>
+            </div>
+            
+            <div style="background: #e3f2fd; border-radius: 12px; padding: 16px; margin: 24px 0;">
+              <p style="margin: 0; color: #1565c0;">✅ <strong>Контактные данные клиента теперь доступны</strong> в вашем личном кабинете.</p>
+            </div>
+            
+            <p style="font-size: 14px; color: #666;">Не забудьте связаться с клиентом для уточнения деталей!</p>
+          </div>
+        `
+      );
+
+      const data = await res.json();
+      console.log("Payment notification email response:", data);
+
+      return new Response(JSON.stringify({ success: true, data }), {
+        status: res.ok ? 200 : 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // Handle test email
