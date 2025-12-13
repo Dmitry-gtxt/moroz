@@ -19,14 +19,36 @@ interface PushNotificationRequest {
   icon?: string;
   url?: string;
   tag?: string;
-  // For new message notifications
   type?: 'new_message' | 'direct';
   bookingId?: string;
   senderName?: string;
   senderId?: string;
 }
 
-// Web Push implementation using Web Crypto API
+// Base64 URL decode helper
+function base64UrlDecode(str: string): Uint8Array {
+  // Add padding if necessary
+  const padding = '='.repeat((4 - str.length % 4) % 4);
+  const base64 = (str + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+// Base64 URL encode helper
+function base64UrlEncode(data: ArrayBuffer | Uint8Array): string {
+  const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Generate VAPID JWT token
 async function generateVAPIDAuthToken(endpoint: string): Promise<string> {
   const audience = new URL(endpoint).origin;
   const expiration = Math.floor(Date.now() / 1000) + 12 * 60 * 60;
@@ -38,32 +60,43 @@ async function generateVAPIDAuthToken(endpoint: string): Promise<string> {
     sub: "mailto:ded-morozy@gtxt.biz"
   };
   
-  const base64UrlEncode = (data: ArrayBuffer | Uint8Array | string): string => {
-    let bytes: Uint8Array;
-    if (typeof data === 'string') {
-      bytes = new TextEncoder().encode(data);
-    } else if (data instanceof ArrayBuffer) {
-      bytes = new Uint8Array(data);
-    } else {
-      bytes = data;
-    }
-    
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  };
-  
-  const headerB64 = base64UrlEncode(JSON.stringify(header));
-  const payloadB64 = base64UrlEncode(JSON.stringify(payload));
+  const headerB64 = base64UrlEncode(new TextEncoder().encode(JSON.stringify(header)));
+  const payloadB64 = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
   const unsignedToken = `${headerB64}.${payloadB64}`;
   
-  const privateKeyRaw = Uint8Array.from(atob(VAPID_PRIVATE_KEY!.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  // Decode the raw 32-byte private key
+  const privateKeyRaw = base64UrlDecode(VAPID_PRIVATE_KEY!);
+  
+  console.log("Private key length:", privateKeyRaw.length);
+  
+  // For ECDSA P-256, the raw private key should be 32 bytes
+  // We need to create a proper JWK to import
+  const jwk = {
+    kty: "EC",
+    crv: "P-256",
+    d: base64UrlEncode(privateKeyRaw),
+    // We also need x and y from public key for JWK import
+    // Public key is 65 bytes: 0x04 + 32 bytes x + 32 bytes y
+    x: "",
+    y: ""
+  };
+  
+  // Decode public key to get x and y coordinates
+  const publicKeyRaw = base64UrlDecode(VAPID_PUBLIC_KEY!);
+  console.log("Public key length:", publicKeyRaw.length);
+  
+  if (publicKeyRaw.length === 65 && publicKeyRaw[0] === 0x04) {
+    // Uncompressed public key format
+    jwk.x = base64UrlEncode(publicKeyRaw.slice(1, 33));
+    jwk.y = base64UrlEncode(publicKeyRaw.slice(33, 65));
+  } else {
+    console.error("Invalid public key format, expected uncompressed P-256 key (65 bytes starting with 0x04)");
+    throw new Error("Invalid VAPID public key format");
+  }
   
   const key = await crypto.subtle.importKey(
-    "raw",
-    privateKeyRaw,
+    "jwk",
+    jwk,
     { name: "ECDSA", namedCurve: "P-256" },
     false,
     ["sign"]
@@ -75,7 +108,20 @@ async function generateVAPIDAuthToken(endpoint: string): Promise<string> {
     new TextEncoder().encode(unsignedToken)
   );
   
-  const signatureB64 = base64UrlEncode(new Uint8Array(signature));
+  // Convert DER signature to raw format (r || s, each 32 bytes)
+  const signatureBytes = new Uint8Array(signature);
+  let rawSignature: Uint8Array;
+  
+  // Web Crypto returns signature in IEEE P1363 format (r || s) for ECDSA
+  // Each value is 32 bytes for P-256
+  if (signatureBytes.length === 64) {
+    rawSignature = signatureBytes;
+  } else {
+    // Fallback - shouldn't happen with Web Crypto
+    rawSignature = signatureBytes;
+  }
+  
+  const signatureB64 = base64UrlEncode(rawSignature);
   
   return `${unsignedToken}.${signatureB64}`;
 }
@@ -100,29 +146,41 @@ async function sendPushToUser(
     return 0;
   }
 
+  console.log(`Found ${subscriptions.length} subscriptions for user ${userId}`);
+
   let sent = 0;
   const failedEndpoints: string[] = [];
 
   for (const sub of subscriptions) {
     try {
+      console.log("Sending push to endpoint:", sub.endpoint.substring(0, 50) + "...");
+      
       const jwt = await generateVAPIDAuthToken(sub.endpoint);
+      console.log("Generated JWT token successfully");
+      
+      const pushPayload = JSON.stringify(payload);
       
       const response = await fetch(sub.endpoint, {
         method: "POST",
         headers: {
-          "Content-Type": "application/octet-stream",
-          "Content-Encoding": "aes128gcm",
+          "Content-Type": "application/json",
           "TTL": "86400",
           "Authorization": `vapid t=${jwt}, k=${VAPID_PUBLIC_KEY}`,
         },
-        body: JSON.stringify(payload),
+        body: pushPayload,
       });
 
-      if (response.ok) {
+      console.log("Push response status:", response.status);
+      
+      if (response.ok || response.status === 201) {
         sent++;
+        console.log("Push sent successfully");
       } else {
-        console.error("Push failed:", response.status);
-        failedEndpoints.push(sub.endpoint);
+        const errorText = await response.text();
+        console.error("Push failed:", response.status, errorText);
+        if (response.status === 404 || response.status === 410) {
+          failedEndpoints.push(sub.endpoint);
+        }
       }
     } catch (error) {
       console.error("Error sending push:", error);
@@ -131,6 +189,7 @@ async function sendPushToUser(
   }
 
   if (failedEndpoints.length > 0) {
+    console.log("Removing failed endpoints:", failedEndpoints.length);
     await supabaseAdmin
       .from("push_subscriptions")
       .delete()
@@ -192,7 +251,6 @@ const handler = async (req: Request): Promise<Response> => {
     if (payload.type === 'new_message' && payload.bookingId && payload.senderId) {
       console.log("Processing new message notification for booking:", payload.bookingId);
 
-      // Get booking details
       const { data: booking, error: bookingError } = await supabaseAdmin
         .from("bookings")
         .select(`
@@ -220,7 +278,6 @@ const handler = async (req: Request): Promise<Response> => {
       const performer = booking.performer_profiles as any;
       const isFromCustomer = payload.senderId === booking.customer_id;
       
-      // Determine recipient
       const recipientUserId = isFromCustomer ? performer?.user_id : booking.customer_id;
       const senderName = isFromCustomer ? booking.customer_name : performer?.display_name;
 
@@ -240,10 +297,8 @@ const handler = async (req: Request): Promise<Response> => {
         tag: `message-${payload.bookingId}`
       };
 
-      // Send push notification
       const sent = await sendPushToUser(supabaseAdmin, recipientUserId, notificationPayload);
 
-      // Send email notification to customer if message is from performer
       if (!isFromCustomer && booking.customer_email) {
         await sendEmailNotification(
           booking.customer_email,
@@ -274,7 +329,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Direct notification (existing behavior)
+    // Direct notification
     const { userId, title, body, icon, url, tag } = payload;
 
     if (!userId || !title || !body) {
