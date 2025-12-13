@@ -169,7 +169,7 @@ export default function CustomerBookings() {
     supabase.functions.invoke('send-notification-email', {
       body: {
         type: 'booking_cancelled',
-        performerEmail: '', // Will be fetched server-side
+        bookingId: booking.id,
         customerName: userProfile?.full_name || 'Клиент',
         performerName: booking.performer?.display_name || 'Исполнитель',
         bookingDate: format(new Date(booking.booking_date), 'd MMMM yyyy', { locale: ru }),

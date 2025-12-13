@@ -228,20 +228,19 @@ export default function PerformerBookings() {
     }
 
     // Send email notification
-    if (booking.customer_email) {
-      supabase.functions.invoke('send-notification-email', {
-        body: {
-          type: 'booking_cancelled',
-          customerEmail: booking.customer_email,
-          customerName: booking.customer_name,
-          performerName: performerName,
-          bookingDate: format(new Date(booking.booking_date), 'd MMMM yyyy', { locale: ru }),
-          bookingTime: booking.booking_time,
-          cancellationReason: reason,
-          cancelledBy: 'performer',
-        },
-      });
-    }
+    supabase.functions.invoke('send-notification-email', {
+      body: {
+        type: 'booking_cancelled',
+        bookingId: booking.id,
+        customerEmail: booking.customer_email,
+        customerName: booking.customer_name || 'Клиент',
+        performerName: performerName,
+        bookingDate: format(new Date(booking.booking_date), 'd MMMM yyyy', { locale: ru }),
+        bookingTime: booking.booking_time,
+        cancellationReason: reason,
+        cancelledBy: 'performer',
+      },
+    });
 
     // Send push notification to customer
     notifyBookingCancelled(
