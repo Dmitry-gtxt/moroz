@@ -250,6 +250,53 @@ export async function notifyBookingConfirmed(
   });
 }
 
+// Send notification when booking is rejected
+export async function notifyBookingRejected(
+  customerUserId: string,
+  performerName: string,
+  bookingDate: string
+): Promise<void> {
+  await sendPushNotification({
+    userId: customerUserId,
+    title: '❌ Заявка отклонена',
+    body: `${performerName} не может принять заказ на ${bookingDate}`,
+    url: '/customer/bookings',
+    tag: 'booking-rejected'
+  });
+}
+
+// Send notification when booking is cancelled
+export async function notifyBookingCancelled(
+  recipientUserId: string,
+  cancellerName: string,
+  bookingDate: string,
+  cancelledBy: 'customer' | 'performer'
+): Promise<void> {
+  await sendPushNotification({
+    userId: recipientUserId,
+    title: '😔 Бронирование отменено',
+    body: `${cancellerName} отменил заказ на ${bookingDate}`,
+    url: cancelledBy === 'customer' ? '/performer/bookings' : '/customer/bookings',
+    tag: 'booking-cancelled'
+  });
+}
+
+// Send notification when payment is received
+export async function notifyPaymentReceived(
+  performerUserId: string,
+  customerName: string,
+  bookingDate: string,
+  amount: number
+): Promise<void> {
+  await sendPushNotification({
+    userId: performerUserId,
+    title: '💰 Оплата получена!',
+    body: `${customerName} оплатил заказ на ${bookingDate}. Сумма: ${amount.toLocaleString()} ₽`,
+    url: '/performer/bookings',
+    tag: 'payment-received'
+  });
+}
+
 // Send welcome notification
 export async function notifyWelcome(userId: string, userName: string): Promise<void> {
   await sendPushNotification({

@@ -10,6 +10,7 @@ import { Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { notifyPaymentReceived } from '@/lib/pushNotifications';
 import type { Database } from '@/integrations/supabase/types';
 
 type Booking = Database['public']['Tables']['bookings']['Row'];
@@ -87,6 +88,9 @@ export default function AdminOrders() {
   }
 
   async function updatePaymentStatus(id: string, newStatus: Database['public']['Enums']['payment_status']) {
+    // Find booking to get details for notification
+    const booking = bookings.find(b => b.id === id);
+    
     const { error } = await supabase
       .from('bookings')
       .update({ payment_status: newStatus })
@@ -96,6 +100,48 @@ export default function AdminOrders() {
       toast.error('Ошибка обновления статуса оплаты');
     } else {
       toast.success('Статус оплаты обновлён');
+      
+      // Send notifications when payment is received
+      if (booking && (newStatus === 'prepayment_paid' || newStatus === 'fully_paid')) {
+        // Get performer's user_id and email for notification
+        const { data: performer } = await supabase
+          .from('performer_profiles')
+          .select('user_id')
+          .eq('id', booking.performer_id)
+          .single();
+
+        // Get performer's email from auth
+        let performerEmail = '';
+        if (performer?.user_id) {
+          const { data: userData } = await supabase.auth.admin.getUserById(performer.user_id);
+          performerEmail = userData?.user?.email || '';
+          
+          // Send push notification
+          notifyPaymentReceived(
+            performer.user_id,
+            booking.customer_name,
+            format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+            newStatus === 'prepayment_paid' ? booking.prepayment_amount : booking.price_total
+          );
+        }
+
+        // Send email notification
+        if (performerEmail || booking.performer_profiles?.display_name) {
+          supabase.functions.invoke('send-notification-email', {
+            body: {
+              type: 'payment_received',
+              performerEmail,
+              performerName: booking.performer_profiles?.display_name || 'Исполнитель',
+              customerName: booking.customer_name,
+              bookingDate: format(new Date(booking.booking_date), 'd MMMM yyyy', { locale: ru }),
+              bookingTime: booking.booking_time,
+              amount: newStatus === 'prepayment_paid' ? booking.prepayment_amount : booking.price_total,
+              paymentStatus: newStatus
+            }
+          });
+        }
+      }
+      
       fetchBookings();
     }
   }

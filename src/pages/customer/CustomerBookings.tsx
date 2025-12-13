@@ -10,6 +10,7 @@ import { CancelBookingDialog } from '@/components/bookings/CancelBookingDialog';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { notifyBookingCancelled } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { 
   Calendar, Clock, MapPin, Star, Loader2, 
@@ -154,8 +155,29 @@ export default function CustomerBookings() {
         .eq('id', booking.slot_id);
     }
 
-    // Note: Email notification to performer is handled by database trigger or admin action
-    // We show the cancellation in their dashboard immediately
+    // Get performer's user_id for push notification
+    if (booking.performer?.user_id) {
+      notifyBookingCancelled(
+        booking.performer.user_id,
+        userProfile?.full_name || 'Клиент',
+        format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+        'customer'
+      );
+    }
+
+    // Send email notification to performer
+    supabase.functions.invoke('send-notification-email', {
+      body: {
+        type: 'booking_cancelled',
+        performerEmail: '', // Will be fetched server-side
+        customerName: userProfile?.full_name || 'Клиент',
+        performerName: booking.performer?.display_name || 'Исполнитель',
+        bookingDate: format(new Date(booking.booking_date), 'd MMMM yyyy', { locale: ru }),
+        bookingTime: booking.booking_time,
+        cancellationReason: reason,
+        cancelledBy: 'customer'
+      }
+    });
 
     toast.success('Заказ отменён');
     fetchBookings();
