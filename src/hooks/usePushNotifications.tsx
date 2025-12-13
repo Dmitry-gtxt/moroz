@@ -69,6 +69,8 @@ export function usePushNotifications() {
   }, [isSupported, user]);
 
   const subscribe = useCallback(async () => {
+    console.log('Subscribe called, isSupported:', isSupported, 'user:', user?.id, 'vapidKey:', vapidKey?.substring(0, 20));
+    
     if (!isSupported || !user) {
       toast.error('Push-уведомления не поддерживаются');
       return false;
@@ -82,7 +84,9 @@ export function usePushNotifications() {
 
     try {
       // Request permission
+      console.log('Requesting notification permission...');
       const permission = await Notification.requestPermission();
+      console.log('Permission result:', permission);
       setPermission(permission);
       
       if (permission !== 'granted') {
@@ -91,18 +95,25 @@ export function usePushNotifications() {
       }
 
       // Register service worker
+      console.log('Registering service worker...');
       const registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('Service worker registered:', registration.scope);
       await navigator.serviceWorker.ready;
+      console.log('Service worker ready');
 
       // Subscribe to push
+      console.log('Subscribing to push with VAPID key:', vapidKey.substring(0, 30) + '...');
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidKey)
       });
+      console.log('Push subscription created:', subscription.endpoint.substring(0, 50) + '...');
 
       const subscriptionJson = subscription.toJSON();
+      console.log('Subscription JSON keys:', subscriptionJson.keys);
       
       // Save to database
+      console.log('Saving subscription to database for user:', user.id);
       const { error } = await supabase
         .from('push_subscriptions')
         .upsert({
@@ -119,6 +130,7 @@ export function usePushNotifications() {
         throw error;
       }
 
+      console.log('Subscription saved successfully');
       setIsSubscribed(true);
       toast.success('Push-уведомления включены');
       return true;
