@@ -267,7 +267,7 @@ const handler = async (req: Request): Promise<Response> => {
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h1 style="color: #c41e3a; margin-bottom: 24px;">🎅 Новая заявка!</h1>
             <p style="font-size: 16px; color: #333;">Здравствуйте, <strong>${escapeHtml(performerName)}</strong>!</p>
-            <p style="font-size: 16px; color: #333;">У вас новая заявка на бронирование на платформе ДедМороз63.рф</p>
+            <p style="font-size: 16px; color: #333;">У вас новая заявка на бронирование на платформе Дед-Морозы.РФ</p>
             
             <div style="background: #fff3e0; border-radius: 12px; padding: 16px; margin: 16px 0;">
               <p style="margin: 0; color: #e65100;">⚠️ <strong>Важно:</strong> Подтвердите или отклоните заявку в личном кабинете. До подтверждения время остаётся доступным для других клиентов.</p>
@@ -279,14 +279,19 @@ const handler = async (req: Request): Promise<Response> => {
               <p><strong>Время:</strong> ${escapeHtml(bookingTime)}</p>
               <p><strong>Тип:</strong> ${escapeHtml(eventTypeLabels[eventType] || eventType)}</p>
               <p><strong>Адрес:</strong> ${escapeHtml(address)}</p>
-              <p><strong>Стоимость:</strong> <span style="color: #c41e3a; font-weight: bold;">${priceTotal.toLocaleString()} сом</span></p>
+              <p><strong>Стоимость:</strong> <span style="color: #c41e3a; font-weight: bold;">${priceTotal.toLocaleString()} ₽</span></p>
             </div>
             <div style="background: #e8f5e9; border-radius: 12px; padding: 20px; margin: 24px 0;">
               <h3 style="margin-top: 0; color: #333;">👤 Клиент:</h3>
               <p><strong>Имя:</strong> ${escapeHtml(customerName)}</p>
               <p><strong>Телефон:</strong> <a href="tel:${escapeHtml(customerPhone)}" style="color: #c41e3a;">${escapeHtml(customerPhone)}</a></p>
             </div>
-            <p style="font-size: 14px; color: #666;">Подтвердите или отклоните заявку в личном кабинете.</p>
+            
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="https://moroz.lovable.app/performer/bookings" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти к заказам</a>
+            </div>
+            
+            <p style="font-size: 14px; color: #666; margin-top: 24px;">Подтвердите или отклоните заявку в личном кабинете.</p>
           </div>
         `
       );
@@ -391,7 +396,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p style="font-size: 14px; color: #666;">Не расстраивайтесь! Вы можете выбрать другого исполнителя в нашем каталоге. Предоплата будет возвращена.</p>
             
             <div style="text-align: center; margin-top: 24px;">
-              <a href="https://dedmoroz63.рф/catalog" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">🎅 Найти другого исполнителя</a>
+              <a href="https://moroz.lovable.app/catalog" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">🎅 Найти другого исполнителя</a>
             </div>
           </div>
         `
@@ -630,7 +635,11 @@ const handler = async (req: Request): Promise<Response> => {
               </ul>
             </div>
             
-            <p style="font-size: 14px; color: #666;">Проверка обычно занимает до 24 часов. Мы уведомим вас о результате.</p>
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="https://moroz.lovable.app/performer/profile" style="display: inline-block; background: #ff9800; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти в личный кабинет</a>
+            </div>
+            
+            <p style="font-size: 14px; color: #666; margin-top: 24px;">Проверка обычно занимает до 24 часов. Мы уведомим вас о результате.</p>
           </div>
         `
       );
@@ -671,7 +680,7 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
             
             <div style="text-align: center; margin-top: 24px;">
-              <a href="https://dedmoroz63.рф/admin/moderation" style="display: inline-block; background: #1976d2; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти к модерации</a>
+              <a href="https://moroz.lovable.app/admin/moderation" style="display: inline-block; background: #1976d2; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти к модерации</a>
             </div>
           </div>
         `
@@ -702,12 +711,12 @@ const handler = async (req: Request): Promise<Response> => {
 
       const res = await sendEmail(
         [email],
-        "🎄 Добро пожаловать на ДедМороз63.рф!",
+        "🎄 Добро пожаловать на Дед-Морозы.РФ!",
         `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="text-align: center; margin-bottom: 32px;">
               <h1 style="color: #c41e3a; margin-bottom: 8px;">🎅 Добро пожаловать!</h1>
-              <p style="font-size: 18px; color: #333;">на ДедМороз63.рф</p>
+              <p style="font-size: 18px; color: #333;">на Дед-Морозы.РФ</p>
             </div>
             
             <p style="font-size: 16px; color: #333;">Здравствуйте${fullName ? `, <strong>${escapeHtml(fullName)}</strong>` : ''}!</p>
@@ -728,7 +737,7 @@ const handler = async (req: Request): Promise<Response> => {
               <h3 style="margin: 0 0 12px 0; color: #7b1fa2; text-align: center;">🎄 Каталог Дедов Морозов</h3>
               <p style="color: #555; text-align: center; margin: 0 0 16px 0;">В нашем каталоге вы найдёте проверенных исполнителей с реальными отзывами. Выберите подходящего Деда Мороза и забронируйте визит онлайн!</p>
               <div style="text-align: center;">
-                <a href="https://dedmoroz63.рф/catalog" style="display: inline-block; background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); color: white; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 15px;">🎅 Выбрать Деда Мороза</a>
+                <a href="https://moroz.lovable.app/catalog" style="display: inline-block; background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); color: white; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 15px;">🎅 Выбрать Деда Мороза</a>
               </div>
             </div>
             
@@ -736,7 +745,7 @@ const handler = async (req: Request): Promise<Response> => {
               <h3 style="margin: 0 0 12px 0; color: #1565c0; text-align: center;">🎭 Хотите стать Дедом Морозом?</h3>
               <p style="color: #555; text-align: center; margin: 0 0 16px 0;">Если вы профессиональный аниматор или артист — присоединяйтесь к нашей команде и принимайте заказы на новогодние праздники!</p>
               <div style="text-align: center;">
-                <a href="https://dedmoroz63.рф/become-performer" style="display: inline-block; background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%); color: white; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 15px;">🎅 Стать исполнителем</a>
+                <a href="https://moroz.lovable.app/performer/register" style="display: inline-block; background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%); color: white; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 15px;">🎅 Стать исполнителем</a>
               </div>
             </div>
             
@@ -745,7 +754,7 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
             
             <p style="font-size: 14px; color: #666; text-align: center;">С наступающим Новым годом! 🎄✨</p>
-            <p style="font-size: 14px; color: #666; text-align: center;">Команда ДедМороз63.рф</p>
+            <p style="font-size: 14px; color: #666; text-align: center;">Команда Дед-Морозы.РФ</p>
           </div>
         `
       );
@@ -930,7 +939,7 @@ const handler = async (req: Request): Promise<Response> => {
             ` : ''}
             
             <div style="text-align: center; margin-top: 24px;">
-              <a href="https://dedmoroz63.рф/performer/dashboard" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти в личный кабинет</a>
+              <a href="https://moroz.lovable.app/performer/dashboard" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти в личный кабинет</a>
             </div>
             
             <p style="font-size: 14px; color: #666; margin-top: 24px;">Если у вас есть вопросы, свяжитесь с нами через чат поддержки.</p>
@@ -966,6 +975,9 @@ const handler = async (req: Request): Promise<Response> => {
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h1 style="color: #4caf50;">✅ Поздравляем, ${escapeHtml(performerName)}!</h1>
             <p>Ваш профиль успешно прошёл верификацию. Теперь администратор может активировать ваш профиль для публикации в каталоге.</p>
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="https://moroz.lovable.app/performer/dashboard" style="display: inline-block; background: #4caf50; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти в личный кабинет</a>
+            </div>
           </div>
         `);
       }
@@ -993,6 +1005,9 @@ const handler = async (req: Request): Promise<Response> => {
             <p>Здравствуйте, ${escapeHtml(performerName)}!</p>
             <p><strong>Причина:</strong> ${escapeHtml(reason)}</p>
             <p>Вы можете обновить профиль и отправить заявку повторно.</p>
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="https://moroz.lovable.app/performer/profile" style="display: inline-block; background: #f44336; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📝 Редактировать профиль</a>
+            </div>
           </div>
         `);
       }
@@ -1027,6 +1042,9 @@ const handler = async (req: Request): Promise<Response> => {
                 <li>Заполните подробное описание о себе</li>
               </ul>
             </div>
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="https://moroz.lovable.app/performer/dashboard" style="display: inline-block; background: #4caf50; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти в личный кабинет</a>
+            </div>
           </div>
         `);
       }
@@ -1041,7 +1059,9 @@ const handler = async (req: Request): Promise<Response> => {
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h1 style="color: #1976d2;">📋 Новая заявка на верификацию</h1>
           <p>Исполнитель <strong>${escapeHtml(performerName)}</strong> подал заявку на верификацию.</p>
-          <p><a href="https://dedmoroz63.рф/admin/verification" style="background: #1976d2; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Перейти к верификации</a></p>
+          <div style="text-align: center; margin-top: 24px;">
+            <a href="https://moroz.lovable.app/admin/verification" style="display: inline-block; background: #1976d2; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти к верификации</a>
+          </div>
         </div>
       `);
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders } });
@@ -1067,6 +1087,9 @@ const handler = async (req: Request): Promise<Response> => {
             <h1 style="color: #4caf50;">✅ Профиль одобрен!</h1>
             <p>Здравствуйте, ${escapeHtml(performerName)}!</p>
             <p>Ваши изменения в профиле прошли модерацию. Профиль снова виден в каталоге.</p>
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="https://moroz.lovable.app/performer/dashboard" style="display: inline-block; background: #4caf50; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти в личный кабинет</a>
+            </div>
           </div>
         `);
       }
@@ -1094,6 +1117,9 @@ const handler = async (req: Request): Promise<Response> => {
             <p>Здравствуйте, ${escapeHtml(performerName)}!</p>
             <p><strong>Причина:</strong> ${escapeHtml(reason)}</p>
             <p>Пожалуйста, внесите изменения и отправьте профиль повторно.</p>
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="https://moroz.lovable.app/performer/profile" style="display: inline-block; background: #f44336; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📝 Редактировать профиль</a>
+            </div>
           </div>
         `);
       }
@@ -1140,7 +1166,11 @@ const handler = async (req: Request): Promise<Response> => {
               <p style="margin: 0; color: #1565c0;">✅ <strong>Контактные данные клиента теперь доступны</strong> в вашем личном кабинете.</p>
             </div>
             
-            <p style="font-size: 14px; color: #666;">Не забудьте связаться с клиентом для уточнения деталей!</p>
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="https://moroz.lovable.app/performer/bookings" style="display: inline-block; background: #2e7d32; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 Перейти к заказам</a>
+            </div>
+            
+            <p style="font-size: 14px; color: #666; margin-top: 24px;">Не забудьте связаться с клиентом для уточнения деталей!</p>
           </div>
         `
       );
