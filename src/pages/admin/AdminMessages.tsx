@@ -200,6 +200,19 @@ export default function AdminMessages() {
       console.error('Error sending message:', error);
     } else {
       setNewMessage('');
+      
+      // Send push notification to performer
+      try {
+        await supabase.functions.invoke('send-push-notification', {
+          body: {
+            type: 'new_support_message',
+            chatId: selectedChatId,
+            senderType: 'admin'
+          }
+        });
+      } catch (e) {
+        console.error('Error sending push notification:', e);
+      }
     }
     
     setSendingMessage(false);

@@ -19,10 +19,14 @@ interface PushNotificationRequest {
   icon?: string;
   url?: string;
   tag?: string;
-  type?: 'new_message' | 'direct';
+  type?: 'new_message' | 'new_support_message' | 'direct';
   bookingId?: string;
   senderName?: string;
   senderId?: string;
+  // For support messages
+  chatId?: string;
+  senderType?: 'admin' | 'performer';
+  performerId?: string;
 }
 
 // Base64 URL decode helper
@@ -247,7 +251,79 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
     const payload: PushNotificationRequest = await req.json();
 
-    // Handle new message notification
+    // Handle new support message notification
+    if (payload.type === 'new_support_message' && payload.chatId && payload.senderType) {
+      console.log("Processing new support message notification for chat:", payload.chatId);
+
+      // Get support chat to find performer
+      const { data: supportChat, error: chatError } = await supabaseAdmin
+        .from("support_chats")
+        .select(`
+          id,
+          performer_id,
+          performer_profiles!support_chats_performer_id_fkey (
+            user_id,
+            display_name
+          )
+        `)
+        .eq("id", payload.chatId)
+        .single();
+
+      if (chatError || !supportChat) {
+        console.error("Support chat not found:", chatError);
+        return new Response(JSON.stringify({ error: "Chat not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      const performer = supportChat.performer_profiles as any;
+
+      if (payload.senderType === 'admin') {
+        // Admin sent message -> notify performer
+        const recipientUserId = performer?.user_id;
+        if (recipientUserId) {
+          const notificationPayload = {
+            title: "Сообщение от поддержки",
+            body: "Вам пришло новое сообщение от службы поддержки",
+            icon: "/favicon.png",
+            url: `/messages?chat=${payload.chatId}&type=support`,
+            tag: `support-${payload.chatId}`
+          };
+
+          const sent = await sendPushToUser(supabaseAdmin, recipientUserId, notificationPayload);
+          console.log(`Sent push to performer ${recipientUserId}: ${sent}`);
+        }
+      } else if (payload.senderType === 'performer') {
+        // Performer sent message -> notify all admins
+        const { data: adminRoles } = await supabaseAdmin
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "admin");
+
+        const adminUserIds = adminRoles?.map(r => r.user_id) || [];
+        console.log(`Notifying ${adminUserIds.length} admins about new support message`);
+
+        for (const adminUserId of adminUserIds) {
+          const notificationPayload = {
+            title: "Новое сообщение в поддержку",
+            body: `${performer?.display_name || 'Исполнитель'} написал в поддержку`,
+            icon: "/favicon.png",
+            url: `/admin/messages?chat=${payload.chatId}`,
+            tag: `support-${payload.chatId}`
+          };
+
+          await sendPushToUser(supabaseAdmin, adminUserId, notificationPayload);
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Handle new message notification (booking chat)
     if (payload.type === 'new_message' && payload.bookingId && payload.senderId) {
       console.log("Processing new message notification for booking:", payload.bookingId);
 
