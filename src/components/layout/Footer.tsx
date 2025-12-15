@@ -206,7 +206,7 @@ export function Footer() {
           <p className="text-[10px] md:text-xs text-snow-500 text-center flex flex-wrap items-center justify-center gap-x-1 md:gap-x-2">
             <span>© 2025 <span className="text-gradient-gold font-semibold">Дед-Морозы.РФ</span></span>
             <span className="hidden md:inline text-snow-600">•</span>
-            <span className="hidden md:inline text-snow-600">ИП Шевчук Д.С. • ИНН: 631803547498 • ОГРНИП: 324631300031498</span>
+            <span className="hidden md:inline text-snow-600">ИП Шевчук Д.С. • ИНН: 771394875700 • ОГРН: 323673300005598</span>
             <span className="md:hidden text-snow-600">• ИП Шевчук Д.С.</span>
           </p>
         </div>
