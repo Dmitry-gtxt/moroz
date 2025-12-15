@@ -51,15 +51,15 @@ const BankInfo = () => {
                   </div>
                   <div>
                     <p className="font-semibold text-foreground mb-1 print:text-black">ИНН:</p>
-                    <p>631803547498</p>
+                    <p>771394875700</p>
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground mb-1 print:text-black">ОГРНИП:</p>
-                    <p>324631300031498</p>
+                    <p className="font-semibold text-foreground mb-1 print:text-black">ОГРН:</p>
+                    <p>323673300005598</p>
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground mb-1 print:text-black">Дата регистрации:</p>
-                    <p>17.04.2024</p>
+                    <p className="font-semibold text-foreground mb-1 print:text-black">ОКВЭД:</p>
+                    <p>78.10</p>
                   </div>
                 </div>
                 
@@ -68,19 +68,19 @@ const BankInfo = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:gap-2">
                     <div>
                       <p className="font-semibold text-foreground mb-1 print:text-black">Банк:</p>
-                      <p>АО «ТБанк»</p>
+                      <p>Филиал «центральный» Банк ВТБ (ПАО)</p>
                     </div>
                     <div>
                       <p className="font-semibold text-foreground mb-1 print:text-black">БИК:</p>
-                      <p>044525974</p>
+                      <p>044525411</p>
                     </div>
                     <div>
                       <p className="font-semibold text-foreground mb-1 print:text-black">Расчётный счёт:</p>
-                      <p>40802810500003552577</p>
+                      <p>40802810511650000340</p>
                     </div>
                     <div>
                       <p className="font-semibold text-foreground mb-1 print:text-black">Корр. счёт:</p>
-                      <p>30101810145250000974</p>
+                      <p>30101810145250000411</p>
                     </div>
                   </div>
                 </div>
