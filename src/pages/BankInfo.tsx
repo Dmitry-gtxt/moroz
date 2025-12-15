@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef } from "react";
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SEOHead } from '@/components/seo/SEOHead';
