@@ -174,7 +174,7 @@ export function Footer() {
                 <div className="p-2 rounded-lg bg-magic-gold/10 border border-magic-gold/20">
                   <MapPin className="h-4 w-4 text-magic-gold" />
                 </div>
-                <span>г. Самара,<br/>Самарская область</span>
+                <span>г. Ярцево,<br/>Смоленская область</span>
               </li>
             </ul>
           </div>

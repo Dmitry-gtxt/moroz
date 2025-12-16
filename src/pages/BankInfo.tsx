@@ -218,7 +218,7 @@ const BankInfo = () => {
                   </div>
                   <div>
                     <p className="font-semibold text-foreground mb-2 print:text-black print:mb-1">Адрес:</p>
-                    <p>г. Самара, Самарская область, Россия</p>
+                    <p>г. Ярцево, Смоленская область, Россия</p>
                   </div>
                   <div>
                     <p className="font-semibold text-foreground mb-2 print:text-black print:mb-1">Телефон:</p>
