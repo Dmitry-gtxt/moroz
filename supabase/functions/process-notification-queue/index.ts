@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 async function sendNotifications(supabase: any, booking: any, notificationType: string, adminPhone: string) {
-  const baseUrl = "https://moroz.lovable.app";
+  const baseUrl = "https://ded-morozy-rf.ru";
   
   // Get performer user_id
   const { data: performer } = await supabase
