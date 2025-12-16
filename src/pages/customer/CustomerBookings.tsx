@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewForm } from '@/components/reviews/ReviewForm';
 import { CancelBookingDialog } from '@/components/bookings/CancelBookingDialog';
+import { ProposalsList } from '@/components/bookings/ProposalsList';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,10 +15,10 @@ import { notifyBookingCancelled } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { 
   Calendar, Clock, MapPin, Star, Loader2, 
-  Package, User, X, CheckCircle, CreditCard, Lock
+  Package, User, X, CheckCircle, CreditCard, Lock, Timer, AlertCircle
 } from 'lucide-react';
 import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment } from '@/lib/pricing';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInMinutes } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -37,7 +38,7 @@ const statusLabels: Record<BookingStatus, { label: string; variant: 'default' | 
   completed: { label: 'Завершён', variant: 'outline' },
   no_show: { label: 'Неявка', variant: 'destructive' },
   counter_proposed: { label: 'Предложено другое время', variant: 'secondary' },
-  customer_accepted: { label: 'Ожидает подтверждения', variant: 'outline' },
+  customer_accepted: { label: 'Ожидает финального подтверждения', variant: 'outline' },
 };
 
 const eventTypeLabels: Record<string, string> = {
@@ -48,6 +49,71 @@ const eventTypeLabels: Record<string, string> = {
   corporate: 'Корпоратив',
   outdoor: 'На улице',
 };
+
+// Helper component for payment deadline countdown
+function PaymentDeadlineBlock({ deadline, prepaymentAmount }: { deadline: string; prepaymentAmount: number }) {
+  const [timeLeft, setTimeLeft] = useState('');
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    const updateTimer = () => {
+      const now = new Date();
+      const deadlineDate = parseISO(deadline);
+      const diffMinutes = differenceInMinutes(deadlineDate, now);
+
+      if (diffMinutes <= 0) {
+        setIsExpired(true);
+        setTimeLeft('Время истекло');
+      } else {
+        const hours = Math.floor(diffMinutes / 60);
+        const minutes = diffMinutes % 60;
+        setTimeLeft(`${hours}ч ${minutes}мин`);
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, [deadline]);
+
+  if (isExpired) {
+    return (
+      <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 text-red-600 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-medium text-red-800 dark:text-red-200">
+              Время на оплату истекло
+            </p>
+            <p className="text-red-600 dark:text-red-400">
+              Бронирование может быть отменено исполнителем
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="font-medium text-amber-800 dark:text-amber-200 flex items-center gap-2">
+            <Timer className="h-4 w-4" />
+            Оплатите в течение {timeLeft}
+          </p>
+          <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+            Предоплата {prepaymentAmount.toLocaleString()} ₽ — иначе бронирование будет отменено
+          </p>
+        </div>
+        <Button variant="gold" size="sm">
+          <CreditCard className="h-4 w-4 mr-2" />
+          Оплатить
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function CustomerBookings() {
   const { user } = useAuth();
@@ -308,8 +374,43 @@ export default function CustomerBookings() {
                       </div>
                     </div>
 
-                    {/* Payment status and button */}
-                    {booking.status === 'confirmed' && booking.payment_status === 'not_paid' && (
+                    {/* Counter proposal section */}
+                    {booking.status === 'counter_proposed' && booking.performer && (
+                      <ProposalsList
+                        bookingId={booking.id}
+                        performerName={booking.performer.display_name}
+                        performerUserId={booking.performer.user_id}
+                        originalPrice={booking.price_total}
+                        customerName={userProfile?.full_name || 'Клиент'}
+                        onAccepted={fetchBookings}
+                        onRejected={fetchBookings}
+                      />
+                    )}
+
+                    {/* Payment deadline warning for customer_accepted */}
+                    {booking.status === 'customer_accepted' && (
+                      <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <Timer className="h-4 w-4 text-blue-600 mt-0.5" />
+                          <div className="text-sm">
+                            <p className="font-medium text-blue-800 dark:text-blue-200">
+                              Ожидает финального подтверждения от исполнителя
+                            </p>
+                            <p className="text-blue-600 dark:text-blue-400">
+                              После подтверждения у вас будет 2 часа на оплату предоплаты, иначе бронирование может быть отменено
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Confirmed with payment deadline */}
+                    {booking.status === 'confirmed' && booking.payment_status === 'not_paid' && booking.payment_deadline && (
+                      <PaymentDeadlineBlock deadline={booking.payment_deadline} prepaymentAmount={booking.prepayment_amount} />
+                    )}
+
+                    {/* Regular payment reminder for confirmed without deadline */}
+                    {booking.status === 'confirmed' && booking.payment_status === 'not_paid' && !booking.payment_deadline && (
                       <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
                         <div className="flex items-center justify-between gap-4">
                           <div>
