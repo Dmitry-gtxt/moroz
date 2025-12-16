@@ -18,7 +18,9 @@ interface Partner {
   name: string;
   referral_code: string;
   is_active: boolean;
-  created_at: string;
+  organization_type?: string;
+  contact_email?: string;
+  contact_phone?: string;
 }
 
 interface Registration {
@@ -54,11 +56,9 @@ export default function PartnerDashboard() {
       return;
     }
 
-    // Fetch partner by access token
+    // Fetch partner by access token using secure RPC function
     const { data: partnerData, error: partnerError } = await supabase
-      .from('partners')
-      .select('*')
-      .eq('access_token', token)
+      .rpc('get_partner_by_token', { _token: token })
       .maybeSingle();
 
     if (partnerError || !partnerData) {
@@ -67,7 +67,7 @@ export default function PartnerDashboard() {
       return;
     }
 
-    setPartner(partnerData);
+    setPartner(partnerData as Partner);
 
     // Fetch all data in parallel
     const [visitsResult, regsData, bookingsData] = await Promise.all([
