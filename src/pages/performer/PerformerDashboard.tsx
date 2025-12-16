@@ -161,7 +161,12 @@ export function PerformerLayout({ children }: PerformerLayoutProps) {
 export default function PerformerDashboard() {
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<PerformerProfile | null>(null);
-  const [stats, setStats] = useState({ pendingBookings: 0, confirmedBookings: 0, totalEarnings: 0 });
+  const [stats, setStats] = useState({ 
+    pendingBookings: 0, 
+    confirmedBookings: 0, 
+    totalEarnings: 0,
+    bookedAmount: 0 
+  });
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
 
@@ -191,21 +196,38 @@ export default function PerformerDashboard() {
       setProfile(profileData);
       setHasProfile(true);
 
-      const [pendingRes, confirmedRes, completedRes] = await Promise.all([
+      const [pendingRes, confirmedRes, completedRes, bookedRes] = await Promise.all([
         supabase.from('bookings').select('id', { count: 'exact', head: true })
           .eq('performer_id', profileData.id).eq('status', 'pending'),
         supabase.from('bookings').select('id', { count: 'exact', head: true })
           .eq('performer_id', profileData.id).eq('status', 'confirmed'),
-        supabase.from('bookings').select('price_total')
+        supabase.from('bookings').select('price_total, prepayment_amount')
           .eq('performer_id', profileData.id).eq('status', 'completed'),
+        // Booked = confirmed bookings that are paid (prepayment_paid or fully_paid)
+        supabase.from('bookings').select('price_total, prepayment_amount')
+          .eq('performer_id', profileData.id)
+          .eq('status', 'confirmed')
+          .in('payment_status', ['prepayment_paid', 'fully_paid']),
       ]);
 
-      const totalEarnings = (completedRes.data || []).reduce((sum, b) => sum + (b.price_total || 0), 0);
+      // Calculate performer's net earnings (what they receive, without commission)
+      // Net = price_total - prepayment_amount (commission is the prepayment)
+      const totalEarnings = (completedRes.data || []).reduce((sum, b) => {
+        const net = (b.price_total || 0) - (b.prepayment_amount || 0);
+        return sum + net;
+      }, 0);
+
+      // Calculate booked amount (confirmed and paid, performer's net)
+      const bookedAmount = (bookedRes.data || []).reduce((sum, b) => {
+        const net = (b.price_total || 0) - (b.prepayment_amount || 0);
+        return sum + net;
+      }, 0);
 
       setStats({
         pendingBookings: pendingRes.count ?? 0,
         confirmedBookings: confirmedRes.count ?? 0,
         totalEarnings,
+        bookedAmount,
       });
 
       setLoading(false);
@@ -261,7 +283,7 @@ export default function PerformerDashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6">
           <div className="bg-card border border-border rounded-xl p-4 md:p-6">
             <p className="text-sm text-muted-foreground">Новые заказы</p>
             <p className="text-2xl md:text-3xl font-bold text-foreground mt-1">{stats.pendingBookings}</p>
@@ -269,6 +291,10 @@ export default function PerformerDashboard() {
           <div className="bg-card border border-border rounded-xl p-4 md:p-6">
             <p className="text-sm text-muted-foreground">Подтверждённые</p>
             <p className="text-2xl md:text-3xl font-bold text-foreground mt-1">{stats.confirmedBookings}</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4 md:p-6">
+            <p className="text-sm text-muted-foreground">Забронировано</p>
+            <p className="text-2xl md:text-3xl font-bold text-foreground mt-1">{stats.bookedAmount.toLocaleString()} ₽</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4 md:p-6">
             <p className="text-sm text-muted-foreground">Заработано</p>
