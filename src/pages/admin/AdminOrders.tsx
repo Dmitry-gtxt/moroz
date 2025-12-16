@@ -17,7 +17,8 @@ type Booking = Database['public']['Tables']['bookings']['Row'];
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
 
 interface BookingWithPerformer extends Booking {
-  performer_profiles: Pick<PerformerProfile, 'display_name'> | null;
+  performer_profiles: Pick<PerformerProfile, 'display_name' | 'user_id'> | null;
+  performer_phone?: string | null;
 }
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -51,7 +52,7 @@ export default function AdminOrders() {
     setLoading(true);
     let query = supabase
       .from('bookings')
-      .select('*, performer_profiles(display_name)')
+      .select('*, performer_profiles(display_name, user_id)')
       .order('created_at', { ascending: false });
 
     if (statusFilter !== 'all') {
@@ -63,9 +64,29 @@ export default function AdminOrders() {
     if (error) {
       toast.error('Ошибка загрузки заказов');
       console.error(error);
-    } else {
-      setBookings((data as BookingWithPerformer[]) ?? []);
+      setLoading(false);
+      return;
     }
+
+    // Fetch performer phones from profiles
+    const performerUserIds = data
+      ?.map(b => b.performer_profiles?.user_id)
+      .filter((id): id is string => !!id) || [];
+    
+    const uniqueUserIds = [...new Set(performerUserIds)];
+    const { data: performerProfiles } = uniqueUserIds.length > 0
+      ? await supabase.from('profiles').select('user_id, phone').in('user_id', uniqueUserIds)
+      : { data: [] };
+
+    const phoneMap = new Map<string, string | null>();
+    performerProfiles?.forEach(p => phoneMap.set(p.user_id, p.phone));
+
+    const enriched = data?.map(b => ({
+      ...b,
+      performer_phone: b.performer_profiles?.user_id ? phoneMap.get(b.performer_profiles.user_id) : null,
+    })) || [];
+
+    setBookings(enriched as BookingWithPerformer[]);
     setLoading(false);
   }
 
@@ -210,7 +231,10 @@ export default function AdminOrders() {
                           <div className="text-sm text-muted-foreground">{booking.customer_phone}</div>
                         </TableCell>
                         <TableCell>
-                          {booking.performer_profiles?.display_name ?? 'Неизвестно'}
+                          <div className="font-medium">{booking.performer_profiles?.display_name ?? 'Неизвестно'}</div>
+                          {booking.performer_phone && (
+                            <div className="text-sm text-muted-foreground">{booking.performer_phone}</div>
+                          )}
                         </TableCell>
                         <TableCell>{eventTypeLabels[booking.event_type] ?? booking.event_type}</TableCell>
                         <TableCell className="font-medium">{booking.price_total} ₽</TableCell>

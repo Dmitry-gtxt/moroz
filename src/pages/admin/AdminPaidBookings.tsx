@@ -60,14 +60,25 @@ export default function AdminPaidBookings() {
         .select('*')
         .in('user_id', customerIds);
 
+      // Fetch performer phones from profiles
+      const performerUserIds = performers?.map(p => p.user_id).filter((id): id is string => !!id) || [];
+      const { data: performerPhoneProfiles } = performerUserIds.length > 0
+        ? await supabase.from('profiles').select('user_id, phone').in('user_id', performerUserIds)
+        : { data: [] };
+
+      const phoneMap = new Map<string, string | null>();
+      performerPhoneProfiles?.forEach(p => phoneMap.set(p.user_id, p.phone));
+
       // Enrich bookings
       const enrichedBookings: PaidBooking[] = bookingsData.map(booking => {
         const performer = performers?.find(p => p.id === booking.performer_id);
         const customerProfile = profiles?.find(p => p.user_id === booking.customer_id);
+        const performerPhone = performer?.user_id ? phoneMap.get(performer.user_id) : null;
         return {
           ...booking,
           performer,
           customerProfile,
+          performerPhone,
         };
       });
 
@@ -132,9 +143,9 @@ export default function AdminPaidBookings() {
                       <TableCell>
                         <div>
                           <p className="font-medium">{booking.performer?.display_name || '—'}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {booking.customer_phone}
-                          </p>
+                          {booking.performerPhone && (
+                            <p className="text-sm text-muted-foreground">{booking.performerPhone}</p>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
