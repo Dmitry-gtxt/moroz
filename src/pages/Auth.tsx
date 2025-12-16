@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Snowflake, Mail, Lock, User, Phone, ArrowLeft, Sparkles, Star } from 'lucide-react';
+import { Snowflake, Mail, Lock, User, Phone, ArrowLeft, Sparkles, Star, Eye, EyeOff } from 'lucide-react';
 import { autoSubscribeToPush } from '@/lib/pushNotifications';
 import { getReferralCode, clearReferralCode } from '@/lib/referral';
 
@@ -30,6 +30,14 @@ const Auth = () => {
   });
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Password validation
+  const passwordRequirements = [
+    { label: 'Минимум 6 символов', check: (p: string) => p.length >= 6 },
+    { label: 'Хотя бы одна цифра', check: (p: string) => /\d/.test(p) },
+    { label: 'Хотя бы одна буква', check: (p: string) => /[a-zA-Zа-яА-ЯёЁ]/.test(p) },
+  ];
 
   useEffect(() => {
     setModeState(modeFromUrl);
@@ -276,15 +284,34 @@ const Auth = () => {
                     <Input
                       id="password"
                       name="password"
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       value={formData.password}
                       onChange={handleInputChange}
                       placeholder="••••••••"
-                      className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
+                      className="pl-10 pr-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
                       required
                       minLength={6}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-snow-500 hover:text-snow-300 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
+                  {mode === 'register' && (
+                    <div className="mt-2 space-y-1">
+                      {passwordRequirements.map((req, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs">
+                          <span className={`w-1.5 h-1.5 rounded-full transition-colors ${req.check(formData.password) ? 'bg-green-500' : 'bg-red-500'}`} />
+                          <span className={`transition-colors ${req.check(formData.password) ? 'text-green-400' : 'text-snow-500'}`}>
+                            {req.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
