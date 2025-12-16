@@ -278,7 +278,7 @@ export function ProposalsList({
                       </div>
                       {commissionRate !== null && prepayment !== null && performerAmount !== null && (
                         <div className="text-xs text-muted-foreground mt-1">
-                          (предоплата {formatPrice(prepayment)} + {formatPrice(performerAmount)} исполнителю при встрече)
+                          (Предоплата онлайн {formatPrice(prepayment)} + Исполнителю на руки {formatPrice(performerAmount)})
                         </div>
                       )}
                     </Label>
@@ -299,7 +299,7 @@ export function ProposalsList({
           </div>
           {commissionRate !== null && (
             <div className="text-sm text-muted-foreground mt-1">
-              (предоплата {formatPrice(getPrepayment(selectedPrice)!)} + {formatPrice(getPerformerAmount(selectedPrice)!)} исполнителю при встрече)
+              (Предоплата онлайн {formatPrice(getPrepayment(selectedPrice)!)} + Исполнителю на руки {formatPrice(getPerformerAmount(selectedPrice)!)})
             </div>
           )}
         </div>

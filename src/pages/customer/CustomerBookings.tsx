@@ -593,7 +593,7 @@ export default function CustomerBookings() {
                             {booking.price_total.toLocaleString()} ₽
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            (предоплата {booking.prepayment_amount.toLocaleString()} ₽ + {(booking.price_total - booking.prepayment_amount).toLocaleString()} ₽ исполнителю)
+                            (Предоплата онлайн {booking.prepayment_amount.toLocaleString()} ₽ + Исполнителю на руки {(booking.price_total - booking.prepayment_amount).toLocaleString()} ₽)
                           </div>
                         </div>
                       )}
