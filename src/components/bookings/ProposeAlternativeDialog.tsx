@@ -1,22 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
 import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { CalendarIcon, Plus, Trash2, Loader2, Clock } from 'lucide-react';
+import { Plus, Trash2, Loader2, Clock, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProposalSlot {
   date: Date;
   time: string;
   price?: number;
+  slotId?: string;
+}
+
+interface AvailabilitySlot {
+  id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  price: number | null;
 }
 
 interface ProposeAlternativeDialogProps {
@@ -48,68 +56,91 @@ export function ProposeAlternativeDialog({
   basePrice,
   onSuccess,
 }: ProposeAlternativeDialogProps) {
-  const [proposals, setProposals] = useState<ProposalSlot[]>([
-    { date: new Date(), time: '10:00-11:00', price: basePrice }
-  ]);
+  const [proposals, setProposals] = useState<ProposalSlot[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [availableSlots, setAvailableSlots] = useState<{ date: string; start_time: string; end_time: string; id: string }[]>([]);
+  const [allSlots, setAllSlots] = useState<AvailabilitySlot[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (open) {
-      fetchAvailableSlots();
+      fetchAllSlots();
+      setProposals([]);
     }
   }, [open, performerId]);
 
-  const fetchAvailableSlots = async () => {
+  const fetchAllSlots = async () => {
+    setLoading(true);
     const today = new Date().toISOString().split('T')[0];
+    
+    // Fetch all slots (free and booked)
     const { data } = await supabase
       .from('availability_slots')
-      .select('id, date, start_time, end_time')
+      .select('id, date, start_time, end_time, status, price')
       .eq('performer_id', performerId)
-      .eq('status', 'free')
+      .in('status', ['free', 'booked'])
       .gte('date', today)
       .order('date', { ascending: true })
       .order('start_time', { ascending: true });
     
     if (data) {
-      setAvailableSlots(data);
+      setAllSlots(data);
     }
+    setLoading(false);
   };
 
-  const addProposal = () => {
+  // Get dates that have slots for calendar highlighting
+  const datesWithSlots = useMemo(() => {
+    const dates = new Set<string>();
+    allSlots.forEach(slot => dates.add(slot.date));
+    return dates;
+  }, [allSlots]);
+
+  // Get slots for selected date
+  const slotsForSelectedDate = useMemo(() => {
+    if (!selectedDate) return [];
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    return allSlots.filter(slot => slot.date === dateStr);
+  }, [allSlots, selectedDate]);
+
+  // Check if a slot is already added to proposals
+  const isSlotInProposals = (slotId: string) => {
+    return proposals.some(p => p.slotId === slotId);
+  };
+
+  const addSlotToProposals = (slot: AvailabilitySlot) => {
     if (proposals.length >= 5) {
       toast.error('Максимум 5 вариантов');
       return;
     }
-    setProposals([...proposals, { date: new Date(), time: '10:00-11:00', price: basePrice }]);
+    if (isSlotInProposals(slot.id)) {
+      toast.error('Этот слот уже добавлен');
+      return;
+    }
+    
+    const newDate = new Date(slot.date + 'T00:00:00');
+    setProposals([...proposals, {
+      date: newDate,
+      time: `${slot.start_time.slice(0, 5)}-${slot.end_time.slice(0, 5)}`,
+      price: slot.price || basePrice,
+      slotId: slot.id,
+    }]);
   };
 
   const removeProposal = (index: number) => {
-    if (proposals.length <= 1) {
-      toast.error('Нужен хотя бы один вариант');
-      return;
-    }
     setProposals(proposals.filter((_, i) => i !== index));
   };
 
-  const updateProposal = (index: number, field: keyof ProposalSlot, value: any) => {
+  const updateProposalPrice = (index: number, price: number) => {
     const updated = [...proposals];
-    updated[index] = { ...updated[index], [field]: value };
+    updated[index] = { ...updated[index], price };
     setProposals(updated);
   };
 
   const handleSubmit = async () => {
     if (proposals.length === 0) {
-      toast.error('Добавьте хотя бы один вариант времени');
+      toast.error('Выберите хотя бы один слот');
       return;
-    }
-
-    // Validate all proposals have date and time
-    for (const p of proposals) {
-      if (!p.date || !p.time) {
-        toast.error('Заполните дату и время для всех вариантов');
-        return;
-      }
     }
 
     setSubmitting(true);
@@ -121,6 +152,7 @@ export function ProposeAlternativeDialog({
         proposed_date: format(p.date, 'yyyy-MM-dd'),
         proposed_time: p.time,
         proposed_price: p.price || basePrice,
+        slot_id: p.slotId,
         status: 'pending',
       }));
 
@@ -176,132 +208,175 @@ export function ProposeAlternativeDialog({
     }
   };
 
+  // Custom day rendering for calendar
+  const modifiers = useMemo(() => {
+    const hasSlots: Date[] = [];
+    const hasFreeSlots: Date[] = [];
+    const hasBookedSlots: Date[] = [];
+
+    allSlots.forEach(slot => {
+      const date = new Date(slot.date + 'T00:00:00');
+      if (!hasSlots.some(d => isSameDay(d, date))) {
+        hasSlots.push(date);
+      }
+      if (slot.status === 'free' && !hasFreeSlots.some(d => isSameDay(d, date))) {
+        hasFreeSlots.push(date);
+      }
+      if (slot.status === 'booked' && !hasBookedSlots.some(d => isSameDay(d, date))) {
+        hasBookedSlots.push(date);
+      }
+    });
+
+    return { hasSlots, hasFreeSlots, hasBookedSlots };
+  }, [allSlots]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Предложить другое время</DialogTitle>
           <DialogDescription>
-            Предложите клиенту {customerName} альтернативные варианты времени вместо {format(new Date(originalDate), 'd MMMM', { locale: ru })} {originalTime}
+            Выберите свободные слоты из вашего календаря для {customerName} вместо {format(new Date(originalDate), 'd MMMM', { locale: ru })} {originalTime}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Available slots hint */}
-          {availableSlots.length > 0 && (
-            <div className="p-3 bg-muted rounded-lg text-sm">
-              <p className="font-medium mb-2">Ваши свободные слоты:</p>
-              <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
-                {availableSlots.slice(0, 10).map((slot) => (
-                  <button
-                    key={slot.id}
-                    type="button"
-                    className="px-2 py-1 bg-primary/10 text-primary rounded text-xs hover:bg-primary/20"
-                    onClick={() => {
-                      if (proposals.length < 5) {
-                        const newDate = new Date(slot.date + 'T00:00:00');
-                        setProposals([...proposals, {
-                          date: newDate,
-                          time: `${slot.start_time.slice(0, 5)}-${slot.end_time.slice(0, 5)}`,
-                          price: basePrice,
-                        }]);
-                      }
-                    }}
-                  >
-                    {format(new Date(slot.date), 'd MMM', { locale: ru })} {slot.start_time.slice(0, 5)}
-                  </button>
-                ))}
-                {availableSlots.length > 10 && (
-                  <span className="text-xs text-muted-foreground">+{availableSlots.length - 10} ещё</span>
-                )}
-              </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          )}
-
-          {/* Proposals list */}
-          <div className="space-y-3">
-            {proposals.map((proposal, index) => (
-              <div key={index} className="p-3 border rounded-lg space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Вариант {index + 1}</span>
-                  {proposals.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeProposal(index)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
+          ) : (
+            <>
+              {/* Calendar */}
+              <div className="border rounded-lg p-2">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  locale={ru}
+                  disabled={(date) => {
+                    const dateStr = format(date, 'yyyy-MM-dd');
+                    return date < new Date() || !datesWithSlots.has(dateStr);
+                  }}
+                  modifiers={modifiers}
+                  modifiersClassNames={{
+                    hasFreeSlots: 'bg-green-100 dark:bg-green-900/30 font-bold',
+                    hasBookedSlots: 'bg-yellow-100 dark:bg-yellow-900/30',
+                  }}
+                  className="pointer-events-auto"
+                />
+                <div className="flex gap-4 mt-2 px-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded bg-green-100 dark:bg-green-900/30 border" />
+                    <span>Свободно</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded bg-yellow-100 dark:bg-yellow-900/30 border" />
+                    <span>Ожидает подтверждения</span>
+                  </div>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs">Дата</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
+              {/* Slots for selected date */}
+              {selectedDate && slotsForSelectedDate.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Слоты на {format(selectedDate, 'd MMMM', { locale: ru })}:
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {slotsForSelectedDate.map((slot) => {
+                      const isAdded = isSlotInProposals(slot.id);
+                      const isFree = slot.status === 'free';
+                      
+                      return (
+                        <button
+                          key={slot.id}
+                          type="button"
+                          disabled={isAdded}
+                          onClick={() => addSlotToProposals(slot)}
                           className={cn(
-                            "w-full justify-start text-left font-normal h-9 text-sm",
-                            !proposal.date && "text-muted-foreground"
+                            "p-3 rounded-lg border text-left transition-all",
+                            isFree 
+                              ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/40"
+                              : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-100 dark:hover:bg-yellow-900/40",
+                            isAdded && "opacity-50 cursor-not-allowed"
                           )}
                         >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {proposal.date ? format(proposal.date, 'd MMM yyyy', { locale: ru }) : 'Выберите'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={proposal.date}
-                          onSelect={(date) => date && updateProposal(index, 'date', date)}
-                          disabled={(date) => date < new Date()}
-                          locale={ru}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs">Время</Label>
-                    <div className="relative">
-                      <Clock className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        value={proposal.time}
-                        onChange={(e) => updateProposal(index, 'time', e.target.value)}
-                        placeholder="10:00-11:00"
-                        className="pl-8 h-9 text-sm"
-                      />
-                    </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium text-sm">
+                                {slot.start_time.slice(0, 5)}-{slot.end_time.slice(0, 5)}
+                              </span>
+                            </div>
+                            {isAdded && <Check className="h-4 w-4 text-green-600" />}
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {slot.price ? `${slot.price.toLocaleString()} ₽` : `${basePrice.toLocaleString()} ₽`}
+                          </div>
+                          {!isFree && (
+                            <div className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
+                              Ожидает подтверждения
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
+              )}
 
-                <div>
-                  <Label className="text-xs">Цена (₽)</Label>
-                  <Input
-                    type="number"
-                    value={proposal.price || ''}
-                    onChange={(e) => updateProposal(index, 'price', parseInt(e.target.value) || basePrice)}
-                    placeholder={basePrice.toString()}
-                    className="h-9 text-sm"
-                  />
+              {selectedDate && slotsForSelectedDate.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Нет слотов на выбранную дату
+                </p>
+              )}
+
+              {/* Selected proposals */}
+              {proposals.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Выбранные слоты ({proposals.length}/5):</Label>
+                  <div className="space-y-2">
+                    {proposals.map((proposal, index) => (
+                      <div key={index} className="p-3 border rounded-lg bg-primary/5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-medium text-sm">
+                              {format(proposal.date, 'd MMMM', { locale: ru })} {proposal.time}
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeProposal(index)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <Label className="text-xs whitespace-nowrap">Цена:</Label>
+                          <Input
+                            type="number"
+                            value={proposal.price || ''}
+                            onChange={(e) => updateProposalPrice(index, parseInt(e.target.value) || basePrice)}
+                            className="h-8 text-sm w-28"
+                          />
+                          <span className="text-xs text-muted-foreground">₽</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={addProposal}
-            disabled={proposals.length >= 5}
-            className="w-full"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Добавить вариант ({proposals.length}/5)
-          </Button>
-
+              {allSlots.length === 0 && (
+                <div className="text-center py-6 text-muted-foreground">
+                  <p>У вас нет свободных слотов в календаре.</p>
+                  <p className="text-sm mt-1">Добавьте слоты в разделе "Календарь"</p>
+                </div>
+              )}
+            </>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">
@@ -324,7 +399,7 @@ export function ProposeAlternativeDialog({
                   Отправка...
                 </>
               ) : (
-                'Отправить предложение'
+                `Отправить (${proposals.length})`
               )}
             </Button>
           </div>
