@@ -94,6 +94,7 @@ export default function Messages() {
         .maybeSingle();
 
       // 1. Fetch booking-related dialogs (ONLY for paid bookings - chat is available after prepayment)
+      // Exclude admin-created pseudo-bookings for reviews (marked with customer_phone: '+7-admin-review')
       let bookingsQuery = supabase
         .from('bookings')
         .select(`
@@ -103,6 +104,7 @@ export default function Messages() {
           customer_id,
           performer_id,
           payment_status,
+          customer_phone,
           performer_profiles!bookings_performer_id_fkey (
             display_name,
             photo_urls,
@@ -110,6 +112,7 @@ export default function Messages() {
           )
         `)
         .in('payment_status', ['prepayment_paid', 'fully_paid'])
+        .neq('customer_phone', '+7-admin-review')
         .order('created_at', { ascending: false });
 
       // Build OR filter based on whether user is customer or performer
