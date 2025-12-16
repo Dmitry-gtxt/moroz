@@ -8,15 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CancelBookingDialog } from '@/components/bookings/CancelBookingDialog';
+import { ProposeAlternativeDialog } from '@/components/bookings/ProposeAlternativeDialog';
 import { notifyBookingConfirmed, notifyBookingRejected, notifyBookingCancelled, scheduleBookingReminders } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Loader2, Check, X, MapPin, Phone, User, Calendar, Lock, Mail, CreditCard } from 'lucide-react';
+import { Loader2, Check, X, MapPin, Phone, User, Calendar, Lock, Mail, CreditCard, Clock, MessageSquare } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
-// Use the same type as bookings since secure_bookings has the same structure
-type Booking = Database['public']['Tables']['bookings']['Row'];
+// Use secure_bookings view type with new fields
+type SecureBooking = Database['public']['Views']['secure_bookings']['Row'];
+type Booking = SecureBooking & {
+  payment_deadline?: string | null;
+  proposal_message?: string | null;
+};
 type BookingStatus = Database['public']['Enums']['booking_status'];
 
 const statusLabels: Record<BookingStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -25,6 +30,8 @@ const statusLabels: Record<BookingStatus, { label: string; variant: 'default' | 
   completed: { label: 'Завершён', variant: 'secondary' },
   cancelled: { label: 'Отменён', variant: 'destructive' },
   no_show: { label: 'Неявка', variant: 'destructive' },
+  counter_proposed: { label: 'Предложено время', variant: 'secondary' },
+  customer_accepted: { label: 'Клиент выбрал', variant: 'outline' },
 };
 
 const eventTypeLabels: Record<string, string> = {
@@ -40,6 +47,7 @@ export default function PerformerBookings() {
   const { user, loading: authLoading } = useAuth();
   const [performerId, setPerformerId] = useState<string | null>(null);
   const [performerName, setPerformerName] = useState<string>('');
+  const [basePrice, setBasePrice] = useState<number>(3000);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
@@ -48,6 +56,10 @@ export default function PerformerBookings() {
     booking: null,
     action: 'cancel',
   });
+  const [proposeDialog, setProposeDialog] = useState<{ open: boolean; booking: Booking | null }>({
+    open: false,
+    booking: null,
+  });
 
   useEffect(() => {
     async function fetchData() {
@@ -55,7 +67,7 @@ export default function PerformerBookings() {
 
       const { data: profile } = await supabase
         .from('performer_profiles')
-        .select('id, display_name')
+        .select('id, display_name, base_price')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -66,6 +78,7 @@ export default function PerformerBookings() {
 
       setPerformerId(profile.id);
       setPerformerName(profile.display_name);
+      setBasePrice(profile.base_price || 3000);
 
       const { data: bookingsData, error } = await supabase
         .from('secure_bookings')
@@ -76,7 +89,7 @@ export default function PerformerBookings() {
       if (error) {
         console.error('Error fetching bookings:', error);
       } else {
-        setBookings(bookingsData ?? []);
+        setBookings((bookingsData as Booking[]) ?? []);
       }
 
       setLoading(false);
@@ -254,10 +267,82 @@ export default function PerformerBookings() {
     setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'cancelled', cancellation_reason: reason, cancelled_by: 'performer' } : b));
   };
 
+  // Final confirmation after customer accepted proposal
+  const confirmFinalBooking = async (booking: Booking) => {
+    if (!booking.id) return;
+    
+    // Set payment deadline to 2 hours from now
+    const paymentDeadline = new Date();
+    paymentDeadline.setHours(paymentDeadline.getHours() + 2);
+
+    const { error } = await supabase
+      .from('bookings')
+      .update({ 
+        status: 'confirmed',
+        payment_deadline: paymentDeadline.toISOString(),
+      })
+      .eq('id', booking.id);
+
+    if (error) {
+      toast.error('Ошибка подтверждения');
+      return;
+    }
+
+    // Mark the slot as booked if slot_id exists
+    if (booking.slot_id) {
+      await supabase
+        .from('availability_slots')
+        .update({ status: 'booked' })
+        .eq('id', booking.slot_id);
+    }
+
+    // Send notification with payment deadline info
+    if (booking.customer_email) {
+      supabase.functions.invoke('send-notification-email', {
+        body: {
+          type: 'booking_confirmed_with_deadline',
+          customerEmail: booking.customer_email,
+          customerName: booking.customer_name,
+          performerName: performerName,
+          bookingDate: format(new Date(booking.booking_date!), 'd MMMM yyyy', { locale: ru }),
+          bookingTime: booking.booking_time,
+          address: booking.address,
+          priceTotal: booking.price_total,
+          prepaymentAmount: booking.prepayment_amount,
+          paymentDeadline: format(paymentDeadline, 'HH:mm d MMMM', { locale: ru }),
+        },
+      });
+    }
+
+    // Send push notification
+    notifyBookingConfirmed(
+      booking.customer_id!,
+      performerName,
+      format(new Date(booking.booking_date!), 'd MMMM', { locale: ru }),
+      booking.booking_time!
+    );
+
+    toast.success('Заказ подтверждён! Клиенту отправлено уведомление об оплате.');
+    setBookings(bookings.map(b => b.id === booking.id ? { ...b, status: 'confirmed', payment_deadline: paymentDeadline.toISOString() } : b));
+  };
+
+  const refreshBookings = async () => {
+    if (!performerId) return;
+    const { data } = await supabase
+      .from('secure_bookings')
+      .select('*')
+      .eq('performer_id', performerId)
+      .order('booking_date', { ascending: true });
+    if (data) {
+      setBookings((data as Booking[]) ?? []);
+    }
+  };
+
   const filteredBookings = bookings.filter(b => {
     if (activeTab === 'all') return true;
-    if (activeTab === 'pending') return b.status === 'pending';
-    if (activeTab === 'upcoming') return b.status === 'confirmed' && new Date(b.booking_date) >= new Date();
+    if (activeTab === 'pending') return b.status === 'pending' || b.status === 'customer_accepted';
+    if (activeTab === 'proposed') return b.status === 'counter_proposed';
+    if (activeTab === 'upcoming') return b.status === 'confirmed' && new Date(b.booking_date!) >= new Date();
     if (activeTab === 'past') return b.status === 'completed' || b.status === 'cancelled' || b.status === 'no_show';
     return true;
   });
@@ -287,9 +372,12 @@ export default function PerformerBookings() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
+          <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="pending">
-              Новые ({bookings.filter(b => b.status === 'pending').length})
+              Новые ({bookings.filter(b => b.status === 'pending' || b.status === 'customer_accepted').length})
+            </TabsTrigger>
+            <TabsTrigger value="proposed">
+              Предложения ({bookings.filter(b => b.status === 'counter_proposed').length})
             </TabsTrigger>
             <TabsTrigger value="upcoming">Предстоящие</TabsTrigger>
             <TabsTrigger value="past">История</TabsTrigger>
@@ -410,6 +498,34 @@ export default function PerformerBookings() {
                           </div>
                           
                           {booking.status === 'pending' && (
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCancelDialog({ open: true, booking, action: 'reject' })}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Отклонить
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => setProposeDialog({ open: true, booking })}
+                              >
+                                <Clock className="h-4 w-4 mr-1" />
+                                Другое время
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => updateBookingStatus(booking.id!, 'confirmed')}
+                              >
+                                <Check className="h-4 w-4 mr-1" />
+                                Подтвердить
+                              </Button>
+                            </div>
+                          )}
+
+                          {booking.status === 'customer_accepted' && (
                             <div className="flex gap-2">
                               <Button
                                 variant="outline"
@@ -421,10 +537,10 @@ export default function PerformerBookings() {
                               </Button>
                               <Button
                                 size="sm"
-                                onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                                onClick={() => confirmFinalBooking(booking)}
                               >
                                 <Check className="h-4 w-4 mr-1" />
-                                Подтвердить
+                                Подтвердить финально
                               </Button>
                             </div>
                           )}
@@ -464,13 +580,30 @@ export default function PerformerBookings() {
             onOpenChange={(open) => setCancelDialog({ ...cancelDialog, open })}
             onConfirm={(reason) => 
               cancelDialog.action === 'reject' 
-                ? rejectBooking(cancelDialog.booking!.id, reason)
-                : cancelBooking(cancelDialog.booking!.id, reason)
+                ? rejectBooking(cancelDialog.booking!.id!, reason)
+                : cancelBooking(cancelDialog.booking!.id!, reason)
             }
-            bookingDate={format(new Date(cancelDialog.booking.booking_date), 'd MMMM yyyy', { locale: ru })}
-            customerName={cancelDialog.booking.customer_name}
+            bookingDate={format(new Date(cancelDialog.booking.booking_date!), 'd MMMM yyyy', { locale: ru })}
+            customerName={cancelDialog.booking.customer_name || 'Клиент'}
             role="performer"
             isRejection={cancelDialog.action === 'reject'}
+          />
+        )}
+
+        {proposeDialog.booking && performerId && (
+          <ProposeAlternativeDialog
+            open={proposeDialog.open}
+            onOpenChange={(open) => setProposeDialog({ ...proposeDialog, open })}
+            bookingId={proposeDialog.booking.id!}
+            performerId={performerId}
+            performerName={performerName}
+            customerName={proposeDialog.booking.customer_name || 'Клиент'}
+            customerId={proposeDialog.booking.customer_id!}
+            customerEmail={proposeDialog.booking.customer_email}
+            originalDate={proposeDialog.booking.booking_date!}
+            originalTime={proposeDialog.booking.booking_time!}
+            basePrice={basePrice}
+            onSuccess={refreshBookings}
           />
         )}
       </div>

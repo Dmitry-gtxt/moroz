@@ -36,6 +36,8 @@ const statusLabels: Record<BookingStatus, { label: string; variant: 'default' | 
   cancelled: { label: 'Отменён', variant: 'destructive' },
   completed: { label: 'Завершён', variant: 'outline' },
   no_show: { label: 'Неявка', variant: 'destructive' },
+  counter_proposed: { label: 'Предложено другое время', variant: 'secondary' },
+  customer_accepted: { label: 'Ожидает подтверждения', variant: 'outline' },
 };
 
 const eventTypeLabels: Record<string, string> = {
@@ -185,7 +187,7 @@ export default function CustomerBookings() {
 
   const filteredBookings = bookings.filter(booking => {
     if (activeTab === 'all') return true;
-    if (activeTab === 'active') return ['pending', 'confirmed'].includes(booking.status);
+    if (activeTab === 'active') return ['pending', 'confirmed', 'counter_proposed', 'customer_accepted'].includes(booking.status);
     if (activeTab === 'completed') return booking.status === 'completed';
     if (activeTab === 'cancelled') return ['cancelled', 'no_show'].includes(booking.status);
     return true;
