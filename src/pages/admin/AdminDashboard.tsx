@@ -18,7 +18,7 @@ export default function AdminDashboard() {
     pendingOrders: 0,
   });
   
-  const [commissionRate, setCommissionRate] = useState('40');
+  const [commissionRate, setCommissionRate] = useState('');
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);

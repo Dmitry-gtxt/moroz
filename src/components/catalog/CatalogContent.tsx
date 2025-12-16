@@ -30,7 +30,7 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
   const [districts, setDistricts] = useState<District[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequestsMap>({});
   const [availability, setAvailability] = useState<AvailabilityMap>({});
-  const [commissionRate, setCommissionRate] = useState(40);
+  const [commissionRate, setCommissionRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   
   const initialFilters: Filters = {

@@ -50,7 +50,7 @@ const PerformerProfile = () => {
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [pendingSlotIds, setPendingSlotIds] = useState<Set<string>>(new Set());
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [commissionRate, setCommissionRate] = useState(40);
+  const [commissionRate, setCommissionRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [videoWatched, setVideoWatched] = useState(false);

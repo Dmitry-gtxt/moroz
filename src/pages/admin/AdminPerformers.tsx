@@ -43,7 +43,7 @@ const verificationLabels: Record<string, { label: string; variant: 'default' | '
 export default function AdminPerformers() {
   const [performers, setPerformers] = useState<PerformerProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [commissionRate, setCommissionRateState] = useState(40);
+  const [commissionRate, setCommissionRateState] = useState<number | null>(null);
   
   // Sorting state
   const [sortField, setSortField] = useState<SortField>('created_at');

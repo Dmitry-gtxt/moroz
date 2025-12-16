@@ -47,7 +47,7 @@ const Booking = () => {
   const [districts, setDistricts] = useState<District[]>([]);
   const [slot, setSlot] = useState<AvailabilitySlot | null>(null);
   const [pendingBookingsCount, setPendingBookingsCount] = useState(0);
-  const [commissionRate, setCommissionRate] = useState(40);
+  const [commissionRate, setCommissionRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -245,7 +245,7 @@ const Booking = () => {
           customer_phone: formData.customerPhone,
           customer_email: formData.customerEmail || null,
           price_total: customerPrice, // Total customer sees (with markup)
-          prepayment_amount: prepaymentAmount, // 40% of performer price
+          prepayment_amount: prepaymentAmount, // Platform commission percentage
           status: 'pending', // Awaiting performer confirmation
           payment_status: 'not_paid', // Payment made after confirmation
         }).select().single();

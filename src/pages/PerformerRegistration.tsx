@@ -62,7 +62,7 @@ export default function PerformerRegistration() {
   const [verificationPhone, setVerificationPhone] = useState('');
   const [programDuration, setProgramDuration] = useState('30');
   const [programDescription, setProgramDescription] = useState('');
-  const [commissionRate, setCommissionRate] = useState(40);
+  const [commissionRate, setCommissionRate] = useState<number | null>(null);
   
   // Consent checkboxes
   const [acceptAgreement, setAcceptAgreement] = useState(false);
@@ -133,7 +133,7 @@ export default function PerformerRegistration() {
           .eq('key', 'commission_rate')
           .maybeSingle();
         if (data?.value) {
-          setCommissionRate(parseInt(data.value, 10) || 40);
+          setCommissionRate(parseInt(data.value, 10));
         }
       } catch (err) {
         console.error('Failed to fetch commission rate:', err);
