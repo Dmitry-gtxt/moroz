@@ -408,10 +408,12 @@ const Booking = () => {
                           onChange={handleInputChange}
                           className={`w-full h-10 px-3 mt-1 rounded-lg border bg-background text-sm ${fieldErrors.district ? 'border-destructive' : 'border-input'}`}
                         >
-                          <option value="">Выберите район</option>
-                          {districts.map((d) => (
-                            <option key={d.id} value={d.slug}>{d.name}</option>
-                          ))}
+                        <option value="">Выберите район</option>
+                          {districts
+                            .filter((d) => performer.district_slugs.includes(d.slug))
+                            .map((d) => (
+                              <option key={d.id} value={d.slug}>{d.name}</option>
+                            ))}
                         </select>
                         {fieldErrors.district && <p className="text-destructive text-sm mt-1">{fieldErrors.district}</p>}
                       </div>
