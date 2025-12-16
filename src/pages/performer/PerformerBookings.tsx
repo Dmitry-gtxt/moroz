@@ -422,9 +422,13 @@ export default function PerformerBookings() {
             <TabsTrigger value="proposed">
               Предложения ({bookings.filter(b => b.status === 'counter_proposed').length})
             </TabsTrigger>
-            <TabsTrigger value="upcoming">Предстоящие</TabsTrigger>
-            <TabsTrigger value="past">История</TabsTrigger>
-            <TabsTrigger value="all">Все</TabsTrigger>
+            <TabsTrigger value="upcoming">
+              Предстоящие ({bookings.filter(b => b.status === 'confirmed' && new Date(b.booking_date!) >= new Date()).length})
+            </TabsTrigger>
+            <TabsTrigger value="past">
+              История ({bookings.filter(b => b.status === 'completed' || b.status === 'cancelled' || b.status === 'no_show').length})
+            </TabsTrigger>
+            <TabsTrigger value="all">Все ({bookings.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-6">
