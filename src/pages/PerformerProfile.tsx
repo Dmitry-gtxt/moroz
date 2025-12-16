@@ -105,18 +105,28 @@ const PerformerProfile = () => {
       if (slotsRes.data) {
         setSlots(slotsRes.data);
         
-        // Check which slots have pending bookings
+        // Check which slots have pending or counter_proposed bookings
         const slotIds = slotsRes.data.map(s => s.id);
         if (slotIds.length > 0) {
+          // Check bookings table for pending bookings
           const { data: pendingBookings } = await supabase
             .from('bookings')
             .select('slot_id')
             .in('slot_id', slotIds)
+            .in('status', ['pending', 'counter_proposed', 'customer_accepted']);
+          
+          // Also check booking_proposals for slots proposed to customers
+          const { data: proposedSlots } = await supabase
+            .from('booking_proposals')
+            .select('slot_id')
+            .in('slot_id', slotIds)
             .eq('status', 'pending');
           
-          if (pendingBookings) {
-            setPendingSlotIds(new Set(pendingBookings.map(b => b.slot_id).filter(Boolean) as string[]));
-          }
+          const pendingIds = new Set<string>();
+          pendingBookings?.forEach(b => b.slot_id && pendingIds.add(b.slot_id));
+          proposedSlots?.forEach(p => p.slot_id && pendingIds.add(p.slot_id));
+          
+          setPendingSlotIds(pendingIds);
         }
       }
       if (reviewsRes.data) setReviews(reviewsRes.data);
@@ -627,6 +637,16 @@ const PerformerProfile = () => {
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">Нет свободных слотов</p>
+                      )}
+                      
+                      {/* Warning for slots with pending bookings */}
+                      {selectedSlot && pendingSlotIds.has(selectedSlot) && (
+                        <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                          <p className="text-xs text-amber-800 dark:text-amber-200">
+                            <strong>Внимание:</strong> У исполнителя на это время уже есть заявки, но он их пока не принял. 
+                            Вы можете подать заявку на это время — исполнитель может выбрать вас или предложит другое время.
+                          </p>
+                        </div>
                       )}
                     </div>
                   )}
