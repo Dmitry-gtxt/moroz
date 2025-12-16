@@ -561,6 +561,43 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
+      // Always send to admin
+      console.log("Sending cancellation notice to admin:", ADMIN_EMAIL);
+      emails.push(
+        sendEmail(
+          [ADMIN_EMAIL],
+          `❌ Заказ отменён (${cancelledBy === "customer" ? "клиентом" : "исполнителем"})`,
+          `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h1 style="color: #d32f2f; margin-bottom: 24px;">❌ Заказ отменён</h1>
+              <p style="font-size: 16px; color: #333;">Заказ был отменён <strong>${cancelledBy === "customer" ? "клиентом" : "исполнителем"}</strong>.</p>
+              
+              <div style="background: #f9f9f9; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                <h3 style="margin-top: 0; color: #333;">👤 Участники:</h3>
+                <p><strong>Клиент:</strong> ${escapeHtml(customerName)}${finalCustomerEmail ? ` (${escapeHtml(finalCustomerEmail)})` : ''}</p>
+                <p><strong>Исполнитель:</strong> ${escapeHtml(performerName)}${finalPerformerEmail ? ` (${escapeHtml(finalPerformerEmail)})` : ''}</p>
+              </div>
+              
+              <div style="background: #ffebee; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                <h3 style="margin-top: 0; color: #333;">📋 Детали заказа:</h3>
+                <p><strong>📅 Дата:</strong> ${escapeHtml(bookingDate)}</p>
+                <p><strong>⏰ Время:</strong> ${escapeHtml(bookingTime)}</p>
+                ${bookingId ? `<p><strong>ID:</strong> ${escapeHtml(bookingId)}</p>` : ''}
+              </div>
+              
+              <div style="background: #fff3e0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                <h3 style="margin-top: 0; color: #333;">💬 Причина отмены:</h3>
+                <p style="color: #555;">${escapeHtml(cancellationReason)}</p>
+              </div>
+              
+              <div style="text-align: center; margin-top: 24px;">
+                <a href="${SITE_URL}/admin/booking-history" style="display: inline-block; background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 История заказов</a>
+              </div>
+            </div>
+          `
+        )
+      );
+
       if (emails.length === 0) {
         console.log("No recipient emails provided or found, skipping notification");
         return new Response(JSON.stringify({ success: true, skipped: true }), {
