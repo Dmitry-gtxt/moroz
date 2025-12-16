@@ -11,10 +11,10 @@ import { ProposalsList } from '@/components/bookings/ProposalsList';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { notifyBookingCancelled, notifyPaymentReceived } from '@/lib/pushNotifications';
+import { notifyBookingCancelled, notifyPaymentReceived, notifyAdminBookingCancelled } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { 
-  Calendar, Clock, MapPin, Star, Loader2, Phone,
+  Calendar, Clock, MapPin, Star, Loader2, Phone, HeadphonesIcon,
   Package, User, X, CheckCircle, CreditCard, Lock, Timer, AlertCircle, MessageSquare
 } from 'lucide-react';
 import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment } from '@/lib/pricing';
@@ -266,6 +266,15 @@ export default function CustomerBookings() {
         'customer'
       );
     }
+
+    // Notify admin about cancellation
+    notifyAdminBookingCancelled(
+      userProfile?.full_name || 'Клиент',
+      booking.performer?.display_name || 'Исполнитель',
+      format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+      'customer',
+      reason
+    );
 
     // Send email notification to performer
     supabase.functions.invoke('send-notification-email', {
@@ -627,6 +636,12 @@ export default function CustomerBookings() {
                             </Link>
                           </Button>
                         )}
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to="/messages?type=support">
+                            <HeadphonesIcon className="h-4 w-4 mr-2" />
+                            В поддержку
+                          </Link>
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
