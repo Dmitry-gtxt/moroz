@@ -224,18 +224,18 @@ const PerformerProfile = () => {
       <Header />
       <main className="flex-1">
         {/* Breadcrumb */}
-        <div className="bg-secondary/50 border-b border-border">
-          <div className="container py-4">
-            <nav className="flex items-center gap-2 text-sm">
-              <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
+        <div className="bg-card border-b border-border">
+          <div className="container py-3">
+            <nav className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm overflow-x-auto">
+              <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
                 Главная
               </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link to="/catalog" className="text-muted-foreground hover:text-foreground transition-colors">
+              <span className="text-muted-foreground/60">/</span>
+              <Link to="/catalog" className="text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
                 Каталог
               </Link>
-              <span className="text-muted-foreground">/</span>
-              <span className="text-foreground font-medium">{performer.display_name}</span>
+              <span className="text-muted-foreground/60">/</span>
+              <span className="text-foreground font-medium truncate max-w-[150px] sm:max-w-none">{performer.display_name}</span>
             </nav>
           </div>
         </div>
