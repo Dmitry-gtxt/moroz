@@ -164,7 +164,13 @@ export function ProposeAlternativeDialog({
     setSubmitting(true);
 
     try {
-      // Create proposal records
+      // Delete existing proposals for this booking (for re-proposals)
+      await supabase
+        .from('booking_proposals')
+        .delete()
+        .eq('booking_id', bookingId);
+
+      // Create new proposal records
       const proposalRecords = proposals.map(p => ({
         booking_id: bookingId,
         proposed_date: format(p.date, 'yyyy-MM-dd'),
