@@ -86,8 +86,15 @@ export default function Messages() {
       setLoading(true);
       const dialogsData: Dialog[] = [];
       
+      // First get performer profile id if exists
+      const { data: performerProfile } = await supabase
+        .from('performer_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       // 1. Fetch booking-related dialogs (ONLY for paid bookings - chat is available after prepayment)
-      const { data: bookings } = await supabase
+      let bookingsQuery = supabase
         .from('bookings')
         .select(`
           id,
@@ -102,9 +109,17 @@ export default function Messages() {
             user_id
           )
         `)
-        .or(`customer_id.eq.${user.id},performer_id.in.(select id from performer_profiles where user_id = '${user.id}')`)
         .in('payment_status', ['prepayment_paid', 'fully_paid'])
         .order('created_at', { ascending: false });
+
+      // Build OR filter based on whether user is customer or performer
+      if (performerProfile) {
+        bookingsQuery = bookingsQuery.or(`customer_id.eq.${user.id},performer_id.eq.${performerProfile.id}`);
+      } else {
+        bookingsQuery = bookingsQuery.eq('customer_id', user.id);
+      }
+
+      const { data: bookings } = await bookingsQuery;
 
       for (const booking of bookings || []) {
         const performer = booking.performer_profiles as any;
@@ -125,29 +140,22 @@ export default function Messages() {
           .neq('sender_id', user.id)
           .is('read_at', null);
 
-        if (lastMsg) {
-          dialogsData.push({
-            id: booking.id,
-            type: 'booking',
-            other_user_name: isCustomer 
-              ? (performer?.display_name || 'Исполнитель')
-              : booking.customer_name,
-            subtitle: `Заказ на ${format(new Date(booking.booking_date), 'd MMM', { locale: ru })}`,
-            last_message: lastMsg.text,
-            last_message_time: lastMsg.created_at,
-            unread_count: unreadCount || 0,
-            photo: performer?.photo_urls?.[0]
-          });
-        }
+        // Show dialog even if no messages yet (paid booking = chat available)
+        dialogsData.push({
+          id: booking.id,
+          type: 'booking',
+          other_user_name: isCustomer 
+            ? (performer?.display_name || 'Исполнитель')
+            : booking.customer_name,
+          subtitle: `Заказ на ${format(new Date(booking.booking_date), 'd MMM', { locale: ru })}`,
+          last_message: lastMsg?.text || 'Начните диалог...',
+          last_message_time: lastMsg?.created_at || booking.booking_date,
+          unread_count: unreadCount || 0,
+          photo: performer?.photo_urls?.[0]
+        });
       }
 
-      // 2. Fetch support chat (for performers)
-      const { data: performerProfile } = await supabase
-        .from('performer_profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
+      // 2. Fetch support chat (for performers) - reuse performerProfile from above
       if (performerProfile) {
         const { data: supportChat } = await supabase
           .from('support_chats')

@@ -15,11 +15,27 @@ export function useUnreadMessages() {
     const fetchUnreadCount = async () => {
       let totalUnread = 0;
 
+      // First get performer profile id if exists
+      const { data: performerProfile } = await supabase
+        .from('performer_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       // 1. Count unread booking chat messages
-      const { data: bookings } = await supabase
+      let bookingsQuery = supabase
         .from('bookings')
         .select('id, customer_id, performer_id')
-        .or(`customer_id.eq.${user.id},performer_id.in.(select id from performer_profiles where user_id = '${user.id}')`);
+        .in('payment_status', ['prepayment_paid', 'fully_paid']);
+
+      // Build OR filter based on whether user is customer or performer
+      if (performerProfile) {
+        bookingsQuery = bookingsQuery.or(`customer_id.eq.${user.id},performer_id.eq.${performerProfile.id}`);
+      } else {
+        bookingsQuery = bookingsQuery.eq('customer_id', user.id);
+      }
+
+      const { data: bookings } = await bookingsQuery;
 
       if (bookings?.length) {
         const bookingIds = bookings.map(b => b.id);
@@ -35,12 +51,6 @@ export function useUnreadMessages() {
       }
 
       // 2. Count unread support chat messages (for performers)
-      const { data: performerProfile } = await supabase
-        .from('performer_profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
       if (performerProfile) {
         const { data: supportChat } = await supabase
           .from('support_chats')
