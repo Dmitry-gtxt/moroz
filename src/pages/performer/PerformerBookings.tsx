@@ -500,78 +500,89 @@ export default function PerformerBookings() {
                           </div>
                         )}
 
-                        <div className="flex items-center justify-between pt-2 border-t">
-                          <div className="text-lg font-bold">
-                            {booking.price_total?.toLocaleString()} ₽
+                        <div className="flex flex-col gap-3 pt-2 border-t">
+                          <div>
+                            <div className="text-lg font-bold">
+                              {booking.price_total?.toLocaleString()} ₽
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              ({((booking.price_total || 0) - (booking.prepayment_amount || 0)).toLocaleString()} ₽ вам оплатит заказчик лично при встрече + комиссию сайта предоплатой {booking.prepayment_amount?.toLocaleString()} ₽)
+                            </p>
                           </div>
                           
-                          {booking.status === 'pending' && (
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCancelDialog({ open: true, booking, action: 'reject' })}
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                Отклонить
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => setProposeDialog({ open: true, booking })}
-                              >
-                                <Clock className="h-4 w-4 mr-1" />
-                                Другое время
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => updateBookingStatus(booking.id!, 'confirmed')}
-                              >
-                                <Check className="h-4 w-4 mr-1" />
-                                Подтвердить
-                              </Button>
-                            </div>
-                          )}
+                          <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg text-xs text-blue-700 dark:text-blue-300">
+                            В случае изменения в вашем графике или форс-мажорных обстоятельств, которые помешают вам прийти к клиенту в обозначенное время, чтобы ваш рейтинг не был понижен — обязательно отмените заказ и позвоните нам: <a href="tel:+79953829736" className="font-medium underline">+7(995)382-97-36</a>
+                          </div>
+                          
+                          <div className="flex items-center justify-end">
+                            {booking.status === 'pending' && (
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCancelDialog({ open: true, booking, action: 'reject' })}
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Отклонить
+                                </Button>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => setProposeDialog({ open: true, booking })}
+                                >
+                                  <Clock className="h-4 w-4 mr-1" />
+                                  Другое время
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => updateBookingStatus(booking.id!, 'confirmed')}
+                                >
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Подтвердить
+                                </Button>
+                              </div>
+                            )}
 
-                          {booking.status === 'customer_accepted' && (
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCancelDialog({ open: true, booking, action: 'reject' })}
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                Отклонить
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => confirmFinalBooking(booking)}
-                              >
-                                <Check className="h-4 w-4 mr-1" />
-                                Подтвердить финально
-                              </Button>
-                            </div>
-                          )}
+                            {booking.status === 'customer_accepted' && (
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCancelDialog({ open: true, booking, action: 'reject' })}
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Отклонить
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => confirmFinalBooking(booking)}
+                                >
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Подтвердить финально
+                                </Button>
+                              </div>
+                            )}
 
-                          {booking.status === 'confirmed' && (
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCancelDialog({ open: true, booking, action: 'cancel' })}
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                Отменить
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => updateBookingStatus(booking.id, 'completed')}
-                              >
-                                <Check className="h-4 w-4 mr-1" />
-                                Завершить
-                              </Button>
-                            </div>
-                          )}
+                            {booking.status === 'confirmed' && (
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCancelDialog({ open: true, booking, action: 'cancel' })}
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Отменить
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => updateBookingStatus(booking.id, 'completed')}
+                                >
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Завершить
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
