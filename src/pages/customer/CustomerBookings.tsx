@@ -461,9 +461,18 @@ export default function CustomerBookings() {
                     )}
 
                       <div className="flex items-center justify-between pt-4 border-t border-border">
-                      <div className="text-lg font-semibold">
-                        {booking.price_total.toLocaleString()} ₽
-                      </div>
+                      {/* Hide price when counter_proposed - proposals have their own prices */}
+                      {booking.status !== 'counter_proposed' && (
+                        <div>
+                          <div className="text-lg font-semibold">
+                            {booking.price_total.toLocaleString()} ₽
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            (предоплата {booking.prepayment_amount.toLocaleString()} ₽ + {(booking.price_total - booking.prepayment_amount).toLocaleString()} ₽ исполнителю)
+                          </div>
+                        </div>
+                      )}
+                      {booking.status === 'counter_proposed' && <div />}
                       
                       <div className="flex gap-2">
                         {/* Cancel button for pending/confirmed */}

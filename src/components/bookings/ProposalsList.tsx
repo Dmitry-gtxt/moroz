@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +8,8 @@ import { sendPushNotification } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Calendar, Clock, Loader2, Check, X, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, Loader2, Check, X, AlertTriangle, Coins } from 'lucide-react';
+import { getCommissionRate, getPrepaymentAmount, getPerformerPayment, formatPrice } from '@/lib/pricing';
 
 interface Proposal {
   id: string;
@@ -46,10 +46,17 @@ export function ProposalsList({
   const [selectedProposal, setSelectedProposal] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  const [commissionRate, setCommissionRate] = useState<number | null>(null);
 
   useEffect(() => {
     fetchProposals();
+    fetchCommissionRate();
   }, [bookingId]);
+
+  const fetchCommissionRate = async () => {
+    const rate = await getCommissionRate();
+    setCommissionRate(rate);
+  };
 
   const fetchProposals = async () => {
     try {
@@ -69,6 +76,25 @@ export function ProposalsList({
     }
   };
 
+  // Get proposal price (fallback to originalPrice if null)
+  const getProposalPrice = (proposal: Proposal) => proposal.proposed_price ?? originalPrice;
+
+  // Get prepayment amount for a price
+  const getPrepayment = (price: number) => {
+    if (commissionRate === null) return null;
+    return getPrepaymentAmount(price, commissionRate);
+  };
+
+  // Get performer payment for a price
+  const getPerformerAmount = (price: number) => {
+    if (commissionRate === null) return null;
+    return getPerformerPayment(price, commissionRate);
+  };
+
+  // Get selected proposal object
+  const selectedProposalObj = proposals.find(p => p.id === selectedProposal);
+  const selectedPrice = selectedProposalObj ? getProposalPrice(selectedProposalObj) : null;
+
   const acceptProposal = async () => {
     if (!selectedProposal) {
       toast.error('Выберите вариант');
@@ -80,6 +106,9 @@ export function ProposalsList({
       const proposal = proposals.find(p => p.id === selectedProposal);
       if (!proposal) return;
 
+      const proposalPrice = getProposalPrice(proposal);
+      const prepayment = getPrepayment(proposalPrice);
+
       // Update booking with selected proposal
       const { error: bookingError } = await supabase
         .from('bookings')
@@ -87,7 +116,8 @@ export function ProposalsList({
           status: 'customer_accepted',
           booking_date: proposal.proposed_date,
           booking_time: proposal.proposed_time,
-          price_total: proposal.proposed_price || originalPrice,
+          price_total: proposalPrice,
+          prepayment_amount: prepayment || Math.round(proposalPrice * 0.2),
           slot_id: proposal.slot_id,
         })
         .eq('id', bookingId);
@@ -213,42 +243,67 @@ export function ProposalsList({
 
       <RadioGroup value={selectedProposal || ''} onValueChange={setSelectedProposal}>
         <div className="space-y-2">
-          {proposals.map((proposal) => (
-            <Card
-              key={proposal.id}
-              className={`cursor-pointer transition-all ${
-                selectedProposal === proposal.id
-                  ? 'ring-2 ring-primary border-primary'
-                  : 'hover:border-primary/50'
-              }`}
-              onClick={() => setSelectedProposal(proposal.id)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <RadioGroupItem value={proposal.id} id={proposal.id} />
-                  <Label htmlFor={proposal.id} className="flex-1 cursor-pointer">
-                    <div className="flex flex-wrap items-center gap-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {format(parseISO(proposal.proposed_date), 'd MMMM yyyy', { locale: ru })}
+          {proposals.map((proposal) => {
+            const price = getProposalPrice(proposal);
+            const prepayment = getPrepayment(price);
+            const performerAmount = getPerformerAmount(price);
+            
+            return (
+              <Card
+                key={proposal.id}
+                className={`cursor-pointer transition-all ${
+                  selectedProposal === proposal.id
+                    ? 'ring-2 ring-primary border-primary'
+                    : 'hover:border-primary/50'
+                }`}
+                onClick={() => setSelectedProposal(proposal.id)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <RadioGroupItem value={proposal.id} id={proposal.id} className="mt-1" />
+                    <Label htmlFor={proposal.id} className="flex-1 cursor-pointer">
+                      <div className="flex flex-wrap items-center gap-4 mb-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          {format(parseISO(proposal.proposed_date), 'd MMMM yyyy', { locale: ru })}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          {proposal.proposed_time}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        {proposal.proposed_time}
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Coins className="h-4 w-4 text-muted-foreground" />
+                        {formatPrice(price)}
                       </div>
-                      {proposal.proposed_price && proposal.proposed_price !== originalPrice && (
-                        <Badge variant="secondary">
-                          {proposal.proposed_price.toLocaleString()} ₽
-                        </Badge>
+                      {commissionRate !== null && prepayment !== null && performerAmount !== null && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          (предоплата {formatPrice(prepayment)} + {formatPrice(performerAmount)} исполнителю при встрече)
+                        </div>
                       )}
-                    </div>
-                  </Label>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    </Label>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </RadioGroup>
+
+      {/* Selected proposal summary */}
+      {selectedProposal && selectedPrice !== null && (
+        <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+          <div className="flex items-center gap-2 font-semibold text-lg">
+            <Check className="h-5 w-5 text-primary" />
+            Итого: {formatPrice(selectedPrice)}
+          </div>
+          {commissionRate !== null && (
+            <div className="text-sm text-muted-foreground mt-1">
+              (предоплата {formatPrice(getPrepayment(selectedPrice)!)} + {formatPrice(getPerformerAmount(selectedPrice)!)} исполнителю при встрече)
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex gap-2 pt-2">
         <Button
