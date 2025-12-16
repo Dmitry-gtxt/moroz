@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { notifyBookingCancelled, notifyPaymentReceived } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { 
-  Calendar, Clock, MapPin, Star, Loader2, 
+  Calendar, Clock, MapPin, Star, Loader2, Phone,
   Package, User, X, CheckCircle, CreditCard, Lock, Timer, AlertCircle, MessageSquare
 } from 'lucide-react';
 import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment } from '@/lib/pricing';
@@ -29,6 +29,7 @@ type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'
 
 interface BookingWithPerformer extends Booking {
   performer?: PerformerProfile | null;
+  performerPhone?: string | null;
   hasReview?: boolean;
 }
 
@@ -171,6 +172,21 @@ export default function CustomerBookings() {
         .select('*')
         .in('id', performerIds);
 
+      // Fetch performer phone numbers from profiles table
+      const performerUserIds = performers?.filter(p => p.user_id).map(p => p.user_id) || [];
+      const { data: performerProfiles } = performerUserIds.length > 0 
+        ? await supabase
+            .from('profiles')
+            .select('user_id, phone')
+            .in('user_id', performerUserIds)
+        : { data: [] };
+
+      // Create a map of user_id to phone
+      const phoneMap = new Map<string, string | null>();
+      performerProfiles?.forEach(p => {
+        if (p.user_id) phoneMap.set(p.user_id, p.phone);
+      });
+
       // Fetch existing reviews for these bookings
       const bookingIds = bookingsData.map(b => b.id);
       const { data: reviews } = await supabase
@@ -182,11 +198,15 @@ export default function CustomerBookings() {
       const reviewedBookingIds = new Set(reviews?.map(r => r.booking_id) || []);
 
       // Combine data
-      const enrichedBookings: BookingWithPerformer[] = bookingsData.map(booking => ({
-        ...booking,
-        performer: performers?.find(p => p.id === booking.performer_id) || null,
-        hasReview: reviewedBookingIds.has(booking.id),
-      }));
+      const enrichedBookings: BookingWithPerformer[] = bookingsData.map(booking => {
+        const performer = performers?.find(p => p.id === booking.performer_id) || null;
+        return {
+          ...booking,
+          performer,
+          performerPhone: performer?.user_id ? phoneMap.get(performer.user_id) || null : null,
+          hasReview: reviewedBookingIds.has(booking.id),
+        };
+      });
 
       setBookings(enrichedBookings);
     } catch (error: any) {
@@ -525,6 +545,18 @@ export default function CustomerBookings() {
                           <p className="text-sm text-green-600 dark:text-green-400 mt-1">
                             Оплатите исполнителю наличкой после мероприятия: {(booking.price_total - booking.prepayment_amount).toLocaleString()} ₽
                           </p>
+                          {booking.performerPhone && (
+                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-green-200 dark:border-green-800">
+                              <Phone className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              <a 
+                                href={`tel:${booking.performerPhone}`}
+                                className="text-sm font-medium text-green-700 dark:text-green-300 hover:underline"
+                              >
+                                {booking.performerPhone}
+                              </a>
+                              <span className="text-xs text-green-600 dark:text-green-400">— телефон исполнителя</span>
+                            </div>
+                          )}
                         </div>
                         <Button variant="outline" size="sm" asChild>
                           <Link to={`/messages?chat=${booking.id}&type=booking`}>
