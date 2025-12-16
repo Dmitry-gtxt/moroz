@@ -10,11 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CancelBookingDialog } from '@/components/bookings/CancelBookingDialog';
 import { ProposeAlternativeDialog } from '@/components/bookings/ProposeAlternativeDialog';
 import { PerformerProposalsList } from '@/components/bookings/PerformerProposalsList';
-import { notifyBookingConfirmed, notifyBookingRejected, notifyBookingCancelled, scheduleBookingReminders } from '@/lib/pushNotifications';
+import { notifyBookingConfirmed, notifyBookingRejected, notifyBookingCancelled, scheduleBookingReminders, notifyAdminBookingCancelled } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Loader2, Check, X, MapPin, Phone, User, Calendar, Lock, Mail, CreditCard, Clock, MessageSquare } from 'lucide-react';
+import { Loader2, Check, X, MapPin, Phone, User, Calendar, Lock, Mail, CreditCard, Clock, MessageSquare, HeadphonesIcon } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 // Use secure_bookings view type with new fields
@@ -211,6 +211,15 @@ export default function PerformerBookings() {
       format(new Date(booking.booking_date), 'd MMMM', { locale: ru })
     );
 
+    // Notify admin about rejection
+    notifyAdminBookingCancelled(
+      booking.customer_name || 'Клиент',
+      performerName,
+      format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+      'performer',
+      reason
+    );
+
     toast.success('Заявка отклонена');
     setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'cancelled', cancellation_reason: reason, cancelled_by: 'performer' } : b));
   };
@@ -262,6 +271,15 @@ export default function PerformerBookings() {
       performerName,
       format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
       'performer'
+    );
+
+    // Notify admin about cancellation
+    notifyAdminBookingCancelled(
+      booking.customer_name || 'Клиент',
+      performerName,
+      format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+      'performer',
+      reason
     );
 
     toast.success('Заказ отменён');
@@ -627,6 +645,12 @@ export default function PerformerBookings() {
                               </div>
                             )}
                           </div>
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link to="/messages?type=support">
+                              <HeadphonesIcon className="h-4 w-4 mr-2" />
+                              В поддержку
+                            </Link>
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

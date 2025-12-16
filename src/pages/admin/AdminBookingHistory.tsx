@@ -4,27 +4,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, MessageSquare, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { MessageSquare, Search, ChevronDown, ChevronRight, Phone, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import type { Database } from '@/integrations/supabase/types';
 
 type Booking = Database['public']['Tables']['bookings']['Row'];
-type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
 type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
 
 interface BookingWithDetails extends Booking {
   performer_name?: string;
+  performer_phone?: string | null;
 }
 
 interface PerformerBasic {
   id: string;
   display_name: string;
+  user_id: string | null;
 }
 
 interface GroupedBookings {
@@ -33,6 +34,8 @@ interface GroupedBookings {
   performerName: string;
   customerId: string;
   performerId: string;
+  customerPhone: string;
+  performerPhone: string | null;
   bookings: BookingWithDetails[];
 }
 
@@ -42,6 +45,8 @@ const statusLabels: Record<string, { label: string; variant: 'default' | 'second
   completed: { label: 'Завершён', variant: 'secondary' },
   cancelled: { label: 'Отменён', variant: 'destructive' },
   no_show: { label: 'Неявка', variant: 'destructive' },
+  counter_proposed: { label: 'Предложено время', variant: 'secondary' },
+  customer_accepted: { label: 'Клиент выбрал', variant: 'outline' },
 };
 
 const paymentLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -56,7 +61,7 @@ export default function AdminBookingHistory() {
   const [performers, setPerformers] = useState<PerformerBasic[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState('all');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
   // Chat dialog
@@ -66,42 +71,60 @@ export default function AdminBookingHistory() {
 
   useEffect(() => {
     fetchData();
-  }, [statusFilter]);
+  }, []);
 
   async function fetchData() {
     setLoading(true);
 
-    let query = supabase
-      .from('bookings')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (statusFilter !== 'all') {
-      query = query.eq('status', statusFilter as Database['public']['Enums']['booking_status']);
-    }
-
     const [bookingsRes, performersRes] = await Promise.all([
-      query,
-      supabase.from('performer_profiles').select('id, display_name'),
+      supabase
+        .from('bookings')
+        .select('*')
+        .order('created_at', { ascending: false }),
+      supabase.from('performer_profiles').select('id, display_name, user_id'),
     ]);
 
     if (bookingsRes.error) {
       toast.error('Ошибка загрузки заказов');
-    } else {
-      const performerMap = new Map(performersRes.data?.map(p => [p.id, p.display_name]) || []);
-      const enriched = bookingsRes.data?.map(b => ({
-        ...b,
-        performer_name: performerMap.get(b.performer_id) || 'Неизвестно',
-      })) || [];
-      setBookings(enriched);
+      setLoading(false);
+      return;
     }
+
+    // Fetch performer phones from profiles
+    const performerUserIds = performersRes.data?.filter(p => p.user_id).map(p => p.user_id) || [];
+    const { data: performerProfiles } = performerUserIds.length > 0
+      ? await supabase.from('profiles').select('user_id, phone').in('user_id', performerUserIds)
+      : { data: [] };
+
+    const performerPhoneMap = new Map<string, string | null>();
+    performersRes.data?.forEach(p => {
+      if (p.user_id) {
+        const profile = performerProfiles?.find(pr => pr.user_id === p.user_id);
+        performerPhoneMap.set(p.id, profile?.phone || null);
+      }
+    });
+
+    const performerMap = new Map(performersRes.data?.map(p => [p.id, p.display_name]) || []);
+    const enriched = bookingsRes.data?.map(b => ({
+      ...b,
+      performer_name: performerMap.get(b.performer_id) || 'Неизвестно',
+      performer_phone: performerPhoneMap.get(b.performer_id) || null,
+    })) || [];
+    setBookings(enriched);
 
     if (performersRes.data) setPerformers(performersRes.data);
     setLoading(false);
   }
 
+  // Filter by tab
+  const getFilteredByTab = (tab: string) => {
+    if (tab === 'confirmed') return bookings.filter(b => b.status === 'confirmed');
+    if (tab === 'cancelled') return bookings.filter(b => b.status === 'cancelled');
+    return bookings;
+  };
+
   // Filter and group bookings
-  const filteredBookings = bookings.filter(b => {
+  const filteredBookings = getFilteredByTab(activeTab).filter(b => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -123,6 +146,8 @@ export default function AdminBookingHistory() {
         performerName: booking.performer_name || 'Неизвестно',
         customerId: booking.customer_id,
         performerId: booking.performer_id,
+        customerPhone: booking.customer_phone,
+        performerPhone: booking.performer_phone || null,
         bookings: [],
       });
     }
@@ -160,6 +185,9 @@ export default function AdminBookingHistory() {
     setLoadingChat(false);
   }
 
+  const confirmedCount = bookings.filter(b => b.status === 'confirmed').length;
+  const cancelledCount = bookings.filter(b => b.status === 'cancelled').length;
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -178,105 +206,136 @@ export default function AdminBookingHistory() {
               className="pl-10"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Фильтр по статусу" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все заказы</SelectItem>
-              <SelectItem value="pending">Ожидающие</SelectItem>
-              <SelectItem value="confirmed">Подтверждённые</SelectItem>
-              <SelectItem value="completed">Завершённые</SelectItem>
-              <SelectItem value="cancelled">Отменённые</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : groupedBookings.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              Заказы не найдены
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {groupedBookings.map((group) => (
-              <Card key={group.key}>
-                <CardHeader 
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => toggleGroup(group.key)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {expandedGroups.has(group.key) ? (
-                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                      )}
-                      <div>
-                        <CardTitle className="text-lg">
-                          {group.customerName} → {group.performerName}
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {group.bookings.length} {group.bookings.length === 1 ? 'заказ' : group.bookings.length < 5 ? 'заказа' : 'заказов'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      {group.bookings.some(b => b.status === 'pending') && (
-                        <Badge variant="outline">Есть ожидающие</Badge>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="all">Все ({bookings.length})</TabsTrigger>
+            <TabsTrigger value="confirmed">Подтверждённые ({confirmedCount})</TabsTrigger>
+            <TabsTrigger value="cancelled">Отменённые ({cancelledCount})</TabsTrigger>
+          </TabsList>
 
-                {expandedGroups.has(group.key) && (
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      {group.bookings.map((booking) => {
-                        const status = statusLabels[booking.status] || statusLabels.pending;
-                        const payment = paymentLabels[booking.payment_status] || paymentLabels.not_paid;
-
-                        return (
-                          <div
-                            key={booking.id}
-                            className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border"
-                          >
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">
-                                  {format(new Date(booking.booking_date), 'd MMM yyyy', { locale: ru })}
-                                </span>
-                                <span className="text-muted-foreground">{booking.booking_time}</span>
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {booking.address}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant={status.variant}>{status.label}</Badge>
-                                <Badge variant={payment.variant}>{payment.label}</Badge>
-                                <span className="font-semibold">{booking.price_total.toLocaleString()} ₽</span>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button variant="ghost" size="sm" onClick={() => openChat(booking.id)}>
-                                <MessageSquare className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                )}
+          <TabsContent value={activeTab} className="mt-4">
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : groupedBookings.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  Заказы не найдены
+                </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div className="space-y-4">
+                {groupedBookings.map((group) => (
+                  <Card key={group.key}>
+                    <CardHeader 
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => toggleGroup(group.key)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {expandedGroups.has(group.key) ? (
+                            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                          )}
+                          <div>
+                            <CardTitle className="text-lg">
+                              {group.customerName} → {group.performerName}
+                            </CardTitle>
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                Клиент: {group.customerPhone}
+                              </span>
+                              {group.performerPhone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  Исполнитель: {group.performerPhone}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {group.bookings.length} {group.bookings.length === 1 ? 'заказ' : group.bookings.length < 5 ? 'заказа' : 'заказов'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {group.bookings.some(b => b.status === 'pending') && (
+                            <Badge variant="outline">Есть ожидающие</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    {expandedGroups.has(group.key) && (
+                      <CardContent className="pt-0">
+                        <div className="space-y-3">
+                          {group.bookings.map((booking) => {
+                            const status = statusLabels[booking.status] || statusLabels.pending;
+                            const payment = paymentLabels[booking.payment_status] || paymentLabels.not_paid;
+                            const remainingAmount = booking.price_total - booking.prepayment_amount;
+
+                            return (
+                              <div
+                                key={booking.id}
+                                className="flex flex-col gap-2 p-4 rounded-lg bg-muted/30 border border-border"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">
+                                        {format(new Date(booking.booking_date), 'd MMM yyyy', { locale: ru })}
+                                      </span>
+                                      <span className="text-muted-foreground">{booking.booking_time}</span>
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {booking.address}
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <Badge variant={status.variant}>{status.label}</Badge>
+                                      <Badge variant={payment.variant}>{payment.label}</Badge>
+                                      <span className="font-semibold">
+                                        {booking.prepayment_amount.toLocaleString()} ₽
+                                        <span className="text-muted-foreground font-normal text-sm ml-1">
+                                          (+{remainingAmount.toLocaleString()} ₽ исполнителю)
+                                        </span>
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button variant="ghost" size="sm" onClick={() => openChat(booking.id)}>
+                                      <MessageSquare className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                {/* Cancellation reason */}
+                                {booking.status === 'cancelled' && booking.cancellation_reason && (
+                                  <div className="flex items-start gap-2 p-2 bg-destructive/10 rounded text-sm">
+                                    <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                                    <div>
+                                      <span className="font-medium text-destructive">
+                                        Причина отмены {booking.cancelled_by === 'performer' ? '(исполнитель)' : booking.cancelled_by === 'customer' ? '(клиент)' : ''}:
+                                      </span>
+                                      <span className="ml-1 text-muted-foreground">{booking.cancellation_reason}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Chat Dialog */}

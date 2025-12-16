@@ -321,3 +321,30 @@ export async function notifyAdminProfileEdited(
     tag: 'moderation-needed'
   });
 }
+
+// Notify admin when booking is cancelled
+export async function notifyAdminBookingCancelled(
+  customerName: string,
+  performerName: string,
+  bookingDate: string,
+  cancelledBy: 'customer' | 'performer',
+  reason?: string
+): Promise<void> {
+  // Get admin user ids
+  const { data: admins } = await supabase
+    .from('user_roles')
+    .select('user_id')
+    .eq('role', 'admin');
+
+  if (!admins?.length) return;
+
+  for (const admin of admins) {
+    await sendPushNotification({
+      userId: admin.user_id,
+      title: '❌ Заказ отменён',
+      body: `${cancelledBy === 'customer' ? customerName : performerName} отменил заказ на ${bookingDate}. ${reason ? `Причина: ${reason}` : ''}`,
+      url: '/admin/booking-history',
+      tag: 'admin-booking-cancelled'
+    });
+  }
+}
