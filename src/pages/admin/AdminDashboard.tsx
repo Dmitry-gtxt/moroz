@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { toast } from 'sonner';
 import { clearCommissionCache } from '@/lib/pricing';
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalPerformers: 0,
     pendingModeration: 0,
@@ -157,10 +159,10 @@ export default function AdminDashboard() {
   };
 
   const statCards = [
-    { title: 'Всего исполнителей', value: stats.totalPerformers, icon: Users, color: 'text-primary' },
-    { title: 'На модерации', value: stats.pendingModeration, icon: FileCheck, color: 'text-accent' },
-    { title: 'Всего заказов', value: stats.totalOrders, icon: ShoppingCart, color: 'text-winter-light' },
-    { title: 'Ожидают подтверждения', value: stats.pendingOrders, icon: TrendingUp, color: 'text-santa' },
+    { title: 'Всего исполнителей', value: stats.totalPerformers, icon: Users, color: 'text-primary', link: '/admin/performers' },
+    { title: 'На модерации', value: stats.pendingModeration, icon: FileCheck, color: 'text-accent', link: '/admin/verification' },
+    { title: 'Всего заказов', value: stats.totalOrders, icon: ShoppingCart, color: 'text-winter-light', link: '/admin/orders' },
+    { title: 'Ожидают подтверждения', value: stats.pendingOrders, icon: TrendingUp, color: 'text-santa', link: '/admin/orders' },
   ];
 
   return (
@@ -173,7 +175,11 @@ export default function AdminDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statCards.map((stat) => (
-            <Card key={stat.title} className="bg-card border-border">
+            <Card 
+              key={stat.title} 
+              className="bg-card border-border cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => navigate(stat.link)}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
