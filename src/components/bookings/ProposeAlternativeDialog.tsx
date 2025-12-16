@@ -1,21 +1,21 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, isSameDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Plus, Trash2, Loader2, Clock, Check } from 'lucide-react';
+import { Trash2, Loader2, Clock, Check, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getPerformerNetAmount, getCommissionRate, formatPrice } from '@/lib/pricing';
 
 interface ProposalSlot {
   date: Date;
   time: string;
-  price?: number;
-  slotId?: string;
+  price: number;
+  slotId: string;
 }
 
 interface AvailabilitySlot {
@@ -61,13 +61,20 @@ export function ProposeAlternativeDialog({
   const [allSlots, setAllSlots] = useState<AvailabilitySlot[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [loading, setLoading] = useState(true);
+  const [commissionRate, setCommissionRate] = useState<number | null>(null);
 
   useEffect(() => {
     if (open) {
       fetchAllSlots();
+      fetchCommissionRate();
       setProposals([]);
     }
   }, [open, performerId]);
+
+  const fetchCommissionRate = async () => {
+    const rate = await getCommissionRate();
+    setCommissionRate(rate);
+  };
 
   const fetchAllSlots = async () => {
     setLoading(true);
@@ -108,6 +115,21 @@ export function ProposeAlternativeDialog({
     return proposals.some(p => p.slotId === slotId);
   };
 
+  // Get slot price
+  const getSlotPrice = (slot: AvailabilitySlot) => slot.price ?? basePrice;
+
+  // Get net amount performer receives
+  const getNetAmount = (price: number) => {
+    if (commissionRate === null) return null;
+    return getPerformerNetAmount(price, commissionRate);
+  };
+
+  // Get commission amount
+  const getCommissionAmount = (price: number) => {
+    if (commissionRate === null) return null;
+    return Math.round(price * commissionRate);
+  };
+
   const addSlotToProposals = (slot: AvailabilitySlot) => {
     if (proposals.length >= 5) {
       toast.error('Максимум 5 вариантов');
@@ -119,22 +141,18 @@ export function ProposeAlternativeDialog({
     }
     
     const newDate = new Date(slot.date + 'T00:00:00');
+    const slotPrice = getSlotPrice(slot);
+    
     setProposals([...proposals, {
       date: newDate,
       time: `${slot.start_time.slice(0, 5)}-${slot.end_time.slice(0, 5)}`,
-      price: slot.price || basePrice,
+      price: slotPrice,
       slotId: slot.id,
     }]);
   };
 
   const removeProposal = (index: number) => {
     setProposals(proposals.filter((_, i) => i !== index));
-  };
-
-  const updateProposalPrice = (index: number, price: number) => {
-    const updated = [...proposals];
-    updated[index] = { ...updated[index], price };
-    setProposals(updated);
   };
 
   const handleSubmit = async () => {
@@ -151,7 +169,7 @@ export function ProposeAlternativeDialog({
         booking_id: bookingId,
         proposed_date: format(p.date, 'yyyy-MM-dd'),
         proposed_time: p.time,
-        proposed_price: p.price || basePrice,
+        proposed_price: p.price,
         slot_id: p.slotId,
         status: 'pending',
       }));
@@ -182,7 +200,7 @@ export function ProposeAlternativeDialog({
           proposals: proposals.map(p => ({
             date: format(p.date, 'd MMMM yyyy', { locale: ru }),
             time: p.time,
-            price: p.price || basePrice,
+            price: p.price,
           })),
         },
       });
@@ -283,10 +301,13 @@ export function ProposeAlternativeDialog({
                   <Label className="text-sm font-medium">
                     Слоты на {format(selectedDate, 'd MMMM', { locale: ru })}:
                   </Label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-2">
                     {slotsForSelectedDate.map((slot) => {
                       const isAdded = isSlotInProposals(slot.id);
                       const isFree = slot.status === 'free';
+                      const slotPrice = getSlotPrice(slot);
+                      const netAmount = getNetAmount(slotPrice);
+                      const commissionAmount = getCommissionAmount(slotPrice);
                       
                       return (
                         <button
@@ -311,9 +332,15 @@ export function ProposeAlternativeDialog({
                             </div>
                             {isAdded && <Check className="h-4 w-4 text-green-600" />}
                           </div>
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            {slot.price ? `${slot.price.toLocaleString()} ₽` : `${basePrice.toLocaleString()} ₽`}
+                          <div className="mt-2 flex items-center gap-2">
+                            <Coins className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-sm font-medium">{formatPrice(slotPrice)}</span>
                           </div>
+                          {commissionRate !== null && netAmount !== null && commissionAmount !== null && (
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              ({formatPrice(netAmount)} вам на руки + {formatPrice(commissionAmount)} комиссия предоплатой)
+                            </div>
+                          )}
                           {!isFree && (
                             <div className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
                               Ожидает подтверждения
@@ -337,34 +364,37 @@ export function ProposeAlternativeDialog({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Выбранные слоты ({proposals.length}/5):</Label>
                   <div className="space-y-2">
-                    {proposals.map((proposal, index) => (
-                      <div key={index} className="p-3 border rounded-lg bg-primary/5">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="font-medium text-sm">
-                              {format(proposal.date, 'd MMMM', { locale: ru })} {proposal.time}
-                            </span>
+                    {proposals.map((proposal, index) => {
+                      const netAmount = getNetAmount(proposal.price);
+                      const commissionAmount = getCommissionAmount(proposal.price);
+                      
+                      return (
+                        <div key={index} className="p-3 border rounded-lg bg-primary/5">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-medium text-sm">
+                                {format(proposal.date, 'd MMMM', { locale: ru })} {proposal.time}
+                              </span>
+                              <div className="text-sm mt-1">
+                                {formatPrice(proposal.price)}
+                              </div>
+                              {commissionRate !== null && netAmount !== null && commissionAmount !== null && (
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  ({formatPrice(netAmount)} вам на руки + {formatPrice(commissionAmount)} комиссия предоплатой)
+                                </div>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeProposal(index)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeProposal(index)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
                         </div>
-                        <div className="mt-2 flex items-center gap-2">
-                          <Label className="text-xs whitespace-nowrap">Цена:</Label>
-                          <Input
-                            type="number"
-                            value={proposal.price || ''}
-                            onChange={(e) => updateProposalPrice(index, parseInt(e.target.value) || basePrice)}
-                            className="h-8 text-sm w-28"
-                          />
-                          <span className="text-xs text-muted-foreground">₽</span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
