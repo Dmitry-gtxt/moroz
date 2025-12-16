@@ -552,6 +552,27 @@ export default function PerformerBookings() {
                               </div>
                             )}
 
+                            {booking.status === 'counter_proposed' && (
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCancelDialog({ open: true, booking, action: 'reject' })}
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Отклонить
+                                </Button>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => setProposeDialog({ open: true, booking })}
+                                >
+                                  <Clock className="h-4 w-4 mr-1" />
+                                  Изменить предложение
+                                </Button>
+                              </div>
+                            )}
+
                             {booking.status === 'customer_accepted' && (
                               <div className="flex gap-2">
                                 <Button
