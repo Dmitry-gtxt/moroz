@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { PerformerLayout } from './PerformerDashboard';
@@ -416,25 +416,33 @@ export default function PerformerBookings() {
                       <CardContent className="space-y-4">
                         {/* Contact info hidden until prepayment */}
                         {booking.payment_status === 'prepayment_paid' || booking.payment_status === 'fully_paid' ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <User className="h-4 w-4" />
-                              <span>{booking.customer_name}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Phone className="h-4 w-4" />
-                              <span>{booking.customer_phone}</span>
-                            </div>
-                            {booking.customer_email && (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                               <div className="flex items-center gap-2 text-muted-foreground">
-                                <Mail className="h-4 w-4" />
-                                <span>{booking.customer_email}</span>
+                                <User className="h-4 w-4" />
+                                <span>{booking.customer_name}</span>
                               </div>
-                            )}
-                            <div className="flex items-center gap-2 text-muted-foreground md:col-span-2">
-                              <MapPin className="h-4 w-4" />
-                              <span>{booking.address}</span>
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Phone className="h-4 w-4" />
+                                <span>{booking.customer_phone}</span>
+                              </div>
+                              {booking.customer_email && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                  <Mail className="h-4 w-4" />
+                                  <span>{booking.customer_email}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 text-muted-foreground md:col-span-2">
+                                <MapPin className="h-4 w-4" />
+                                <span>{booking.address}</span>
+                              </div>
                             </div>
+                            <Button variant="outline" size="sm" asChild>
+                              <Link to={`/messages?chat=${booking.id}&type=booking`}>
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                Перейти в чат
+                              </Link>
+                            </Button>
                           </div>
                         ) : (
                           <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">

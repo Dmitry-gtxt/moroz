@@ -15,7 +15,7 @@ import { notifyBookingCancelled } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { 
   Calendar, Clock, MapPin, Star, Loader2, 
-  Package, User, X, CheckCircle, CreditCard, Lock, Timer, AlertCircle
+  Package, User, X, CheckCircle, CreditCard, Lock, Timer, AlertCircle, MessageSquare
 } from 'lucide-react';
 import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment } from '@/lib/pricing';
 import { format, parseISO, differenceInMinutes } from 'date-fns';
@@ -429,17 +429,25 @@ export default function CustomerBookings() {
                       </div>
                     )}
 
-                    {booking.payment_status === 'prepayment_paid' && (
-                      <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
-                        <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                          <CheckCircle className="h-4 w-4" />
-                          <span className="text-sm font-medium">
-                            Предоплата внесена: {booking.prepayment_amount.toLocaleString()} ₽
-                          </span>
+                    {(booking.payment_status === 'prepayment_paid' || booking.payment_status === 'fully_paid') && (
+                      <div className="space-y-3">
+                        <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+                          <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="text-sm font-medium">
+                              Предоплата внесена: {booking.prepayment_amount.toLocaleString()} ₽
+                            </span>
+                          </div>
+                          <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                            Оплатите исполнителю наличкой после мероприятия: {(booking.price_total - booking.prepayment_amount).toLocaleString()} ₽
+                          </p>
                         </div>
-                        <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                          Оплатите исполнителю наличкой после мероприятия: {(booking.price_total - booking.prepayment_amount).toLocaleString()} ₽
-                        </p>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/messages?chat=${booking.id}&type=booking`}>
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Написать исполнителю
+                          </Link>
+                        </Button>
                       </div>
                     )}
 

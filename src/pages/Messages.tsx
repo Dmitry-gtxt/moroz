@@ -86,7 +86,7 @@ export default function Messages() {
       setLoading(true);
       const dialogsData: Dialog[] = [];
       
-      // 1. Fetch booking-related dialogs
+      // 1. Fetch booking-related dialogs (ONLY for paid bookings - chat is available after prepayment)
       const { data: bookings } = await supabase
         .from('bookings')
         .select(`
@@ -95,6 +95,7 @@ export default function Messages() {
           customer_name,
           customer_id,
           performer_id,
+          payment_status,
           performer_profiles!bookings_performer_id_fkey (
             display_name,
             photo_urls,
@@ -102,6 +103,7 @@ export default function Messages() {
           )
         `)
         .or(`customer_id.eq.${user.id},performer_id.in.(select id from performer_profiles where user_id = '${user.id}')`)
+        .in('payment_status', ['prepayment_paid', 'fully_paid'])
         .order('created_at', { ascending: false });
 
       for (const booking of bookings || []) {

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,7 +51,6 @@ export function ProposeAlternativeDialog({
   const [proposals, setProposals] = useState<ProposalSlot[]>([
     { date: new Date(), time: '10:00-11:00', price: basePrice }
   ]);
-  const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [availableSlots, setAvailableSlots] = useState<{ date: string; start_time: string; end_time: string; id: string }[]>([]);
 
@@ -134,10 +133,7 @@ export function ProposeAlternativeDialog({
       // Update booking status to counter_proposed
       const { error: bookingError } = await supabase
         .from('bookings')
-        .update({ 
-          status: 'counter_proposed',
-          proposal_message: message || null,
-        })
+        .update({ status: 'counter_proposed' })
         .eq('id', bookingId);
 
       if (bookingError) throw bookingError;
@@ -156,7 +152,6 @@ export function ProposeAlternativeDialog({
             time: p.time,
             price: p.price || basePrice,
           })),
-          message,
         },
       });
 
@@ -307,17 +302,6 @@ export function ProposeAlternativeDialog({
             Добавить вариант ({proposals.length}/5)
           </Button>
 
-          {/* Message */}
-          <div>
-            <Label>Сообщение клиенту (опционально)</Label>
-            <Textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Например: К сожалению, в это время у меня уже есть заказ. Предлагаю рассмотреть другие варианты..."
-              rows={3}
-              className="mt-1"
-            />
-          </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">
