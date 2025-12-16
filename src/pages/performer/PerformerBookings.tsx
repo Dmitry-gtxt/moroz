@@ -81,10 +81,12 @@ export default function PerformerBookings() {
       setPerformerName(profile.display_name);
       setBasePrice(profile.base_price || 3000);
 
+      // Exclude admin-created pseudo-bookings for reviews (marked with customer_phone: '+7-admin-review')
       const { data: bookingsData, error } = await supabase
         .from('secure_bookings')
         .select('*')
         .eq('performer_id', profile.id)
+        .neq('customer_phone', '+7-admin-review')
         .order('booking_date', { ascending: true });
 
       if (error) {
@@ -351,6 +353,7 @@ export default function PerformerBookings() {
       .from('secure_bookings')
       .select('*')
       .eq('performer_id', performerId)
+      .neq('customer_phone', '+7-admin-review')
       .order('booking_date', { ascending: true });
     if (data) {
       setBookings((data as Booking[]) ?? []);
