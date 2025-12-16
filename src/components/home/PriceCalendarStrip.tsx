@@ -17,7 +17,7 @@ interface DayPrice {
 
 export function PriceCalendarStrip() {
   const [dayPrices, setDayPrices] = useState<DayPrice[]>([]);
-  const [commissionRate, setCommissionRate] = useState(40);
+  const [commissionRate, setCommissionRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -172,7 +172,7 @@ export function PriceCalendarStrip() {
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {dayPrices.map((day, index) => {
-            const customerPrice = day.minPrice ? getCustomerPrice(day.minPrice, commissionRate) : null;
+            const customerPrice = day.minPrice && commissionRate !== null ? getCustomerPrice(day.minPrice, commissionRate) : null;
             const isToday = isSameDay(day.date, new Date());
             const isNewYear = isSameDay(day.date, new Date(2026, 0, 1));
             const isNYE = isSameDay(day.date, new Date(2025, 11, 31));

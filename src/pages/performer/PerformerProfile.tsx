@@ -106,7 +106,7 @@ export default function PerformerProfilePage() {
       }
 
       if (commissionRes.data?.value) {
-        setCommissionRate(parseInt(commissionRes.data.value, 10) || 40);
+        setCommissionRate(parseInt(commissionRes.data.value, 10));
       }
 
       setLoading(false);

@@ -40,7 +40,7 @@ export function PerformerCard({
   pendingRequestsCount = 0,
   availableSlots,
   selectedDate,
-  commissionRate = 40,
+  commissionRate,
 }: PerformerCardProps) {
   const [showVideo, setShowVideo] = useState(false);
   const { user } = useAuth();
@@ -89,8 +89,8 @@ export function PerformerCard({
 
   const photoUrl = performer.photo_urls?.[0] || 'https://images.unsplash.com/photo-1576919228236-a097c32a5cd4?w=400&h=400&fit=crop';
   const minPerformerPrice = getMinPrice();
-  const customerPrice = getCustomerPrice(minPerformerPrice, commissionRate);
-  const netAmount = getPerformerNetAmount(minPerformerPrice, commissionRate);
+  const customerPrice = commissionRate !== undefined ? getCustomerPrice(minPerformerPrice, commissionRate) : null;
+  const netAmount = commissionRate !== undefined ? getPerformerNetAmount(minPerformerPrice, commissionRate) : null;
 
   return (
     <div className="group bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">
@@ -226,12 +226,12 @@ export function PerformerCard({
           <div>
             <span className="text-sm text-muted-foreground">от </span>
             <span className="font-display text-xl font-bold text-accent">
-              {customerPrice.toLocaleString()}
+              {customerPrice !== null ? customerPrice.toLocaleString() : '...'}
             </span>
             <span className="text-sm text-muted-foreground"> ₽</span>
             {isOwnProfile && (
               <div className="text-xs text-green-600 mt-0.5">
-                На руки: {netAmount.toLocaleString()} ₽
+                На руки: {netAmount !== null ? netAmount.toLocaleString() : '...'} ₽
               </div>
             )}
           </div>

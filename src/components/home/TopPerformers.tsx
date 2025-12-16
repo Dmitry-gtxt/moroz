@@ -13,7 +13,7 @@ type District = Database['public']['Tables']['districts']['Row'];
 export function TopPerformers() {
   const [performers, setPerformers] = useState<PerformerProfile[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
-  const [commissionRate, setCommissionRate] = useState(40);
+  const [commissionRate, setCommissionRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
