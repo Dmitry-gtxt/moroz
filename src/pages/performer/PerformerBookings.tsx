@@ -327,48 +327,6 @@ export default function PerformerBookings() {
     setBookings(bookings.map(b => b.id === booking.id ? { ...b, status: 'confirmed', payment_deadline: paymentDeadline.toISOString() } : b));
   };
 
-  // TEST: Simulate payment received (temporary for testing)
-  const simulatePayment = async (booking: Booking) => {
-    if (!booking.id) return;
-    
-    const { error } = await supabase
-      .from('bookings')
-      .update({ payment_status: 'prepayment_paid' })
-      .eq('id', booking.id);
-
-    if (error) {
-      toast.error('Ошибка симуляции оплаты');
-      return;
-    }
-
-    // Schedule booking reminders
-    scheduleBookingReminders(
-      booking.id,
-      booking.customer_id!,
-      performerId!,
-      booking.booking_date!,
-      booking.booking_time!
-    );
-
-    // Send notification to customer about successful payment
-    if (booking.customer_email) {
-      supabase.functions.invoke('send-notification-email', {
-        body: {
-          type: 'payment_received',
-          customerEmail: booking.customer_email,
-          customerName: booking.customer_name,
-          performerName: performerName,
-          bookingDate: format(new Date(booking.booking_date!), 'd MMMM yyyy', { locale: ru }),
-          bookingTime: booking.booking_time,
-          prepaymentAmount: booking.prepayment_amount,
-        },
-      });
-    }
-
-    toast.success('💳 ТЕСТ: Оплата симулирована успешно');
-    setBookings(bookings.map(b => b.id === booking.id ? { ...b, payment_status: 'prepayment_paid' } : b));
-  };
-
   const refreshBookings = async () => {
     if (!performerId) return;
     const { data } = await supabase
@@ -523,17 +481,6 @@ export default function PerformerBookings() {
                                 <span>Ожидает оплаты предоплаты от клиента</span>
                               )}
                             </div>
-                            {/* TEST BUTTON - REMOVE AFTER TESTING */}
-                            {booking.payment_status !== 'prepayment_paid' && booking.payment_status !== 'fully_paid' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="bg-black text-white hover:bg-gray-800 border-black text-xs"
-                                onClick={() => simulatePayment(booking)}
-                              >
-                                (тест: оплачено)
-                              </Button>
-                            )}
                           </div>
                         )}
 

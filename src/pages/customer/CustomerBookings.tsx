@@ -18,6 +18,7 @@ import {
   Package, User, X, CheckCircle, CreditCard, Lock, Timer, AlertCircle, MessageSquare
 } from 'lucide-react';
 import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment } from '@/lib/pricing';
+import { scheduleBookingReminders } from '@/lib/pushNotifications';
 import { format, parseISO, differenceInMinutes } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import type { Database } from '@/integrations/supabase/types';
@@ -51,7 +52,7 @@ const eventTypeLabels: Record<string, string> = {
 };
 
 // Helper component for payment deadline countdown
-function PaymentDeadlineBlock({ deadline, prepaymentAmount }: { deadline: string; prepaymentAmount: number }) {
+function PaymentDeadlineBlock({ deadline, prepaymentAmount, onTestPayment }: { deadline: string; prepaymentAmount: number; onTestPayment?: () => void }) {
   const [timeLeft, setTimeLeft] = useState('');
   const [isExpired, setIsExpired] = useState(false);
 
@@ -106,10 +107,23 @@ function PaymentDeadlineBlock({ deadline, prepaymentAmount }: { deadline: string
             Предоплата {prepaymentAmount.toLocaleString()} ₽ — иначе бронирование будет отменено
           </p>
         </div>
-        <Button variant="gold" size="sm">
-          <CreditCard className="h-4 w-4 mr-2" />
-          Оплатить
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="gold" size="sm">
+            <CreditCard className="h-4 w-4 mr-2" />
+            Оплатить
+          </Button>
+          {/* TEST BUTTON - REMOVE AFTER TESTING */}
+          {onTestPayment && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-black text-white hover:bg-gray-800 border-black text-xs"
+              onClick={onTestPayment}
+            >
+              (тест: оплачено)
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -248,6 +262,50 @@ export default function CustomerBookings() {
     });
 
     toast.success('Заказ отменён');
+    fetchBookings();
+  };
+
+  // TEST: Simulate payment received (temporary for testing)
+  const simulatePayment = async (booking: BookingWithPerformer) => {
+    if (!booking.id) return;
+    
+    const { error } = await supabase
+      .from('bookings')
+      .update({ payment_status: 'prepayment_paid' })
+      .eq('id', booking.id);
+
+    if (error) {
+      toast.error('Ошибка симуляции оплаты');
+      return;
+    }
+
+    // Schedule booking reminders
+    if (booking.performer) {
+      scheduleBookingReminders(
+        booking.id,
+        booking.booking_date,
+        booking.booking_time,
+        booking.customer_id,
+        booking.performer.id
+      );
+    }
+
+    // Send notification to performer about successful payment
+    if (booking.performer) {
+      supabase.functions.invoke('send-notification-email', {
+        body: {
+          type: 'payment_received',
+          performerId: booking.performer.id,
+          customerName: booking.customer_name,
+          performerName: booking.performer.display_name,
+          bookingDate: format(parseISO(booking.booking_date), 'd MMMM yyyy', { locale: ru }),
+          bookingTime: booking.booking_time,
+          prepaymentAmount: booking.prepayment_amount
+        }
+      });
+    }
+
+    toast.success('Тест: оплата симулирована');
     fetchBookings();
   };
 
@@ -406,7 +464,11 @@ export default function CustomerBookings() {
 
                     {/* Confirmed with payment deadline */}
                     {booking.status === 'confirmed' && booking.payment_status === 'not_paid' && booking.payment_deadline && (
-                      <PaymentDeadlineBlock deadline={booking.payment_deadline} prepaymentAmount={booking.prepayment_amount} />
+                      <PaymentDeadlineBlock 
+                        deadline={booking.payment_deadline} 
+                        prepaymentAmount={booking.prepayment_amount}
+                        onTestPayment={() => simulatePayment(booking)}
+                      />
                     )}
 
                     {/* Regular payment reminder for confirmed without deadline */}
@@ -421,10 +483,21 @@ export default function CustomerBookings() {
                               Оплатите {booking.prepayment_amount.toLocaleString()} ₽ для подтверждения
                             </p>
                           </div>
-                          <Button variant="gold" size="sm">
-                            <CreditCard className="h-4 w-4 mr-2" />
-                            Оплатить
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button variant="gold" size="sm">
+                              <CreditCard className="h-4 w-4 mr-2" />
+                              Оплатить
+                            </Button>
+                            {/* TEST BUTTON - REMOVE AFTER TESTING */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="bg-black text-white hover:bg-gray-800 border-black text-xs"
+                              onClick={() => simulatePayment(booking)}
+                            >
+                              (тест: оплачено)
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )}
