@@ -7,17 +7,17 @@
  * - Performer receives: price - (price * commission%)
  * - Customer prepayment = commission% of the price
  * 
- * Example with 40% commission:
+ * Example with 20% commission:
  * - Performer sets price: 5000 ₽ (customer pays this)
- * - Platform commission/prepayment: 2000 ₽ (5000 * 0.4)
- * - Performer receives "на руки": 3000 ₽ (5000 - 2000)
+ * - Platform commission/prepayment: 1000 ₽ (5000 * 0.2)
+ * - Performer receives "на руки": 4000 ₽ (5000 - 1000)
  */
 
 import { supabase } from '@/integrations/supabase/client';
 
 // Default commission percentage (can be overridden by platform settings)
 let CACHED_COMMISSION_RATE: number | null = null;
-const DEFAULT_COMMISSION_RATE = 40; // 40%
+const DEFAULT_COMMISSION_RATE = 20; // 20%
 
 /**
  * Fetch the commission rate from platform settings
@@ -54,7 +54,7 @@ export function clearCommissionCache(): void {
 }
 
 /**
- * Get the commission as a decimal (e.g., 40% = 0.4)
+ * Get the commission as a decimal (e.g., 20% = 0.2)
  */
 export function getCommissionDecimal(commissionRate: number): number {
   return commissionRate / 100;
