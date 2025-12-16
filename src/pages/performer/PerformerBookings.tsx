@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CancelBookingDialog } from '@/components/bookings/CancelBookingDialog';
 import { ProposeAlternativeDialog } from '@/components/bookings/ProposeAlternativeDialog';
+import { PerformerProposalsList } from '@/components/bookings/PerformerProposalsList';
 import { notifyBookingConfirmed, notifyBookingRejected, notifyBookingCancelled, scheduleBookingReminders } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -498,6 +499,14 @@ export default function PerformerBookings() {
                             </p>
                             <p className="text-muted-foreground">{booking.cancellation_reason}</p>
                           </div>
+                        )}
+
+                        {/* Show proposed slots for counter_proposed status */}
+                        {booking.status === 'counter_proposed' && booking.id && (
+                          <PerformerProposalsList 
+                            bookingId={booking.id} 
+                            basePrice={basePrice} 
+                          />
                         )}
 
                         <div className="flex flex-col gap-3 pt-2 border-t">
