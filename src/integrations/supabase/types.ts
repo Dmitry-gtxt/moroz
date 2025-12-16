@@ -1153,6 +1153,18 @@ export type Database = {
         Args: { _booking_id: string; _user_id: string }
         Returns: boolean
       }
+      get_partner_by_token: {
+        Args: { _token: string }
+        Returns: {
+          contact_email: string
+          contact_phone: string
+          id: string
+          is_active: boolean
+          name: string
+          organization_type: string
+          referral_code: string
+        }[]
+      }
       get_public_platform_settings: {
         Args: never
         Returns: {
