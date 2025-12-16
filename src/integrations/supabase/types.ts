@@ -98,6 +98,61 @@ export type Database = {
           },
         ]
       }
+      booking_proposals: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          proposed_date: string
+          proposed_price: number | null
+          proposed_time: string
+          slot_id: string | null
+          status: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          proposed_date: string
+          proposed_price?: number | null
+          proposed_time: string
+          slot_id?: string | null
+          status?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          proposed_date?: string
+          proposed_price?: number | null
+          proposed_time?: string
+          slot_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_proposals_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_proposals_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "secure_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_proposals_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "availability_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           address: string
@@ -115,10 +170,12 @@ export type Database = {
           district_slug: string
           event_type: Database["public"]["Enums"]["event_format"]
           id: string
+          payment_deadline: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
           performer_id: string
           prepayment_amount: number
           price_total: number
+          proposal_message: string | null
           slot_id: string | null
           status: Database["public"]["Enums"]["booking_status"]
           updated_at: string
@@ -139,10 +196,12 @@ export type Database = {
           district_slug: string
           event_type?: Database["public"]["Enums"]["event_format"]
           id?: string
+          payment_deadline?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           performer_id: string
           prepayment_amount: number
           price_total: number
+          proposal_message?: string | null
           slot_id?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           updated_at?: string
@@ -163,10 +222,12 @@ export type Database = {
           district_slug?: string
           event_type?: Database["public"]["Enums"]["event_format"]
           id?: string
+          payment_deadline?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           performer_id?: string
           prepayment_amount?: number
           price_total?: number
+          proposal_message?: string | null
           slot_id?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           updated_at?: string
@@ -1119,6 +1180,8 @@ export type Database = {
         | "cancelled"
         | "completed"
         | "no_show"
+        | "counter_proposed"
+        | "customer_accepted"
       document_status: "pending" | "approved" | "rejected"
       document_type: "passport" | "id_card" | "other"
       event_format:
@@ -1266,6 +1329,8 @@ export const Constants = {
         "cancelled",
         "completed",
         "no_show",
+        "counter_proposed",
+        "customer_accepted",
       ],
       document_status: ["pending", "approved", "rejected"],
       document_type: ["passport", "id_card", "other"],
