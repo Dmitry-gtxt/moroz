@@ -11,7 +11,7 @@ import { ProposalsList } from '@/components/bookings/ProposalsList';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { notifyBookingCancelled } from '@/lib/pushNotifications';
+import { notifyBookingCancelled, notifyPaymentReceived } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { 
   Calendar, Clock, MapPin, Star, Loader2, 
@@ -290,7 +290,17 @@ export default function CustomerBookings() {
       );
     }
 
-    // Send notification to performer about successful payment
+    // Send push notification to performer about successful payment
+    if (booking.performer?.user_id) {
+      notifyPaymentReceived(
+        booking.performer.user_id,
+        booking.customer_name,
+        format(parseISO(booking.booking_date), 'd MMMM', { locale: ru }),
+        booking.prepayment_amount
+      );
+    }
+
+    // Send email notification to performer about successful payment
     if (booking.performer) {
       supabase.functions.invoke('send-notification-email', {
         body: {
@@ -300,7 +310,8 @@ export default function CustomerBookings() {
           performerName: booking.performer.display_name,
           bookingDate: format(parseISO(booking.booking_date), 'd MMMM yyyy', { locale: ru }),
           bookingTime: booking.booking_time,
-          prepaymentAmount: booking.prepayment_amount
+          amount: booking.prepayment_amount,
+          paymentStatus: 'prepayment_paid'
         }
       });
     }

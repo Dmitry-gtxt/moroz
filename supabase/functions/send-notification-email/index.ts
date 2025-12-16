@@ -166,13 +166,14 @@ interface TestEmailRequest {
 
 interface PaymentReceivedRequest {
   type: "payment_received";
-  performerEmail: string;
+  performerId: string;
+  performerEmail?: string;
   performerName: string;
   customerName: string;
   bookingDate: string;
   bookingTime: string;
   amount: number;
-  paymentStatus: string;
+  paymentStatus?: string;
 }
 
 type NotificationRequest = 
@@ -1131,10 +1132,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Handle payment received notification
     if (payload.type === "payment_received") {
-      const { performerEmail, performerName, customerName, bookingDate, bookingTime, amount, paymentStatus } = payload as PaymentReceivedRequest;
+      const { performerId, performerEmail, performerName, customerName, bookingDate, bookingTime, amount, paymentStatus } = payload as PaymentReceivedRequest;
 
-      if (!performerEmail) {
-        console.log("No performer email provided, skipping notification");
+      // Get performer email if not provided
+      let emailToSend = performerEmail;
+      if (!emailToSend && performerId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: performer } = await supabase.from('performer_profiles').select('user_id').eq('id', performerId).single();
+        if (performer?.user_id) {
+          const { data: authUser } = await supabase.auth.admin.getUserById(performer.user_id);
+          emailToSend = authUser?.user?.email;
+        }
+      }
+
+      if (!emailToSend) {
+        console.log("No performer email found, skipping notification");
         return new Response(JSON.stringify({ success: true, skipped: true }), {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -1146,11 +1158,11 @@ const handler = async (req: Request): Promise<Response> => {
         fully_paid: "Полная оплата получена",
       };
 
-      console.log("Sending payment notification to performer:", performerEmail);
+      console.log("Sending payment notification to performer:", emailToSend);
 
       const res = await sendEmail(
-        [performerEmail],
-        `💰 ${paymentStatusLabels[paymentStatus] || 'Оплата получена'}!`,
+        [emailToSend],
+        `💰 ${paymentStatusLabels[paymentStatus || 'prepayment_paid'] || 'Оплата получена'}!`,
         `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h1 style="color: #2e7d32; margin-bottom: 24px;">💰 Оплата получена!</h1>
@@ -1161,8 +1173,8 @@ const handler = async (req: Request): Promise<Response> => {
               <h3 style="margin-top: 0; color: #333;">💳 Детали оплаты:</h3>
               <p><strong>📅 Дата визита:</strong> ${escapeHtml(bookingDate)}</p>
               <p><strong>⏰ Время:</strong> ${escapeHtml(bookingTime)}</p>
-              <p><strong>💵 Сумма:</strong> <span style="color: #2e7d32; font-weight: bold; font-size: 18px;">${amount.toLocaleString()} ₽</span></p>
-              <p><strong>📋 Статус:</strong> ${escapeHtml(paymentStatusLabels[paymentStatus] || paymentStatus)}</p>
+              <p><strong>💵 Сумма:</strong> <span style="color: #2e7d32; font-weight: bold; font-size: 18px;">${(amount || 0).toLocaleString()} ₽</span></p>
+              <p><strong>📋 Статус:</strong> ${escapeHtml(paymentStatusLabels[paymentStatus || 'prepayment_paid'] || paymentStatus || 'Предоплата получена')}</p>
             </div>
             
             <div style="background: #e3f2fd; border-radius: 12px; padding: 16px; margin: 24px 0;">
