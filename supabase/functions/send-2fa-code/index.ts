@@ -40,8 +40,8 @@ const handler = async (req: Request): Promise<Response> => {
     const { 
       phone, 
       template_id, 
-      code_digits = 4, 
-      code_lifetime = 60, 
+      code_digits = 6, 
+      code_lifetime = 120, 
       code_max_tries = 3 
     }: TwoFaRequest = await req.json();
 
