@@ -72,12 +72,12 @@ const handler = async (req: Request): Promise<Response> => {
     
     const payload = {
       channel: "sms",
-      sender: "Ded-Morozy",
       recipient: formattedPhone,
-      template_id: template_id,
-      code_digits: code_digits,
-      code_lifetime: code_lifetime,
-      code_max_tries: code_max_tries,
+      sender: "Ded-Morozy",
+      template_id: String(template_id),
+      code_digits: String(code_digits),
+      code_max_tries: String(code_max_tries),
+      code_lifetime: String(code_lifetime),
     };
 
     console.log("[2FA] Request payload:", JSON.stringify(payload));
