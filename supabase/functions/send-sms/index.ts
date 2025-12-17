@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,16 +13,53 @@ interface SMSRequest {
   reference?: string;
 }
 
+interface NotificoreResult {
+  id?: string;
+  reference?: string;
+  price?: number;
+  currency?: string;
+  error?: number;
+  errorDescription?: string;
+}
+
+interface NotificoreResponse {
+  result?: NotificoreResult;
+  error?: number;
+  errorDescription?: string;
+  id?: string;
+  reference?: string;
+  rawResponse?: string;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Initialize Supabase client for logging
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  let phone = "";
+  let message = "";
+  let reference = "";
+  let requestPayload: Record<string, unknown> = {};
+
   try {
     const apiKey = Deno.env.get("NOTIFICORE_API_KEY");
     if (!apiKey) {
       console.error("NOTIFICORE_API_KEY is not set");
+      
+      // Log the error
+      await supabase.from("sms_logs").insert({
+        phone: "unknown",
+        message: "API key not configured",
+        error_message: "NOTIFICORE_API_KEY is not set",
+        success: false,
+      });
+
       return new Response(
         JSON.stringify({ error: "SMS service not configured" }),
         {
@@ -31,10 +69,21 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { phone, message, reference }: SMSRequest = await req.json();
+    const requestData: SMSRequest = await req.json();
+    phone = requestData.phone;
+    message = requestData.message;
+    reference = requestData.reference || `sms_${Date.now()}`;
+
     console.log("Sending SMS to:", phone, "Message:", message.substring(0, 50) + "...");
 
     if (!phone || !message) {
+      await supabase.from("sms_logs").insert({
+        phone: phone || "unknown",
+        message: message || "empty",
+        error_message: "Phone and message are required",
+        success: false,
+      });
+
       return new Response(
         JSON.stringify({ error: "Phone and message are required" }),
         {
@@ -53,17 +102,16 @@ const handler = async (req: Request): Promise<Response> => {
     // Remove + if present
     formattedPhone = formattedPhone.replace("+", "");
 
-    const smsPayload = {
-      destination: "phone",
-      originator: "Ded-Morozy", // Alpha name - sender ID (max 11 chars)
+    // Build SMS payload according to Notificore API docs
+    requestPayload = {
+      originator: "Ded-Morozy", // Alpha name - sender ID (max 11 chars, no special chars)
       body: message,
       msisdn: formattedPhone,
-      reference: reference || `sms_${Date.now()}`,
-      validity: "3600", // 1 hour validity
-      tariff: "0",
+      reference: reference,
     };
 
-    console.log("SMS payload:", JSON.stringify(smsPayload));
+    console.log("SMS request payload:", JSON.stringify(requestPayload));
+    console.log("API Key (first 10 chars):", apiKey.substring(0, 10) + "...");
 
     const response = await fetch("https://api.notificore.ru/v1.0/sms/create", {
       method: "POST",
@@ -71,19 +119,50 @@ const handler = async (req: Request): Promise<Response> => {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(smsPayload),
+      body: JSON.stringify(requestPayload),
     });
 
     const responseText = await response.text();
     console.log("Notificore response status:", response.status);
     console.log("Notificore response body:", responseText);
 
-    let result;
+    let result: NotificoreResponse;
     try {
       result = JSON.parse(responseText);
     } catch {
       result = { rawResponse: responseText };
     }
+
+    // Determine if successful
+    const isSuccess = response.ok && 
+      (!result.error || result.error === 0) && 
+      (!result.result || !result.result.error || result.result.error === 0);
+
+    // Extract error message if any
+    let errorMessage: string | null = null;
+    if (!isSuccess) {
+      if (result.errorDescription) {
+        errorMessage = String(result.errorDescription);
+      } else if (result.result?.errorDescription) {
+        errorMessage = String(result.result.errorDescription);
+      } else if (result.error) {
+        errorMessage = `Error code: ${result.error}`;
+      } else if (!response.ok) {
+        errorMessage = `HTTP ${response.status}`;
+      }
+    }
+
+    // Log to database
+    await supabase.from("sms_logs").insert({
+      phone: formattedPhone,
+      message: message,
+      reference: reference,
+      request_payload: requestPayload,
+      response_status: response.status,
+      response_body: result as Record<string, unknown>,
+      error_message: errorMessage,
+      success: isSuccess,
+    });
 
     if (!response.ok) {
       console.error("Notificore API error:", result);
@@ -114,13 +193,28 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Check top-level error
+    if (result.error && result.error !== 0) {
+      console.error("Notificore error:", result);
+      return new Response(
+        JSON.stringify({ 
+          error: result.errorDescription || "SMS sending failed",
+          code: result.error
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     console.log("SMS sent successfully:", result);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        messageId: result.result?.id,
-        reference: result.result?.reference,
+        messageId: result.result?.id || result.id,
+        reference: result.result?.reference || result.reference,
         price: result.result?.price,
         currency: result.result?.currency
       }),
@@ -129,10 +223,26 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
     console.error("Error in send-sms function:", error);
+
+    // Log error to database
+    try {
+      await supabase.from("sms_logs").insert({
+        phone: phone || "unknown",
+        message: message || "unknown",
+        reference: reference || null,
+        request_payload: Object.keys(requestPayload).length > 0 ? requestPayload : null,
+        error_message: errorMsg,
+        success: false,
+      });
+    } catch (logError) {
+      console.error("Failed to log SMS error:", logError);
+    }
+
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMsg }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
