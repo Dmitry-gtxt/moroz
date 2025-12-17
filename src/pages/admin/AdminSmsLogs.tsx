@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { RefreshCw, Search, CheckCircle, XCircle, ChevronDown, ChevronUp, Send } from "lucide-react";
+import { RefreshCw, Search, CheckCircle, XCircle, ChevronDown, ChevronUp, Send, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { toast } from "sonner";
@@ -66,6 +66,11 @@ const AdminSmsLogs = () => {
   const [testPhone, setTestPhone] = useState("");
   const [testMessage, setTestMessage] = useState("");
   const [sending, setSending] = useState(false);
+  
+  // 2FA тест
+  const [twoFaPhone, setTwoFaPhone] = useState("");
+  const [twoFaSending, setTwoFaSending] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
 
   const smsInfo = useMemo(() => calculateSmsInfo(testMessage), [testMessage]);
 
@@ -118,6 +123,45 @@ const AdminSmsLogs = () => {
     }
   };
 
+  // Генерация 6-значного кода
+  const generateCode = (): string => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
+  const send2FaCode = async () => {
+    if (!twoFaPhone) {
+      toast.error("Введите номер телефона");
+      return;
+    }
+    
+    setTwoFaSending(true);
+    setGeneratedCode(null);
+    
+    const code = generateCode();
+    const message = `Ваш код подтверждения: ${code}. Дед-Морозы.РФ`;
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("send-sms", {
+        body: { phone: twoFaPhone, message },
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        setGeneratedCode(code);
+        toast.success("Код отправлен!");
+        fetchLogs();
+      } else {
+        toast.error(data?.error || "Ошибка отправки SMS");
+      }
+    } catch (err: unknown) {
+      console.error("2FA SMS error:", err);
+      toast.error("Ошибка отправки SMS");
+    } finally {
+      setTwoFaSending(false);
+    }
+  };
+
   const filteredLogs = logs.filter(
     (log) =>
       log.phone.includes(searchTerm) ||
@@ -138,10 +182,48 @@ const AdminSmsLogs = () => {
           </p>
         </div>
 
+        {/* 2FA Тест */}
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Тест 2FA (код подтверждения)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-4 items-end flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <label className="text-sm font-medium mb-1.5 block">Номер телефона</label>
+                <Input
+                  placeholder="+7(999)123-45-67"
+                  value={twoFaPhone}
+                  onChange={(e) => setTwoFaPhone(e.target.value)}
+                />
+              </div>
+              <Button onClick={send2FaCode} disabled={twoFaSending || !twoFaPhone}>
+                <ShieldCheck className="h-4 w-4 mr-2" />
+                {twoFaSending ? "Отправка..." : "Отправить код"}
+              </Button>
+            </div>
+            
+            {generatedCode && (
+              <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                <div className="text-sm text-muted-foreground mb-1">Сгенерированный код:</div>
+                <div className="text-3xl font-mono font-bold text-green-500 tracking-widest">
+                  {generatedCode}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Этот код был отправлен на указанный номер. Проверьте, пришло ли SMS.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Форма отправки тестовой SMS */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Тестовая SMS</CardTitle>
+            <CardTitle className="text-lg">Произвольная SMS</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>

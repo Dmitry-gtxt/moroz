@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Users, FileCheck, ShoppingCart, TrendingUp, Settings, Loader2, Save, HelpCircle, Mail, Bell, MessageSquare } from 'lucide-react';
+import { Users, FileCheck, ShoppingCart, TrendingUp, Settings, Loader2, Save, HelpCircle, Mail, Bell } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { clearCommissionCache } from '@/lib/pricing';
@@ -25,9 +25,7 @@ export default function AdminDashboard() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
-  const [testingSms, setTestingSms] = useState(false);
   const [testEmail, setTestEmail] = useState('admin@gtxt.biz');
-  const [testPhone, setTestPhone] = useState('+7(995)3829736');
 
   useEffect(() => {
     async function fetchData() {
@@ -157,36 +155,6 @@ export default function AdminDashboard() {
       toast.error('Ошибка отправки push-уведомления: ' + (error.message || 'Неизвестная ошибка'));
     } finally {
       setTestingPush(false);
-    }
-  };
-
-  const handleTestSms = async () => {
-    if (!testPhone) {
-      toast.error('Введите номер телефона');
-      return;
-    }
-    
-    setTestingSms(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('send-sms', {
-        body: {
-          phone: testPhone,
-          message: 'Тестовое SMS от Дед-Морозы.РФ. Если вы получили это сообщение — SMS-уведомления работают!'
-        }
-      });
-
-      if (error) throw error;
-      
-      if (data?.success) {
-        toast.success(`Тестовое SMS отправлено на ${testPhone}`);
-      } else {
-        throw new Error(data?.error || 'Ошибка отправки SMS');
-      }
-    } catch (error: any) {
-      console.error('SMS test error:', error);
-      toast.error('Ошибка отправки SMS: ' + (error.message || 'Неизвестная ошибка'));
-    } finally {
-      setTestingSms(false);
     }
   };
 
@@ -336,31 +304,6 @@ export default function AdminDashboard() {
                         <Bell className="h-4 w-4 mr-2" />
                       )}
                       Тест push
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-4 items-end">
-                    <div className="space-y-1">
-                      <Label htmlFor="testPhone" className="text-xs text-muted-foreground">Телефон для тестирования SMS</Label>
-                      <Input
-                        id="testPhone"
-                        type="tel"
-                        value={testPhone}
-                        onChange={(e) => setTestPhone(e.target.value)}
-                        placeholder="+7(999)123-45-67"
-                        className="w-64"
-                      />
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      onClick={handleTestSms} 
-                      disabled={testingSms}
-                    >
-                      {testingSms ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                      )}
-                      Тест SMS
                     </Button>
                   </div>
                 </div>
