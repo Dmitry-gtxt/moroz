@@ -107,7 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
     formattedPhone = formattedPhone.replace("+", "");
 
     // Build SMS payload according to Notificore official SDK (Node.js)
-    // createSMS expects extra fields like tariff/validity; provide safe defaults.
+    // Single object format (not array)
     requestPayload = {
       destination: "phone",
       originator: "Ded-Morozy", // max 11 chars
@@ -121,14 +121,15 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("SMS request payload:", JSON.stringify(requestPayload));
     console.log("Auth Key (first 10 chars):", authKey.substring(0, 10) + "...");
 
-    // Notificore auth is via X-API-KEY header (NOT Bearer)
+    // Notificore auth is via X-API-KEY header
+    // SDK uses multipart/form-data header with JSON body
     const response = await fetch("https://api.notificore.ru/rest/sms/create", {
       method: "POST",
       headers: {
         "X-API-KEY": authKey,
-        "Content-Type": "application/json",
+        "Content-type": "multipart/form-data",
       },
-      body: JSON.stringify([requestPayload]),
+      body: JSON.stringify(requestPayload), // Single object, not array
     });
 
     const responseText = await response.text();
