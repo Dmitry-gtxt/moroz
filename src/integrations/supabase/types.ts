@@ -1067,10 +1067,12 @@ export type Database = {
           district_slug: string | null
           event_type: Database["public"]["Enums"]["event_format"] | null
           id: string | null
+          payment_deadline: string | null
           payment_status: Database["public"]["Enums"]["payment_status"] | null
           performer_id: string | null
           prepayment_amount: number | null
           price_total: number | null
+          proposal_message: string | null
           slot_id: string | null
           status: Database["public"]["Enums"]["booking_status"] | null
           updated_at: string | null
@@ -1091,10 +1093,12 @@ export type Database = {
           district_slug?: string | null
           event_type?: Database["public"]["Enums"]["event_format"] | null
           id?: string | null
+          payment_deadline?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           performer_id?: string | null
           prepayment_amount?: number | null
           price_total?: number | null
+          proposal_message?: string | null
           slot_id?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           updated_at?: string | null
@@ -1115,10 +1119,12 @@ export type Database = {
           district_slug?: string | null
           event_type?: Database["public"]["Enums"]["event_format"] | null
           id?: string | null
+          payment_deadline?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           performer_id?: string | null
           prepayment_amount?: number | null
           price_total?: number | null
+          proposal_message?: string | null
           slot_id?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           updated_at?: string | null
