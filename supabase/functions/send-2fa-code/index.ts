@@ -61,7 +61,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     const payload = {
       channel: "sms", // lowercase как в примере
-      sender: "", // пустой sender как в примере
+      sender: "Ded-Morozy",
       recipient: formattedPhone,
       template_id: template_id,
       code_digits: String(code_digits), // строка как в примере
