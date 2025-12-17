@@ -11,26 +11,34 @@ export function PartnersSection() {
           Наши партнёры
         </h2>
         <div className="flex items-center justify-center gap-12 flex-wrap">
-          <img 
-            src={partnerKolibri} 
-            alt="Kolibri Expert" 
-            className="h-[80px] opacity-80 hover:opacity-100 transition-opacity" 
-          />
-          <img 
-            src={partnerPovuzam} 
-            alt="Повузам" 
-            className="h-[80px] opacity-80 hover:opacity-100 transition-opacity" 
-          />
-          <img 
-            src={partnerUmius} 
-            alt="УМИУС" 
-            className="h-[80px] opacity-80 hover:opacity-100 transition-opacity" 
-          />
-          <img 
-            src={partnerUchidron} 
-            alt="УчиДрон" 
-            className="h-[80px] opacity-80 hover:opacity-100 transition-opacity" 
-          />
+          <a href="https://kolibri.expert" target="_blank" rel="noopener noreferrer">
+            <img 
+              src={partnerKolibri} 
+              alt="Kolibri Expert" 
+              className="h-[80px] opacity-80 hover:opacity-100 transition-opacity" 
+            />
+          </a>
+          <a href="http://povuzam.ru" target="_blank" rel="noopener noreferrer">
+            <img 
+              src={partnerPovuzam} 
+              alt="Повузам" 
+              className="h-[80px] opacity-80 hover:opacity-100 transition-opacity" 
+            />
+          </a>
+          <a href="https://umius.ru" target="_blank" rel="noopener noreferrer">
+            <img 
+              src={partnerUmius} 
+              alt="УМИУС" 
+              className="h-[80px] opacity-80 hover:opacity-100 transition-opacity" 
+            />
+          </a>
+          <a href="https://xn--d1acgejj.xn--p1ai" target="_blank" rel="noopener noreferrer">
+            <img 
+              src={partnerUchidron} 
+              alt="УчиДрон" 
+              className="h-[80px] opacity-80 hover:opacity-100 transition-opacity" 
+            />
+          </a>
         </div>
       </div>
     </section>
