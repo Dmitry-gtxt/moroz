@@ -20,9 +20,15 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const NOTIFICORE_2FA_TOKEN = Deno.env.get("NOTIFICORE_2FA_BEARER_TOKEN");
+  const NOTIFICORE_2FA_TOKEN_RAW = Deno.env.get("NOTIFICORE_2FA_BEARER_TOKEN");
+  const NOTIFICORE_2FA_TOKEN = NOTIFICORE_2FA_TOKEN_RAW?.trim();
+  const NOTIFICORE_2FA_AUTH_HEADER = NOTIFICORE_2FA_TOKEN
+    ? (/^Bearer\s+/i.test(NOTIFICORE_2FA_TOKEN)
+        ? NOTIFICORE_2FA_TOKEN
+        : `Bearer ${NOTIFICORE_2FA_TOKEN}`)
+    : null;
   
-  if (!NOTIFICORE_2FA_TOKEN) {
+  if (!NOTIFICORE_2FA_TOKEN || !NOTIFICORE_2FA_AUTH_HEADER) {
     console.error("NOTIFICORE_2FA_BEARER_TOKEN is not set");
     return new Response(
       JSON.stringify({ success: false, error: "2FA Bearer token not configured" }),
@@ -75,7 +81,7 @@ const handler = async (req: Request): Promise<Response> => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${NOTIFICORE_2FA_TOKEN}`,
+        "Authorization": NOTIFICORE_2FA_AUTH_HEADER,
       },
       body: JSON.stringify(payload),
     });
