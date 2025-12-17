@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Sparkles, Snowflake, Star, Heart } from 'lucide-react';
 import santaHatLogo from '@/assets/santa-hat-logo.png';
-import partnerLogo from '@/assets/partner-logo.png';
 
 export function Footer() {
   return (
@@ -87,14 +86,6 @@ export function Footer() {
                 ))}
               </div>
               <span>Рейтинг 4.9 / 5</span>
-            </div>
-            
-            {/* Partners section */}
-            <div className="mt-4 pt-4 border-t border-magic-gold/10">
-              <p className="text-xs text-snow-500 mb-2">Наши партнёры</p>
-              <div className="flex items-center gap-3">
-                <img src={partnerLogo} alt="Партнёр" className="h-[50px] opacity-70 hover:opacity-100 transition-opacity" />
-              </div>
             </div>
           </div>
 
