@@ -12,12 +12,12 @@ export function PartnersSection() {
           <img 
             src={partnerKolibri} 
             alt="Kolibri Expert" 
-            className="h-[50px] opacity-80 hover:opacity-100 transition-opacity" 
+            className="h-[80px] opacity-80 hover:opacity-100 transition-opacity" 
           />
           <img 
             src={partnerPovuzam} 
             alt="Повузам" 
-            className="h-[50px] opacity-80 hover:opacity-100 transition-opacity" 
+            className="h-[80px] opacity-80 hover:opacity-100 transition-opacity" 
           />
         </div>
       </div>
