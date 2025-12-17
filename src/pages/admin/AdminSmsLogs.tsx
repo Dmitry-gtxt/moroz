@@ -69,8 +69,15 @@ const AdminSmsLogs = () => {
   
   // 2FA тест
   const [twoFaPhone, setTwoFaPhone] = useState("");
+  const [twoFaTemplateId, setTwoFaTemplateId] = useState("78"); // По умолчанию шаблон регистрации
   const [twoFaSending, setTwoFaSending] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [twoFaResult, setTwoFaResult] = useState<{
+    success: boolean;
+    auth_id?: string;
+    expires_at?: string;
+    error?: string;
+    details?: Record<string, unknown>;
+  } | null>(null);
 
   const smsInfo = useMemo(() => calculateSmsInfo(testMessage), [testMessage]);
 
@@ -123,40 +130,54 @@ const AdminSmsLogs = () => {
     }
   };
 
-  // Генерация 6-значного кода
-  const generateCode = (): string => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
+  // Доступные шаблоны 2FA (утверждённые)
+  const templates2FA = [
+    { id: "78", name: "1. При регистрации" },
+    { id: "79", name: "2. При восстановлении пароля" },
+    { id: "80", name: "3. При подаче заявки на услугу" },
+    { id: "81", name: "5. При отказе исполнителем" },
+    { id: "82", name: "6. При изменении слота" },
+  ];
 
   const send2FaCode = async () => {
     if (!twoFaPhone) {
       toast.error("Введите номер телефона");
       return;
     }
+    if (!twoFaTemplateId) {
+      toast.error("Выберите шаблон");
+      return;
+    }
     
     setTwoFaSending(true);
-    setGeneratedCode(null);
-    
-    const code = generateCode();
-    const message = `Ваш код подтверждения: ${code}. Дед-Морозы.РФ`;
+    setTwoFaResult(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke("send-sms", {
-        body: { phone: twoFaPhone, message },
+      const { data, error } = await supabase.functions.invoke("send-2fa-code", {
+        body: { 
+          phone: twoFaPhone, 
+          template_id: twoFaTemplateId,
+          code_digits: 6,
+          code_lifetime: 300,
+          code_max_tries: 3,
+        },
       });
       
       if (error) throw error;
       
+      setTwoFaResult(data);
+      
       if (data?.success) {
-        setGeneratedCode(code);
-        toast.success("Код отправлен!");
+        toast.success("OTP отправлен через Notificore 2FA!");
         fetchLogs();
       } else {
-        toast.error(data?.error || "Ошибка отправки SMS");
+        toast.error(data?.error || "Ошибка отправки OTP");
       }
     } catch (err: unknown) {
-      console.error("2FA SMS error:", err);
-      toast.error("Ошибка отправки SMS");
+      console.error("2FA error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Ошибка отправки";
+      setTwoFaResult({ success: false, error: errorMessage });
+      toast.error(errorMessage);
     } finally {
       setTwoFaSending(false);
     }
@@ -182,17 +203,17 @@ const AdminSmsLogs = () => {
           </p>
         </div>
 
-        {/* 2FA Тест */}
+        {/* 2FA Тест через Notificore API */}
         <Card className="border-primary/30 bg-primary/5">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
-              Тест 2FA (код подтверждения)
+              Тест 2FA (Notificore API)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-4 items-end flex-wrap">
-              <div className="flex-1 min-w-[200px]">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
                 <label className="text-sm font-medium mb-1.5 block">Номер телефона</label>
                 <Input
                   placeholder="+7(999)123-45-67"
@@ -200,21 +221,63 @@ const AdminSmsLogs = () => {
                   onChange={(e) => setTwoFaPhone(e.target.value)}
                 />
               </div>
-              <Button onClick={send2FaCode} disabled={twoFaSending || !twoFaPhone}>
-                <ShieldCheck className="h-4 w-4 mr-2" />
-                {twoFaSending ? "Отправка..." : "Отправить код"}
-              </Button>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Шаблон (template_id)</label>
+                <select
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                  value={twoFaTemplateId}
+                  onChange={(e) => setTwoFaTemplateId(e.target.value)}
+                >
+                  {templates2FA.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      ID {t.id}: {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             
-            {generatedCode && (
-              <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                <div className="text-sm text-muted-foreground mb-1">Сгенерированный код:</div>
-                <div className="text-3xl font-mono font-bold text-green-500 tracking-widest">
-                  {generatedCode}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Этот код был отправлен на указанный номер. Проверьте, пришло ли SMS.
-                </p>
+            <div className="flex gap-4 items-center flex-wrap">
+              <Button onClick={send2FaCode} disabled={twoFaSending || !twoFaPhone}>
+                <ShieldCheck className="h-4 w-4 mr-2" />
+                {twoFaSending ? "Отправка..." : "Отправить OTP"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Код генерируется Notificore, 6 цифр, срок жизни 5 мин, 3 попытки
+              </p>
+            </div>
+            
+            {twoFaResult && (
+              <div className={`p-4 rounded-lg border ${
+                twoFaResult.success 
+                  ? "bg-green-500/10 border-green-500/30" 
+                  : "bg-red-500/10 border-red-500/30"
+              }`}>
+                {twoFaResult.success ? (
+                  <>
+                    <div className="text-sm text-muted-foreground mb-1">Успешно! Auth ID:</div>
+                    <code className="text-sm font-mono text-green-500 break-all">
+                      {twoFaResult.auth_id}
+                    </code>
+                    {twoFaResult.expires_at && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Истекает: {twoFaResult.expires_at}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Код сгенерирован и отправлен Notificore. Проверьте SMS на телефоне.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm text-red-500 font-medium">Ошибка: {twoFaResult.error}</div>
+                    {twoFaResult.details && (
+                      <pre className="text-xs mt-2 bg-muted/50 p-2 rounded overflow-x-auto">
+                        {JSON.stringify(twoFaResult.details, null, 2)}
+                      </pre>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </CardContent>

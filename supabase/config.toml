@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.send-sms]
 verify_jwt = false
+
+[functions.send-2fa-code]
+verify_jwt = false
