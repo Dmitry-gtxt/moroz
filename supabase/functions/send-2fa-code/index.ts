@@ -20,21 +20,26 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const NOTIFICORE_2FA_TOKEN_RAW = Deno.env.get("NOTIFICORE_2FA_BEARER_TOKEN");
-  const NOTIFICORE_2FA_TOKEN = NOTIFICORE_2FA_TOKEN_RAW?.trim();
-  const NOTIFICORE_2FA_AUTH_HEADER = NOTIFICORE_2FA_TOKEN
-    ? (/^Bearer\s+/i.test(NOTIFICORE_2FA_TOKEN)
-        ? NOTIFICORE_2FA_TOKEN
-        : `Bearer ${NOTIFICORE_2FA_TOKEN}`)
-    : null;
-  
-  if (!NOTIFICORE_2FA_TOKEN || !NOTIFICORE_2FA_AUTH_HEADER) {
+  const tokenRaw = Deno.env.get("NOTIFICORE_2FA_BEARER_TOKEN") ?? "";
+  const tokenTrimmed = tokenRaw.trim();
+  const tokenNoAuthPrefix = tokenTrimmed.replace(/^Authorization:\s*/i, "").trim();
+  const tokenUnquoted = tokenNoAuthPrefix.replace(/^['"]|['"]$/g, "").trim();
+  const tokenClean = tokenUnquoted.replace(/^Bearer\s+/i, "").trim();
+
+  // Never log the token itself
+  console.log(
+    `[2FA] Token sanity: len=${tokenClean.length}, dots=${Math.max(0, tokenClean.split(".").length - 1)}`,
+  );
+
+  if (!tokenClean) {
     console.error("NOTIFICORE_2FA_BEARER_TOKEN is not set");
     return new Response(
       JSON.stringify({ success: false, error: "2FA Bearer token not configured" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
+
+  const NOTIFICORE_2FA_AUTH_HEADER = `Bearer ${tokenClean}`;
 
   try {
     const { 
