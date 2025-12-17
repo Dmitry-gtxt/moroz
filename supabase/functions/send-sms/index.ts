@@ -106,26 +106,29 @@ const handler = async (req: Request): Promise<Response> => {
     // Remove + if present
     formattedPhone = formattedPhone.replace("+", "");
 
-    // Build SMS payload according to Notificore REST API docs
-    // Using array format as shown in documentation
+    // Build SMS payload according to Notificore official SDK (Node.js)
+    // createSMS expects extra fields like tariff/validity; provide safe defaults.
     requestPayload = {
-      originator: "Ded-Morozy", // Alpha name - sender ID (max 11 chars, no special chars)
+      destination: "phone",
+      originator: "Ded-Morozy", // max 11 chars
       body: message,
       msisdn: formattedPhone,
       reference: reference,
+      validity: "1",
+      tariff: "0",
     };
 
     console.log("SMS request payload:", JSON.stringify(requestPayload));
     console.log("Auth Key (first 10 chars):", authKey.substring(0, 10) + "...");
 
-    // Try REST API endpoint format: PUT /rest/sms
-    const response = await fetch("https://api.notificore.ru/rest/sms", {
-      method: "PUT",
+    // Notificore auth is via X-API-KEY header (NOT Bearer)
+    const response = await fetch("https://api.notificore.ru/rest/sms/create", {
+      method: "POST",
       headers: {
-        "Authorization": `Bearer ${authKey}`,
+        "X-API-KEY": authKey,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify([requestPayload]), // Array format per docs
+      body: JSON.stringify([requestPayload]),
     });
 
     const responseText = await response.text();
