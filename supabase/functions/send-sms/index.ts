@@ -48,9 +48,13 @@ const handler = async (req: Request): Promise<Response> => {
   let requestPayload: Record<string, unknown> = {};
 
   try {
+    // Try both API key and password - Notificore uses different auth methods
     const apiKey = Deno.env.get("NOTIFICORE_API_KEY");
-    if (!apiKey) {
-      console.error("NOTIFICORE_API_KEY is not set");
+    const apiPassword = Deno.env.get("NOTIFICORE_API_PASSWORD");
+    
+    const authKey = apiKey || apiPassword;
+    if (!authKey) {
+      console.error("NOTIFICORE_API_KEY or NOTIFICORE_API_PASSWORD is not set");
       
       // Log the error
       await supabase.from("sms_logs").insert({
@@ -102,7 +106,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Remove + if present
     formattedPhone = formattedPhone.replace("+", "");
 
-    // Build SMS payload according to Notificore API docs
+    // Build SMS payload according to Notificore REST API docs
+    // Using array format as shown in documentation
     requestPayload = {
       originator: "Ded-Morozy", // Alpha name - sender ID (max 11 chars, no special chars)
       body: message,
@@ -111,15 +116,16 @@ const handler = async (req: Request): Promise<Response> => {
     };
 
     console.log("SMS request payload:", JSON.stringify(requestPayload));
-    console.log("API Key (first 10 chars):", apiKey.substring(0, 10) + "...");
+    console.log("Auth Key (first 10 chars):", authKey.substring(0, 10) + "...");
 
-    const response = await fetch("https://api.notificore.ru/v1.0/sms/create", {
-      method: "POST",
+    // Try REST API endpoint format: PUT /rest/sms
+    const response = await fetch("https://api.notificore.ru/rest/sms", {
+      method: "PUT",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${authKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestPayload),
+      body: JSON.stringify([requestPayload]), // Array format per docs
     });
 
     const responseText = await response.text();
