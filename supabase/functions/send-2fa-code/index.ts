@@ -66,13 +66,13 @@ const handler = async (req: Request): Promise<Response> => {
     const apiUrl = "https://one-api.notificore.ru/api/2fa/authentications/otp";
     
     const payload = {
-      channel: "sms", // lowercase как в примере
+      channel: "sms",
       sender: "Ded-Morozy",
       recipient: formattedPhone,
       template_id: template_id,
-      code_digits: String(code_digits), // строка как в примере
-      code_lifetime: String(code_lifetime),
-      code_max_tries: String(code_max_tries),
+      code_digits: code_digits,
+      code_lifetime: code_lifetime,
+      code_max_tries: code_max_tries,
     };
 
     console.log("[2FA] Request payload:", JSON.stringify(payload));
