@@ -20,12 +20,12 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const NOTIFICORE_API_KEY = Deno.env.get("NOTIFICORE_API_KEY");
+  const NOTIFICORE_2FA_TOKEN = Deno.env.get("NOTIFICORE_2FA_BEARER_TOKEN");
   
-  if (!NOTIFICORE_API_KEY) {
-    console.error("NOTIFICORE_API_KEY is not set");
+  if (!NOTIFICORE_2FA_TOKEN) {
+    console.error("NOTIFICORE_2FA_BEARER_TOKEN is not set");
     return new Response(
-      JSON.stringify({ success: false, error: "API key not configured" }),
+      JSON.stringify({ success: false, error: "2FA Bearer token not configured" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -75,7 +75,7 @@ const handler = async (req: Request): Promise<Response> => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${NOTIFICORE_API_KEY}`, // Bearer вместо X-API-KEY
+        "Authorization": `Bearer ${NOTIFICORE_2FA_TOKEN}`,
       },
       body: JSON.stringify(payload),
     });
