@@ -1,5 +1,7 @@
 import partnerKolibri from '@/assets/partner-kolibri.png';
 import partnerPovuzam from '@/assets/partner-povuzam.png';
+import partnerUmius from '@/assets/partner-umius.png';
+import partnerUchidron from '@/assets/partner-uchidron.png';
 
 export function PartnersSection() {
   return (
@@ -17,6 +19,16 @@ export function PartnersSection() {
           <img 
             src={partnerPovuzam} 
             alt="Повузам" 
+            className="h-[80px] opacity-80 hover:opacity-100 transition-opacity" 
+          />
+          <img 
+            src={partnerUmius} 
+            alt="УМИУС" 
+            className="h-[80px] opacity-80 hover:opacity-100 transition-opacity" 
+          />
+          <img 
+            src={partnerUchidron} 
+            alt="УчиДрон" 
             className="h-[80px] opacity-80 hover:opacity-100 transition-opacity" 
           />
         </div>
