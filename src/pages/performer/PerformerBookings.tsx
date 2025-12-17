@@ -86,13 +86,15 @@ export default function PerformerBookings() {
         .from('secure_bookings')
         .select('*')
         .eq('performer_id', profile.id)
-        .neq('customer_phone', '+7-admin-review')
         .order('booking_date', { ascending: true });
 
       if (error) {
         console.error('Error fetching bookings:', error);
       } else {
-        setBookings((bookingsData as Booking[]) ?? []);
+        const cleaned = ((bookingsData as Booking[]) ?? []).filter(
+          (b) => b.customer_phone !== '+7-admin-review'
+        );
+        setBookings(cleaned);
       }
 
       setLoading(false);
@@ -353,10 +355,12 @@ export default function PerformerBookings() {
       .from('secure_bookings')
       .select('*')
       .eq('performer_id', performerId)
-      .neq('customer_phone', '+7-admin-review')
       .order('booking_date', { ascending: true });
     if (data) {
-      setBookings((data as Booking[]) ?? []);
+      const cleaned = ((data as Booking[]) ?? []).filter(
+        (b) => b.customer_phone !== '+7-admin-review'
+      );
+      setBookings(cleaned);
     }
   };
 
