@@ -31,6 +31,7 @@ const AdminAuditLog = lazy(() => import("./pages/admin/AdminAuditLog"));
 const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
 const AdminReviews = lazy(() => import("./pages/admin/AdminReviews"));
 const AdminPartners = lazy(() => import("./pages/admin/AdminPartners"));
+const AdminSmsLogs = lazy(() => import("./pages/admin/AdminSmsLogs"));
 const PartnerDashboard = lazy(() => import("./pages/PartnerDashboard"));
 const PerformerRegistration = lazy(() => import("./pages/PerformerRegistration"));
 const PerformerDashboard = lazy(() => import("./pages/performer/PerformerDashboard"));
@@ -145,6 +146,7 @@ const App = () => (
               <Route path="/admin/partners" element={<AdminPartners />} />
               <Route path="/admin/audit" element={<AdminAuditLog />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
+              <Route path="/admin/sms-logs" element={<AdminSmsLogs />} />
               <Route path="/admin/performer/:id" element={<AdminPerformerView />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

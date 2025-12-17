@@ -758,6 +758,45 @@ export type Database = {
           },
         ]
       }
+      sms_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          message: string
+          phone: string
+          reference: string | null
+          request_payload: Json | null
+          response_body: Json | null
+          response_status: number | null
+          success: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message: string
+          phone: string
+          reference?: string | null
+          request_payload?: Json | null
+          response_body?: Json | null
+          response_status?: number | null
+          success?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message?: string
+          phone?: string
+          reference?: string | null
+          request_payload?: Json | null
+          response_body?: Json | null
+          response_status?: number | null
+          success?: boolean | null
+        }
+        Relationships: []
+      }
       support_chats: {
         Row: {
           created_at: string
