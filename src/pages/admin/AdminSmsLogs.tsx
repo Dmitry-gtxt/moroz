@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RefreshCw, Search, CheckCircle, XCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { RefreshCw, Search, CheckCircle, XCircle, ChevronDown, ChevronUp, Send } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface SmsLog {
   id: string;
@@ -22,11 +24,50 @@ interface SmsLog {
   success: boolean;
 }
 
+// Проверка наличия кириллицы в тексте
+const hasCyrillic = (text: string): boolean => /[а-яА-ЯёЁ]/.test(text);
+
+// Подсчёт SMS
+const calculateSmsInfo = (text: string) => {
+  const charCount = text.length;
+  const isCyrillic = hasCyrillic(text);
+  
+  // UCS-2 для кириллицы: 70 символов (одна SMS), 67 символов (многочастная)
+  // GSM-7 для латиницы: 160 символов (одна SMS), 153 символа (многочастная)
+  const singleLimit = isCyrillic ? 70 : 160;
+  const multiPartLimit = isCyrillic ? 67 : 153;
+  
+  let smsCount = 0;
+  if (charCount === 0) {
+    smsCount = 0;
+  } else if (charCount <= singleLimit) {
+    smsCount = 1;
+  } else {
+    smsCount = Math.ceil(charCount / multiPartLimit);
+  }
+  
+  return {
+    charCount,
+    smsCount,
+    singleLimit,
+    multiPartLimit,
+    isCyrillic,
+    encoding: isCyrillic ? "UCS-2 (кириллица)" : "GSM-7 (латиница)",
+  };
+};
+
 const AdminSmsLogs = () => {
   const [logs, setLogs] = useState<SmsLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  
+  // Тестовая SMS
+  const [testPhone, setTestPhone] = useState("");
+  const [testMessage, setTestMessage] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const smsInfo = useMemo(() => calculateSmsInfo(testMessage), [testMessage]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -48,6 +89,35 @@ const AdminSmsLogs = () => {
     fetchLogs();
   }, []);
 
+  const sendTestSms = async () => {
+    if (!testPhone || !testMessage) {
+      toast.error("Введите номер телефона и текст сообщения");
+      return;
+    }
+    
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-sms", {
+        body: { phone: testPhone, message: testMessage },
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success("SMS отправлена успешно!");
+        setTestMessage("");
+        fetchLogs();
+      } else {
+        toast.error(data?.error || "Ошибка отправки SMS");
+      }
+    } catch (err: unknown) {
+      console.error("SMS send error:", err);
+      toast.error("Ошибка отправки SMS");
+    } finally {
+      setSending(false);
+    }
+  };
+
   const filteredLogs = logs.filter(
     (log) =>
       log.phone.includes(searchTerm) ||
@@ -67,6 +137,62 @@ const AdminSmsLogs = () => {
             Журнал всех отправленных SMS с ответами сервера
           </p>
         </div>
+
+        {/* Форма отправки тестовой SMS */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Тестовая SMS</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Номер телефона</label>
+              <Input
+                placeholder="+7(999)123-45-67"
+                value={testPhone}
+                onChange={(e) => setTestPhone(e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Текст сообщения</label>
+              <Textarea
+                placeholder="Введите текст SMS..."
+                value={testMessage}
+                onChange={(e) => setTestMessage(e.target.value)}
+                rows={4}
+              />
+              
+              {/* Счётчики */}
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                <span className="text-muted-foreground">
+                  Символов: <span className="font-medium text-foreground">{smsInfo.charCount}</span>
+                  {smsInfo.charCount > 0 && (
+                    <span className="text-muted-foreground">
+                      {" "}/ {smsInfo.smsCount === 1 ? smsInfo.singleLimit : `${smsInfo.multiPartLimit} × ${smsInfo.smsCount}`}
+                    </span>
+                  )}
+                </span>
+                <span className="text-muted-foreground">
+                  Кол-во SMS: <span className="font-medium text-foreground">{smsInfo.smsCount || "—"}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Кодировка: <span className="font-medium text-foreground">{smsInfo.encoding}</span>
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {smsInfo.isCyrillic 
+                  ? `Кириллица: 1 SMS = до 70 символов, далее по 67 символов на каждую SMS`
+                  : `Латиница: 1 SMS = до 160 символов, далее по 153 символа на каждую SMS`
+                }
+              </p>
+            </div>
+            
+            <Button onClick={sendTestSms} disabled={sending || !testPhone || !testMessage}>
+              <Send className="h-4 w-4 mr-2" />
+              {sending ? "Отправка..." : "Отправить тест"}
+            </Button>
+          </CardContent>
+        </Card>
 
         <div className="flex gap-4 items-center">
           <div className="relative flex-1 max-w-sm">
