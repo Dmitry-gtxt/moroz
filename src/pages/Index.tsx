@@ -5,6 +5,7 @@ import { PriceCalendarStrip } from '@/components/home/PriceCalendarStrip';
 import { HowItWorks } from '@/components/home/HowItWorks';
 import { FeaturesSection } from '@/components/home/FeaturesSection';
 import { CTASection } from '@/components/home/CTASection';
+import { PartnersSection } from '@/components/home/PartnersSection';
 
 import { SEOHead } from '@/components/seo/SEOHead';
 
@@ -20,6 +21,7 @@ const Index = () => {
         <HowItWorks />
         <FeaturesSection />
         <CTASection />
+        <PartnersSection />
       </main>
       <Footer />
     </div>
