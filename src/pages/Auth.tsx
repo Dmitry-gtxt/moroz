@@ -212,10 +212,13 @@ const Auth = () => {
       // Generate email from phone if not provided
       const emailToUse = formData.email.trim() || `${formatPhoneForApi(formData.phone)}@ded-morozy-rf.ru`;
       
-      // Use the SMS code as password
+      // Add prefix "M" to make password pass Supabase validation (requires letter)
+      const passwordToUse = `M${smsCode}`;
+      
+      // Use the SMS code as password with prefix
       const { data, error } = await supabase.auth.signUp({
         email: emailToUse,
-        password: smsCode, // Use SMS code as password
+        password: passwordToUse,
         options: {
           emailRedirectTo: `${window.location.origin}${redirectTo}`,
           data: {
@@ -298,17 +301,20 @@ const Auth = () => {
 
     setLoading(true);
     try {
+      // Add prefix "M" to make password pass Supabase validation
+      const passwordToUse = `M${smsCode}`;
+      
       const { data, error } = await supabase.functions.invoke('reset-password-by-phone', {
         body: {
           phone: formatPhoneForApi(recoveryPhone),
-          new_password: smsCode, // Use SMS code as new password
+          new_password: passwordToUse, // Use SMS code with prefix as new password
         },
       });
 
       if (error) throw error;
       
       if (data?.success) {
-        toast.success('Пароль изменён на код из SMS. Теперь вы можете войти.');
+        toast.success('Пароль изменён! Ваш новый пароль: M + код из SMS. Например: M123456');
         setMode('login');
         // Pre-fill email if we have it
         if (data.email) {
@@ -451,9 +457,9 @@ const Auth = () => {
               <p className="text-snow-400 mt-2">
                 {mode === 'login' && 'Войдите, чтобы забронировать Деда Мороза'}
                 {mode === 'register' && registerStep === 'form' && 'Создайте аккаунт для бронирования'}
-                {mode === 'register' && registerStep === 'sms-verification' && `Введите код из SMS, отправленного на ${formData.phone}`}
+                {mode === 'register' && registerStep === 'sms-verification' && `Ваш пароль: M + код из SMS`}
                 {mode === 'forgot-password' && forgotStep === 'phone' && 'Введите телефон, указанный при регистрации'}
-                {mode === 'forgot-password' && forgotStep === 'sms-verification' && `Введите код из SMS — он станет вашим новым паролем`}
+                {mode === 'forgot-password' && forgotStep === 'sms-verification' && `Ваш новый пароль: M + код из SMS`}
               </p>
             </div>
 
@@ -514,7 +520,7 @@ const Auth = () => {
                     <div className="flex items-start gap-3">
                       <MessageSquare className="h-5 w-5 text-magic-purple mt-0.5 flex-shrink-0" />
                       <p className="text-sm text-snow-300">
-                        Пароль придёт в SMS на указанный телефон. Его потом можно изменить в настройках профиля.
+                        Пароль придёт в SMS на указанный телефон. Ваш пароль: <span className="font-mono font-bold text-magic-gold">M + код из SMS</span>. Например, если код 123456, то пароль: M123456. Его можно изменить в настройках профиля.
                       </p>
                     </div>
                   </div>
