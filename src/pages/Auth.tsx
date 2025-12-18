@@ -13,8 +13,8 @@ import { autoSubscribeToPush } from '@/lib/pushNotifications';
 import { getReferralCode, clearReferralCode } from '@/lib/referral';
 
 type AuthMode = 'login' | 'register' | 'forgot-password';
-type RegisterStep = 'form' | 'sms-verification';
-type ForgotStep = 'phone' | 'sms-verification';
+type RegisterStep = 'form' | 'sms-verification' | 'password-shown';
+type ForgotStep = 'phone' | 'sms-verification' | 'password-shown';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -47,8 +47,11 @@ const Auth = () => {
 
   // Password validation
   const passwordRequirements = [
-    { label: 'Минимум 8 символов', check: (p: string) => p.length >= 8 },
+    { label: 'Минимум 7 символов', check: (p: string) => p.length >= 7 },
   ];
+  
+  // Final password (shown after SMS verification)
+  const [finalPassword, setFinalPassword] = useState<string>('');
 
   useEffect(() => {
     setModeState(modeFromUrl);
@@ -141,7 +144,7 @@ const Auth = () => {
         body: {
           phone: formattedPhone,
           template_id: templateId,
-          code_digits: 8,
+          code_digits: 6,
         },
       });
 
@@ -201,21 +204,28 @@ const Auth = () => {
     }
   };
 
-  // Complete registration with verified SMS code as password
-  const completeRegistration = async () => {
+  // Show password page after SMS verification for registration
+  const showPasswordAfterVerification = async () => {
     const verified = await verifySmsCode();
     if (!verified) return;
+    
+    // Generate password with S prefix
+    const passwordFromCode = `S${smsCode}`;
+    setFinalPassword(passwordFromCode);
+    setRegisterStep('password-shown');
+  };
 
+  // Complete registration with verified SMS code as password
+  const completeRegistration = async () => {
     setLoading(true);
     try {
       // Generate email from phone if not provided
       const emailToUse = formData.email.trim() || `${formatPhoneForApi(formData.phone)}@ded-morozy-rf.ru`;
       
-      // Use the SMS code + suffix as password (meets Supabase complexity: lowercase, uppercase, digit, special char)
-      const passwordFromCode = `${smsCode}Aa!`;
+      // Use the generated password with S prefix
       const { data, error } = await supabase.auth.signUp({
         email: emailToUse,
-        password: passwordFromCode,
+        password: finalPassword,
         options: {
           emailRedirectTo: `${window.location.origin}${redirectTo}`,
           data: {
@@ -292,26 +302,33 @@ const Auth = () => {
     }
   };
 
-  // Find user by phone and update password using SMS code
-  const completePasswordRecovery = async () => {
+  // Show password page after SMS verification for recovery
+  const showPasswordAfterRecoveryVerification = async () => {
     const verified = await verifySmsCode();
     if (!verified) return;
+    
+    // Generate password with S prefix
+    const passwordFromCode = `S${smsCode}`;
+    setFinalPassword(passwordFromCode);
+    setForgotStep('password-shown');
+  };
 
+  // Find user by phone and update password using SMS code
+  const completePasswordRecovery = async () => {
     setLoading(true);
     try {
-      // Use the SMS code + suffix as password (meets Supabase complexity: lowercase, uppercase, digit, special char)
-      const passwordFromCode = `${smsCode}Aa!`;
+      // Use the generated password with S prefix
       const { data, error } = await supabase.functions.invoke('reset-password-by-phone', {
         body: {
           phone: formatPhoneForApi(recoveryPhone),
-          new_password: passwordFromCode,
+          new_password: finalPassword,
         },
       });
 
       if (error) throw error;
       
       if (data?.success) {
-        toast.success('Пароль изменён. Для входа используйте: код из SMS + Aa!');
+        toast.success('Пароль успешно изменён!');
         setMode('login');
         // Pre-fill email if we have it
         if (data.email) {
@@ -360,8 +377,11 @@ const Auth = () => {
             setRegisterStep('sms-verification');
             toast.success('SMS с паролем отправлено на ваш телефон');
           }
-        } else {
-          // Verify SMS and complete registration
+        } else if (registerStep === 'sms-verification') {
+          // Verify SMS and show password
+          await showPasswordAfterVerification();
+        } else if (registerStep === 'password-shown') {
+          // Complete registration with shown password
           await completeRegistration();
         }
       } else if (mode === 'forgot-password') {
@@ -379,7 +399,10 @@ const Auth = () => {
             toast.success('SMS с кодом отправлено на ваш телефон');
           }
         } else if (forgotStep === 'sms-verification') {
-          // Verify SMS code and use it as new password
+          // Verify SMS code and show password
+          await showPasswordAfterRecoveryVerification();
+        } else if (forgotStep === 'password-shown') {
+          // Complete password recovery
           await completePasswordRecovery();
         }
       }
@@ -448,15 +471,19 @@ const Auth = () => {
                 {mode === 'login' && 'Вход в аккаунт'}
                 {mode === 'register' && registerStep === 'form' && 'Регистрация'}
                 {mode === 'register' && registerStep === 'sms-verification' && 'Подтверждение'}
+                {mode === 'register' && registerStep === 'password-shown' && 'Ваш пароль'}
                 {mode === 'forgot-password' && forgotStep === 'phone' && 'Восстановление пароля'}
                 {mode === 'forgot-password' && forgotStep === 'sms-verification' && 'Новый пароль'}
+                {mode === 'forgot-password' && forgotStep === 'password-shown' && 'Ваш новый пароль'}
               </h1>
               <p className="text-snow-400 mt-2">
                 {mode === 'login' && 'Войдите, чтобы забронировать Деда Мороза'}
                 {mode === 'register' && registerStep === 'form' && 'Создайте аккаунт для бронирования'}
-                {mode === 'register' && registerStep === 'sms-verification' && `Введите код из SMS. Ваш пароль: код + Aa!`}
+                {mode === 'register' && registerStep === 'sms-verification' && 'Введите 6-значный код из SMS'}
+                {mode === 'register' && registerStep === 'password-shown' && 'Мы добавили к вашему паролю букву S'}
                 {mode === 'forgot-password' && forgotStep === 'phone' && 'Введите телефон, указанный при регистрации'}
-                {mode === 'forgot-password' && forgotStep === 'sms-verification' && `Введите код из SMS. Ваш новый пароль: код + Aa!`}
+                {mode === 'forgot-password' && forgotStep === 'sms-verification' && 'Введите 6-значный код из SMS'}
+                {mode === 'forgot-password' && forgotStep === 'password-shown' && 'Мы добавили к вашему паролю букву S'}
               </p>
             </div>
 
@@ -517,7 +544,7 @@ const Auth = () => {
                     <div className="flex items-start gap-3">
                       <MessageSquare className="h-5 w-5 text-magic-purple mt-0.5 flex-shrink-0" />
                       <p className="text-sm text-snow-300">
-                        Пароль придёт в SMS на указанный телефон. Ваш пароль для входа: код из SMS + Aa! (например: 12345678Aa!). Его можно изменить в настройках профиля.
+                        Пароль придёт в SMS на указанный телефон. К 6-значному коду мы добавим букву S — это и будет ваш пароль (например: S123456). Его можно изменить в настройках профиля.
                       </p>
                     </div>
                   </div>
@@ -535,10 +562,10 @@ const Auth = () => {
                         id="smsCode"
                         type="text"
                         value={smsCode}
-                        onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                        placeholder="00000000"
+                        onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="000000"
                         className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50 text-center text-2xl tracking-widest font-mono"
-                        maxLength={8}
+                        maxLength={6}
                         autoFocus
                         required
                       />
@@ -576,7 +603,21 @@ const Auth = () => {
                 </>
               )}
 
-              {/* LOGIN */}
+              {/* REGISTRATION - Password shown step */}
+              {mode === 'register' && registerStep === 'password-shown' && (
+                <div className="text-center space-y-6">
+                  <p className="text-snow-300">Теперь он выглядит так:</p>
+                  <div className="bg-winter-900/70 border border-magic-gold/30 rounded-xl p-6">
+                    <p className="text-3xl font-mono font-bold text-magic-gold tracking-widest">
+                      {finalPassword}
+                    </p>
+                  </div>
+                  <p className="text-sm text-snow-400">
+                    Запомните этот пароль для входа в аккаунт
+                  </p>
+                </div>
+              )}
+
               {mode === 'login' && (
                 <>
                   <div>
@@ -663,10 +704,10 @@ const Auth = () => {
                         id="smsCodeRecovery"
                         type="text"
                         value={smsCode}
-                        onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                        placeholder="00000000"
+                        onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="000000"
                         className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50 text-center text-2xl tracking-widest font-mono"
-                        maxLength={8}
+                        maxLength={6}
                         autoFocus
                         required
                       />
@@ -703,6 +744,22 @@ const Auth = () => {
                   </button>
                 </>
               )}
+
+              {/* FORGOT PASSWORD - Password shown step */}
+              {mode === 'forgot-password' && forgotStep === 'password-shown' && (
+                <div className="text-center space-y-6">
+                  <p className="text-snow-300">Теперь он выглядит так:</p>
+                  <div className="bg-winter-900/70 border border-magic-gold/30 rounded-xl p-6">
+                    <p className="text-3xl font-mono font-bold text-magic-gold tracking-widest">
+                      {finalPassword}
+                    </p>
+                  </div>
+                  <p className="text-sm text-snow-400">
+                    Запомните этот пароль для входа в аккаунт
+                  </p>
+                </div>
+              )}
+
               {/* Terms checkboxes for registration */}
               {mode === 'register' && registerStep === 'form' && (
                 <div className="space-y-3 pt-2">
@@ -745,9 +802,11 @@ const Auth = () => {
                 {loading ? 'Загрузка...' : (
                   mode === 'login' ? 'Войти' : 
                   mode === 'register' && registerStep === 'form' ? 'Получить пароль в SMS' :
-                  mode === 'register' && registerStep === 'sms-verification' ? 'Подтвердить и войти' :
+                  mode === 'register' && registerStep === 'sms-verification' ? 'Подтвердить код' :
+                  mode === 'register' && registerStep === 'password-shown' ? 'Войти в аккаунт' :
                   mode === 'forgot-password' && forgotStep === 'phone' ? 'Получить код в SMS' :
-                  mode === 'forgot-password' && forgotStep === 'sms-verification' ? 'Сохранить как новый пароль' :
+                  mode === 'forgot-password' && forgotStep === 'sms-verification' ? 'Подтвердить код' :
+                  mode === 'forgot-password' && forgotStep === 'password-shown' ? 'Сохранить и войти' :
                   'Продолжить'
                 )}
               </button>
