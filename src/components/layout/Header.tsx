@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X, User, LogIn, LogOut, Briefcase, Sparkles, Snowflake } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { useUnreadSupportMessages } from '@/hooks/useUnreadSupportMessages';
 import santaHatLogo from '@/assets/santa-hat-logo.png';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -19,6 +21,10 @@ export function Header() {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const [isPerformer, setIsPerformer] = useState(false);
+  const unreadMessagesCount = useUnreadMessages();
+  const unreadSupportCount = useUnreadSupportMessages();
+  
+  const totalUnread = unreadMessagesCount + unreadSupportCount;
 
   useEffect(() => {
     async function checkPerformerRole() {
@@ -105,7 +111,13 @@ export function Header() {
                     <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-winter-800/50 border border-magic-gold/20 text-snow-200 hover:border-magic-gold/40 hover:bg-winter-800 transition-all group">
                       <div className="relative">
                         <User className="h-4 w-4" />
-                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-magic-gold rounded-full animate-pulse" />
+                        {totalUnread > 0 ? (
+                          <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1 animate-pulse">
+                            {totalUnread > 99 ? '99+' : totalUnread}
+                          </span>
+                        ) : (
+                          <div className="absolute -top-1 -right-1 w-2 h-2 bg-magic-gold rounded-full animate-pulse" />
+                        )}
                       </div>
                       <span className="text-sm font-medium">{user.user_metadata?.full_name || 'Аккаунт'}</span>
                     </button>
@@ -169,13 +181,18 @@ export function Header() {
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2 rounded-lg bg-winter-800/50 border border-magic-gold/20 hover:border-magic-gold/40 transition-colors"
+          className="md:hidden p-2 rounded-lg bg-winter-800/50 border border-magic-gold/20 hover:border-magic-gold/40 transition-colors relative"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
           {isMenuOpen ? (
             <X className="h-6 w-6 text-snow-200" />
           ) : (
             <Menu className="h-6 w-6 text-snow-200" />
+          )}
+          {totalUnread > 0 && !isMenuOpen && (
+            <span className="absolute -top-1 -right-1 min-w-4 h-4 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1 animate-pulse">
+              {totalUnread > 99 ? '99+' : totalUnread}
+            </span>
           )}
         </button>
       </div>
