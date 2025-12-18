@@ -40,6 +40,12 @@ const verificationLabels: Record<string, { label: string; variant: 'default' | '
   rejected: { label: 'Отклонён', variant: 'destructive' },
 };
 
+const extractVerificationPhone = (description: string | null | undefined): string | null => {
+  if (!description) return null;
+  const match = description.match(/\[Телефон для верификации:\s*([^\]]+)\]/i);
+  return match?.[1]?.trim() || null;
+};
+
 export default function AdminPerformers() {
   const [performers, setPerformers] = useState<PerformerProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,12 +134,19 @@ export default function AdminPerformers() {
       }
     }
     
-    const performersWithContacts: PerformerProfile[] = performersData.map(performer => ({
-      ...performer,
-      user_email: performer.user_id ? (emailMap.get(performer.user_id) || '') : '',
-      // Prefer phone from auth.users, fallback to profiles table
-      user_phone: performer.user_id ? (authPhoneMap.get(performer.user_id) || phoneMap.get(performer.user_id) || '') : '',
-    }));
+    const performersWithContacts: PerformerProfile[] = performersData.map((performer) => {
+      const inferredPhone = extractVerificationPhone(performer.description);
+      const directPhone = performer.user_id
+        ? (authPhoneMap.get(performer.user_id) || phoneMap.get(performer.user_id) || '')
+        : '';
+
+      return {
+        ...performer,
+        user_email: performer.user_id ? (emailMap.get(performer.user_id) || '') : '',
+        // Prefer phone from auth.users/profiles; fallback to verification phone stored in description
+        user_phone: directPhone || inferredPhone || '',
+      };
+    });
     
     setPerformers(performersWithContacts);
     setCommissionRateState(commissionRes);
