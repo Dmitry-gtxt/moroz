@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Upload, X, Check, Loader2, Phone } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 import { getReferralCode, clearReferralCode } from '@/lib/referral';
+import { cleanVerificationPhone } from '@/lib/utils';
 
 type PerformerType = Database['public']['Enums']['performer_type'];
 type EventFormat = Database['public']['Enums']['event_format'];
@@ -337,26 +338,28 @@ export default function PerformerRegistration() {
       }
 
       // 3. Create performer profile with verification phone in description
-      const descriptionWithPhone = description 
-        ? `${description}\n\n[Телефон для верификации: ${verificationPhone}]`
+      // Clean all text fields before saving and add verification phone
+      const cleanedDescription = cleanVerificationPhone(description);
+      const descriptionWithPhone = cleanedDescription 
+        ? `${cleanedDescription}\n\n[Телефон для верификации: ${verificationPhone}]`
         : `[Телефон для верификации: ${verificationPhone}]`;
 
       const { data: profile, error: profileError } = await supabase
         .from('performer_profiles')
         .insert({
           user_id: user.id,
-          display_name: displayName,
+          display_name: cleanVerificationPhone(displayName),
           description: descriptionWithPhone,
           performer_types: selectedTypes,
           formats: selectedFormats,
           district_slugs: selectedDistricts,
           base_price: parseInt(basePrice),
           experience_years: experienceYears ? parseInt(experienceYears) : 0,
-          costume_style: costumeStyle || null,
+          costume_style: cleanVerificationPhone(costumeStyle) || null,
           photo_urls: photoUrls,
           video_greeting_url: videoUrl,
           program_duration: programDuration ? parseInt(programDuration) : 30,
-          program_description: programDescription || null,
+          program_description: cleanVerificationPhone(programDescription) || null,
           is_active: false,
           verification_status: 'pending',
         })

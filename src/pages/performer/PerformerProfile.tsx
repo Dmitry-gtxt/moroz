@@ -96,11 +96,11 @@ export default function PerformerProfilePage() {
         setSelectedDistricts(p.district_slugs);
         setBasePrice(p.base_price.toString());
         setExperienceYears(p.experience_years?.toString() || '');
-        setCostumeStyle(p.costume_style || '');
+        setCostumeStyle(cleanVerificationPhone(p.costume_style));
         setPhotoUrls(p.photo_urls);
         setVideoUrl(p.video_greeting_url);
         setProgramDuration((p as any).program_duration?.toString() || '30');
-        setProgramDescription((p as any).program_description || '');
+        setProgramDescription(cleanVerificationPhone((p as any).program_description));
       }
 
       if (districtsRes.data) {
@@ -189,21 +189,22 @@ export default function PerformerProfilePage() {
     const contentChanged = changedFields.length > 0;
 
     setSaving(true);
+    // Clean all text fields before saving to remove any verification phone info
     const { error, data } = await supabase
       .from('performer_profiles')
       .update({
-        display_name: displayName,
-        description,
+        display_name: cleanVerificationPhone(displayName),
+        description: cleanVerificationPhone(description),
         performer_types: selectedTypes,
         formats: selectedFormats,
         district_slugs: selectedDistricts,
         base_price: parseInt(basePrice) || profile.base_price,
         experience_years: experienceYears ? parseInt(experienceYears) : null,
-        costume_style: costumeStyle || null,
+        costume_style: cleanVerificationPhone(costumeStyle) || null,
         photo_urls: photoUrls,
         video_greeting_url: videoUrl,
         program_duration: programDuration ? parseInt(programDuration) : 30,
-        program_description: programDescription || null,
+        program_description: cleanVerificationPhone(programDescription) || null,
       })
       .eq('id', profile.id)
       .select()
