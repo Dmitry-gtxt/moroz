@@ -8,7 +8,7 @@ import { sendPushNotification } from '@/lib/pushNotifications';
 import { smsProposalAcceptedToPerformer } from '@/lib/smsNotifications';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import { Calendar, Clock, Loader2, Check, X, AlertTriangle, Coins } from 'lucide-react';
 import { getCommissionRate, getPrepaymentAmount, getPerformerPayment, formatPrice } from '@/lib/pricing';
 

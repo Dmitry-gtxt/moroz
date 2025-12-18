@@ -14,7 +14,7 @@ import { notifyBookingConfirmed, notifyBookingRejected, notifyBookingCancelled, 
 import { smsBookingConfirmedToCustomer, smsBookingRejectedToCustomer, smsBookingCancelledToCustomer } from '@/lib/smsNotifications';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import { Loader2, Check, X, MapPin, Phone, User, Calendar, Lock, Mail, CreditCard, Clock, MessageSquare, HeadphonesIcon } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 import { trackConfirmation } from '@/lib/analytics';

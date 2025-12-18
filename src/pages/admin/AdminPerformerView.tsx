@@ -16,7 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft, Star, MapPin, Save, Loader2, MessageSquare, Send, Trash2, Image, Video, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];

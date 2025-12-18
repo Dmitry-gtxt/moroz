@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { getCustomerPrice, getCommissionRate } from '@/lib/pricing';
 import { format, addDays, isSameDay } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import { ChevronLeft, ChevronRight, Flame, Snowflake } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

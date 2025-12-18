@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RefreshCw, Search, CheckCircle, XCircle, ChevronDown, ChevronUp, Send, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
-import { ru } from "date-fns/locale";
+import { ru } from "date-fns/locale/ru";
 import { toast } from "sonner";
 
 interface SmsLog {

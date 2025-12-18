@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { format, isSameDay, addDays } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import { Loader2, Plus, Trash2, Clock, CalendarCheck, AlertCircle, Pencil, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getPerformerNetAmount, getCommissionRate, formatPrice } from '@/lib/pricing';
