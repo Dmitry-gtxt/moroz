@@ -134,11 +134,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("[2FA] Request payload:", JSON.stringify(payload));
 
+    // Log token format for debugging
+    console.log(`[2FA] Token first 20 chars: ${bearerToken.substring(0, 20)}...`);
+    console.log(`[2FA] Token last 20 chars: ...${bearerToken.substring(bearerToken.length - 20)}`);
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer: ${bearerToken}`,
+        "Authorization": `Bearer ${bearerToken}`,
       },
       body: JSON.stringify(payload),
     });
