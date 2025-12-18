@@ -284,33 +284,25 @@ const Booking = () => {
           );
 
           // Send SMS notification to performer (priority channel)
-          // Try to get phone from profiles first, then fallback to performer_profiles description
-          const { data: performerProfileData } = await supabase
-            .from('profiles')
-            .select('phone')
-            .eq('user_id', performer.user_id)
-            .maybeSingle();
-
-          let performerPhone = performerProfileData?.phone;
-          
-          // Fallback: extract phone from performer description "[Телефон для верификации: XXX]"
-          if (!performerPhone && performer.description) {
-            const phoneMatch = performer.description.match(/\[Телефон для верификации:\s*([^\]]+)\]/);
-            if (phoneMatch) {
-              performerPhone = phoneMatch[1].trim();
-            }
-          }
-
-          if (performerPhone) {
-            smsNewBookingToPerformer({
-              performerPhone: performerPhone,
-              bookingId: booking.id,
-              customerName: formData.customerName,
-              bookingDate: slotDate,
-              bookingTime: slotTime,
+          // Get performer phone from their login email (phone@ded-morozy-rf.ru format)
+          try {
+            const { data: phoneData } = await supabase.functions.invoke('get-performer-phone', {
+              body: { performerId: performer.id },
             });
-          } else {
-            console.warn('No phone found for performer, SMS notification skipped');
+
+            if (phoneData?.phone) {
+              smsNewBookingToPerformer({
+                performerPhone: phoneData.phone,
+                bookingId: booking.id,
+                customerName: formData.customerName,
+                bookingDate: slotDate,
+                bookingTime: slotTime,
+              });
+            } else {
+              console.warn('No phone found for performer, SMS notification skipped');
+            }
+          } catch (smsError) {
+            console.error('Failed to get performer phone for SMS:', smsError);
           }
         }
 
