@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Headphones, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { sendPushNotification } from '@/lib/pushNotifications';
 
 interface Message {
   id: string;
@@ -178,6 +179,24 @@ export function UserSupportDialog({ trigger }: UserSupportDialogProps) {
       });
 
       if (error) throw error;
+
+      // Send push notification to all admins
+      const { data: adminRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin');
+
+      if (adminRoles) {
+        for (const admin of adminRoles) {
+          sendPushNotification({
+            userId: admin.user_id,
+            title: 'Новое сообщение в поддержку',
+            body: messageText.length > 100 ? messageText.slice(0, 100) + '...' : messageText,
+            url: '/admin/messages',
+            tag: `support-${chatId}`,
+          }).catch(console.error);
+        }
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Ошибка отправки сообщения');
