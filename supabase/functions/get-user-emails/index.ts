@@ -78,8 +78,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Fetching emails for user IDs:", userIds.length);
 
-    // Fetch emails for each user
+    // Fetch emails and phones for each user
     const emails: Record<string, string> = {};
+    const phones: Record<string, string> = {};
     
     for (const userId of userIds) {
       try {
@@ -87,14 +88,18 @@ const handler = async (req: Request): Promise<Response> => {
         if (authUser?.user?.email) {
           emails[userId] = authUser.user.email;
         }
+        if (authUser?.user?.phone) {
+          phones[userId] = authUser.user.phone;
+        }
       } catch (err) {
-        console.error(`Failed to get email for user ${userId}:`, err);
+        console.error(`Failed to get data for user ${userId}:`, err);
       }
     }
 
     console.log("Retrieved emails for", Object.keys(emails).length, "users");
+    console.log("Retrieved phones for", Object.keys(phones).length, "users");
 
-    return new Response(JSON.stringify({ emails }), {
+    return new Response(JSON.stringify({ emails, phones }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
