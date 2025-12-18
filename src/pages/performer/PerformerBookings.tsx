@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Loader2, Check, X, MapPin, Phone, User, Calendar, Lock, Mail, CreditCard, Clock, MessageSquare, HeadphonesIcon } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
+import { trackConfirmation } from '@/lib/analytics';
 
 // Use secure_bookings view type with new fields
 type SecureBooking = Database['public']['Views']['secure_bookings']['Row'];
@@ -134,6 +135,14 @@ export default function PerformerBookings() {
           .from('availability_slots')
           .update({ status: 'booked' })
           .eq('id', booking.slot_id);
+      }
+
+      // Track confirmation event for analytics when booking is confirmed
+      if (newStatus === 'confirmed') {
+        trackConfirmation({
+          booking_id: bookingId,
+          performer_id: performerId!,
+        });
       }
 
       // Send customer notification when booking is confirmed
@@ -384,6 +393,12 @@ export default function PerformerBookings() {
       performerName: performerName,
       bookingDate: format(new Date(booking.booking_date!), 'd MMMM', { locale: ru }),
       bookingTime: booking.booking_time!,
+    });
+
+    // Track confirmation event for analytics
+    trackConfirmation({
+      booking_id: booking.id!,
+      performer_id: performerId!,
     });
 
     toast.success('Заказ подтверждён! Клиенту отправлено уведомление об оплате.');

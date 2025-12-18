@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Snowflake, Mail, Lock, User, Phone, ArrowLeft, Sparkles, Star, Eye, EyeOff, MessageSquare } from 'lucide-react';
 import { autoSubscribeToPush } from '@/lib/pushNotifications';
 import { getReferralCode, clearReferralCode } from '@/lib/referral';
+import { trackRegistration } from '@/lib/analytics';
 
 type AuthMode = 'login' | 'register' | 'forgot-password';
 type RegisterStep = 'form' | 'sms-verification' | 'password-shown';
@@ -287,6 +288,9 @@ const Auth = () => {
           console.log('Auto push subscription skipped:', err)
         );
       }
+      
+      // Track registration event for analytics
+      trackRegistration(data.user?.id);
       
       toast.success('Регистрация успешна! Добро пожаловать!');
     } catch (error: any) {
