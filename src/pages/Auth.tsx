@@ -147,6 +147,7 @@ const Auth = () => {
           phone: formattedPhone,
           template_id: templateId,
           code_digits: 6,
+          check_unique: true, // Проверка уникальности номера при регистрации
         },
       });
 
@@ -157,7 +158,13 @@ const Auth = () => {
         setResendTimer(120);
         return true;
       } else if (data?.error) {
-        throw new Error(data.error);
+        // Специальная обработка ошибки "номер уже зарегистрирован"
+        if (data?.code === 'PHONE_EXISTS') {
+          toast.error('Этот номер уже зарегистрирован. Войдите в систему или используйте другой номер.');
+        } else {
+          throw new Error(data.error);
+        }
+        return false;
       }
       
       return false;

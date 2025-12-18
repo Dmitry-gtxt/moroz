@@ -12,6 +12,8 @@ interface TwoFaRequest {
   code_digits?: number;
   code_lifetime?: number;
   code_max_tries?: number;
+  check_unique?: boolean; // If true, check that phone is not already registered
+  current_user_id?: string; // Exclude this user from uniqueness check (for profile updates)
 }
 
 
@@ -99,7 +101,9 @@ const handler = async (req: Request): Promise<Response> => {
       template_id, 
       code_digits = 6, 
       code_lifetime = 120, 
-      code_max_tries = 3 
+      code_max_tries = 3,
+      check_unique = false,
+      current_user_id,
     }: TwoFaRequest = await req.json();
 
     if (!phone || !template_id) {
@@ -115,6 +119,57 @@ const handler = async (req: Request): Promise<Response> => {
     // Remove leading 8 for Russian numbers, keep country code
     if (formattedPhone.startsWith("8") && formattedPhone.length === 11) {
       formattedPhone = "7" + formattedPhone.substring(1);
+    }
+
+    // Check phone uniqueness if requested
+    if (check_unique) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+      // Get all users from auth.users
+      const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers({
+        perPage: 1000,
+      });
+
+      if (usersError) {
+        console.error("[2FA] Error fetching users for uniqueness check:", usersError);
+        return new Response(
+          JSON.stringify({ success: false, error: "Ошибка проверки номера" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if phone already exists (in user_metadata.phone or auth phone field)
+      const phoneExists = users.some(user => {
+        // Skip current user if provided
+        if (current_user_id && user.id === current_user_id) {
+          return false;
+        }
+        
+        const userPhone = user.phone || user.user_metadata?.phone || "";
+        // Normalize for comparison
+        let normalizedUserPhone = userPhone.replace(/\D/g, "");
+        if (normalizedUserPhone.startsWith("8") && normalizedUserPhone.length === 11) {
+          normalizedUserPhone = "7" + normalizedUserPhone.substring(1);
+        }
+        
+        return normalizedUserPhone === formattedPhone;
+      });
+
+      if (phoneExists) {
+        console.log(`[2FA] Phone ${formattedPhone} already registered`);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "Этот номер телефона уже зарегистрирован в системе",
+            code: "PHONE_EXISTS"
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(`[2FA] Phone ${formattedPhone} is unique, proceeding with OTP`);
     }
 
     console.log(`[2FA] Sending OTP to ${formattedPhone}, template: ${template_id}`);

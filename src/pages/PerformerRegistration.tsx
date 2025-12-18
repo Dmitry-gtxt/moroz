@@ -224,11 +224,19 @@ export default function PerformerRegistration() {
           code_digits: 6,
           code_lifetime: 120,
           code_max_tries: 3,
+          check_unique: true, // Проверка уникальности номера при подаче заявки
         },
       });
       
       if (error) throw error;
-      if (data.error) throw new Error(data.error);
+      if (data.error) {
+        // Специальная обработка ошибки "номер уже зарегистрирован"
+        if (data?.code === 'PHONE_EXISTS') {
+          toast.error('Этот номер телефона уже зарегистрирован в системе. Используйте другой номер.');
+          return false;
+        }
+        throw new Error(data.error);
+      }
       
       setAuthId(data.auth_id);
       setResendTimer(120);
