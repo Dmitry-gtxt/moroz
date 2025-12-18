@@ -5,7 +5,7 @@ import { Calendar, Clock, MapPin, Search, Sparkles, Star, CalendarIcon } from 'l
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import { districtGroups } from '@/data/mockData';
 import heroImage from '@/assets/magical-winter-hero.jpg';
 

@@ -17,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Check, X, MessageCircle, Mail, Phone, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import { SupportChatDialog } from '@/components/admin/SupportChatDialog';
 import type { Database } from '@/integrations/supabase/types';
 import { Link } from 'react-router-dom';

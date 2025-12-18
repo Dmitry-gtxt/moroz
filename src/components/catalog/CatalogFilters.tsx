@@ -6,7 +6,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar, MapPin, Star, Video, Trash2, Check, CalendarIcon } from 'lucide-react';
 import { format, parse } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import type { Database } from '@/integrations/supabase/types';
 import { districtGroups } from '@/data/mockData';
 

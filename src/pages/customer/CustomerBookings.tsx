@@ -20,7 +20,7 @@ import {
 import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment } from '@/lib/pricing';
 import { scheduleBookingReminders } from '@/lib/pushNotifications';
 import { format, parseISO, differenceInMinutes } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import type { Database } from '@/integrations/supabase/types';
 import { trackPayment } from '@/lib/analytics';
 

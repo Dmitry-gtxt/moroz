@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { smsSlotProposalToCustomer } from '@/lib/smsNotifications';
 import { toast } from 'sonner';
 import { format, isSameDay } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import { Trash2, Loader2, Clock, Check, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getPerformerNetAmount, getCommissionRate, formatPrice } from '@/lib/pricing';

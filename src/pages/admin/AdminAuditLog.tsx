@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import { toast } from 'sonner';
 import { Loader2, Search, Eye, Download, RefreshCw, Shield } from 'lucide-react';
 

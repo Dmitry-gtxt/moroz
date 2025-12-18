@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, parseISO } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import { Calendar, Clock, Coins, Loader2 } from 'lucide-react';
 import { getCommissionRate, getPerformerNetAmount, formatPrice } from '@/lib/pricing';
 import { Badge } from '@/components/ui/badge';

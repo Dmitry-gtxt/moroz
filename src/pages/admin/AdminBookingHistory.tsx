@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, Search, ChevronDown, ChevronRight, Phone, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import type { Database } from '@/integrations/supabase/types';
 
 type Booking = Database['public']['Tables']['bookings']['Row'];

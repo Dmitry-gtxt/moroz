@@ -14,7 +14,7 @@ import {
   ChevronLeft, ChevronRight, Calendar, Play, MessageCircle, Loader2, X
 } from 'lucide-react';
 import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isBefore, parseISO } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfileType = Database['public']['Tables']['performer_profiles']['Row'];

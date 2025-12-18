@@ -13,7 +13,7 @@ import {
   ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend 
 } from 'recharts';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 
 const COLORS = ['#eab308', '#8b5cf6', '#06b6d4', '#ef4444', '#22c55e', '#f97316'];
 

@@ -9,7 +9,7 @@ import { SEOHead } from '@/components/seo/SEOHead';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import { 
   MessageCircle, 
   Send, 

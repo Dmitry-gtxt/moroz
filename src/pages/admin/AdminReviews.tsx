@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Eye, EyeOff, Star, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru } from 'date-fns/locale/ru';
 import type { Database } from '@/integrations/supabase/types';
 
 type Review = Database['public']['Tables']['reviews']['Row'];
