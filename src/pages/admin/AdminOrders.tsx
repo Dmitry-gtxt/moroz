@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { notifyPaymentReceived, notifyBookingCancelled } from '@/lib/pushNotifications';
 import { smsBookingCancelledToCustomer } from '@/lib/smsNotifications';
+import { trackConfirmation, trackBooking } from '@/lib/analytics';
 import type { Database } from '@/integrations/supabase/types';
 
 type Booking = Database['public']['Tables']['bookings']['Row'];
@@ -110,6 +111,14 @@ export default function AdminOrders() {
       toast.error('Ошибка обновления статуса');
     } else {
       toast.success('Статус заказа обновлён');
+      
+      // Track confirmation event for analytics (even when admin confirms)
+      if (booking && newStatus === 'confirmed') {
+        trackConfirmation({
+          booking_id: booking.id,
+          performer_id: booking.performer_id,
+        });
+      }
       
       // Send notifications when admin cancels booking
       if (booking && newStatus === 'cancelled') {
