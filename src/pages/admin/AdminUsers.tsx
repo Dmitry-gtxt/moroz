@@ -18,7 +18,25 @@ interface UserData {
   full_name: string;
   created_at: string;
   last_sign_in_at: string | null;
+  roles: string[];
 }
+
+const getRoleLabel = (role: string) => {
+  switch (role) {
+    case 'admin': return 'Админ';
+    case 'performer': return 'Исполнитель';
+    case 'customer': return 'Клиент';
+    default: return role;
+  }
+};
+
+const getRoleBadgeClass = (role: string) => {
+  switch (role) {
+    case 'admin': return 'bg-primary/20 text-primary';
+    case 'performer': return 'bg-accent/20 text-accent';
+    default: return 'bg-muted text-muted-foreground';
+  }
+};
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<UserData[]>([]);
@@ -186,6 +204,7 @@ export default function AdminUsers() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Имя</TableHead>
+                      <TableHead>Роль</TableHead>
                       <TableHead>Телефон</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Дата регистрации</TableHead>
@@ -196,6 +215,18 @@ export default function AdminUsers() {
                     {filteredUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.full_name}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {user.roles.map((role) => (
+                              <span
+                                key={role}
+                                className={`px-2 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeClass(role)}`}
+                              >
+                                {getRoleLabel(role)}
+                              </span>
+                            ))}
+                          </div>
+                        </TableCell>
                         <TableCell>{user.phone || '—'}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{user.email || '—'}</TableCell>
                         <TableCell>
