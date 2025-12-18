@@ -376,6 +376,16 @@ export default function PerformerBookings() {
       booking.booking_time!
     );
 
+    // Send SMS notification to customer (priority channel) - Template 83
+    smsBookingConfirmedToCustomer({
+      customerPhone: booking.customer_phone || undefined,
+      customerId: booking.customer_id || undefined,
+      bookingId: booking.id!,
+      performerName: performerName,
+      bookingDate: format(new Date(booking.booking_date!), 'd MMMM', { locale: ru }),
+      bookingTime: booking.booking_time!,
+    });
+
     toast.success('Заказ подтверждён! Клиенту отправлено уведомление об оплате.');
     setBookings(bookings.map(b => b.id === booking.id ? { ...b, status: 'confirmed', payment_deadline: paymentDeadline.toISOString() } : b));
   };
