@@ -206,7 +206,7 @@ const handler = async (req: Request): Promise<Response> => {
     const payload = {
       channel: "sms",
       recipient: formattedPhone,
-      sender: "ded-morozy",
+      sender: "Ded-Morozy",
       template_id: templateId,
       // These are required by 2FA API but we won't use the code
       code_digits: 6,
