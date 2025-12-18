@@ -22,6 +22,7 @@ interface SmsNotificationRequest {
   type: keyof typeof SMS_TEMPLATES;
   phone?: string;
   userId?: string; // If phone is empty, lookup phone by userId from auth.users
+  isAuthUserId?: boolean; // If true, userId is auth user_id directly (skip performer_profiles lookup)
   // Optional metadata for logging
   bookingId?: string;
   performerName?: string;
@@ -105,7 +106,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const requestBody: SmsNotificationRequest = await req.json();
-    const { type, phone, userId, bookingId, performerName, customerName, bookingDate, bookingTime } = requestBody;
+    const { type, phone, userId, isAuthUserId, bookingId, performerName, customerName, bookingDate, bookingTime } = requestBody;
 
     if (!type) {
       return new Response(
@@ -118,7 +119,7 @@ const handler = async (req: Request): Promise<Response> => {
     let recipientPhone = phone || "";
     
     if (!recipientPhone && userId) {
-      console.log(`[SMS-NOTIFY] Phone not provided, looking up by userId: ${userId}`);
+      console.log(`[SMS-NOTIFY] Phone not provided, looking up by userId: ${userId}, isAuthUserId: ${isAuthUserId}`);
       
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -127,8 +128,8 @@ const handler = async (req: Request): Promise<Response> => {
       let authUserId = userId;
       
       // Check if this is a performer_profile.id (for performer notifications)
-      // If type is for performer, we need to lookup the auth user_id from performer_profiles
-      if (type === 'new_booking_to_performer') {
+      // If type is for performer AND isAuthUserId is not true, we need to lookup the auth user_id from performer_profiles
+      if (type === 'new_booking_to_performer' && !isAuthUserId) {
         console.log(`[SMS-NOTIFY] Looking up performer auth user_id for performer_profile.id: ${userId}`);
         const { data: performerData, error: performerError } = await supabase
           .from('performer_profiles')

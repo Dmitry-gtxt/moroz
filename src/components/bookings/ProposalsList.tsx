@@ -5,6 +5,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { sendPushNotification } from '@/lib/pushNotifications';
+import { smsProposalAcceptedToPerformer } from '@/lib/smsNotifications';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -136,7 +137,7 @@ export function ProposalsList({
         .eq('booking_id', bookingId)
         .neq('id', selectedProposal);
 
-      // Notify performer
+      // Notify performer via push
       if (performerUserId) {
         sendPushNotification({
           userId: performerUserId,
@@ -144,6 +145,15 @@ export function ProposalsList({
           body: `${customerName} принял(а) ваше предложение на ${format(parseISO(proposal.proposed_date), 'd MMMM', { locale: ru })}. Подтвердите бронирование.`,
           url: '/performer/bookings',
           tag: `proposal-accepted-${bookingId}`,
+        });
+
+        // Send SMS notification to performer (priority channel) - Template 80
+        smsProposalAcceptedToPerformer({
+          performerUserId,
+          bookingId,
+          customerName,
+          bookingDate: format(parseISO(proposal.proposed_date), 'd MMMM', { locale: ru }),
+          bookingTime: proposal.proposed_time,
         });
       }
 

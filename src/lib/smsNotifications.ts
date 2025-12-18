@@ -10,6 +10,7 @@ interface SmsNotificationParams {
   type: SmsNotificationType;
   phone?: string;
   userId?: string; // Fallback: if phone is empty, lookup by userId
+  isAuthUserId?: boolean; // If true, userId is auth user_id directly (skip performer_profiles lookup)
   bookingId?: string;
   performerName?: string;
   customerName?: string;
@@ -63,6 +64,31 @@ export async function smsNewBookingToPerformer(params: {
     type: 'new_booking_to_performer',
     phone: params.performerPhone,
     userId: params.performerId,
+    bookingId: params.bookingId,
+    customerName: params.customerName,
+    bookingDate: params.bookingDate,
+    bookingTime: params.bookingTime,
+  });
+}
+
+/**
+ * Send SMS to performer when customer accepts proposed slot
+ * Template 80 (same as new booking - requires performer action)
+ * Note: performerUserId is auth user_id, not performer_profile.id
+ */
+export async function smsProposalAcceptedToPerformer(params: {
+  performerPhone?: string;
+  performerUserId?: string; // Auth user_id (not performer_profile.id)
+  bookingId: string;
+  customerName: string;
+  bookingDate: string;
+  bookingTime: string;
+}): Promise<boolean> {
+  return sendSmsNotification({
+    type: 'new_booking_to_performer', // Same template 80
+    phone: params.performerPhone,
+    userId: params.performerUserId,
+    isAuthUserId: true, // Skip performer_profiles lookup
     bookingId: params.bookingId,
     customerName: params.customerName,
     bookingDate: params.bookingDate,
