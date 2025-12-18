@@ -321,6 +321,27 @@ export default function PerformerDashboard() {
           </div>
         </div>
 
+        {/* Calendar reminder */}
+        <div className="bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-xl p-6 text-center">
+          <p className="text-foreground font-medium text-lg mb-4">
+            Не забудьте проставить дни и время когда вы готовы выезжать на праздник в календаре
+          </p>
+          
+          <Button asChild size="lg" className="gap-2">
+            <Link to="/performer/calendar">
+              <Calendar className="h-5 w-5" />
+              Открыть календарь
+            </Link>
+          </Button>
+          
+          <div className="mt-4 text-sm text-muted-foreground text-left max-w-xl mx-auto space-y-1">
+            <p>• Каждый выезд считается как час времени, учитывайте это.</p>
+            <p>• На разные дни/время — можно поставить разную цену.</p>
+            <p>• После выбора времени заказчиком — вам надо будет подтвердить время.</p>
+            <p>• Если несколько заказчиков выбрали одно время — предложите им другое время из свободного у вас.</p>
+          </div>
+        </div>
+
         {/* Quick actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           <Link
