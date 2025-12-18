@@ -212,13 +212,10 @@ const Auth = () => {
       // Generate email from phone if not provided
       const emailToUse = formData.email.trim() || `${formatPhoneForApi(formData.phone)}@ded-morozy-rf.ru`;
       
-      // Add prefix "S" to make password pass Supabase validation (requires letter)
-      const passwordToUse = `S${smsCode}`;
-      
-      // Use the SMS code as password with prefix
+      // Use the SMS code directly as password (Supabase only requires 6+ chars)
       const { data, error } = await supabase.auth.signUp({
         email: emailToUse,
-        password: passwordToUse,
+        password: smsCode,
         options: {
           emailRedirectTo: `${window.location.origin}${redirectTo}`,
           data: {
@@ -282,11 +279,12 @@ const Auth = () => {
       
       toast.success('Регистрация успешна! Добро пожаловать!');
     } catch (error: any) {
-      let message = 'Произошла ошибка';
-      if (error.message.includes('User already registered')) {
-        message = 'Пользователь с таким email уже зарегистрирован';
-      } else if (error.message.includes('Password')) {
-        message = 'Ошибка создания пароля';
+      console.error('Registration error:', error);
+      let message = error.message || 'Произошла ошибка';
+      if (error.message?.includes('User already registered')) {
+        message = 'Пользователь с таким email/телефоном уже зарегистрирован';
+      } else if (error.message?.includes('Password')) {
+        message = 'Ошибка пароля: ' + error.message;
       }
       toast.error(message);
     } finally {
@@ -301,20 +299,17 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      // Add prefix "S" to make password pass Supabase validation
-      const passwordToUse = `S${smsCode}`;
-      
       const { data, error } = await supabase.functions.invoke('reset-password-by-phone', {
         body: {
           phone: formatPhoneForApi(recoveryPhone),
-          new_password: passwordToUse, // Use SMS code with prefix as new password
+          new_password: smsCode, // Use SMS code directly as password
         },
       });
 
       if (error) throw error;
       
       if (data?.success) {
-        toast.success('Пароль изменён! Ваш новый пароль: S + код из SMS. Например: S123456');
+        toast.success('Пароль изменён на код из SMS. Теперь вы можете войти.');
         setMode('login');
         // Pre-fill email if we have it
         if (data.email) {
@@ -457,9 +452,9 @@ const Auth = () => {
               <p className="text-snow-400 mt-2">
                 {mode === 'login' && 'Войдите, чтобы забронировать Деда Мороза'}
                 {mode === 'register' && registerStep === 'form' && 'Создайте аккаунт для бронирования'}
-                {mode === 'register' && registerStep === 'sms-verification' && `Ваш пароль: S + код из SMS`}
+                {mode === 'register' && registerStep === 'sms-verification' && `Введите код из SMS — это ваш пароль`}
                 {mode === 'forgot-password' && forgotStep === 'phone' && 'Введите телефон, указанный при регистрации'}
-                {mode === 'forgot-password' && forgotStep === 'sms-verification' && `Ваш новый пароль: S + код из SMS`}
+                {mode === 'forgot-password' && forgotStep === 'sms-verification' && `Введите код из SMS — это ваш новый пароль`}
               </p>
             </div>
 
@@ -520,7 +515,7 @@ const Auth = () => {
                     <div className="flex items-start gap-3">
                       <MessageSquare className="h-5 w-5 text-magic-purple mt-0.5 flex-shrink-0" />
                       <p className="text-sm text-snow-300">
-                        Пароль придёт в SMS на указанный телефон. Ваш пароль: <span className="font-mono font-bold text-magic-gold">S + код из SMS</span>. Например, если код 123456, то пароль: S123456. Его можно изменить в настройках профиля.
+                        Пароль придёт в SMS на указанный телефон. Код из SMS — это ваш пароль для входа. Его можно изменить в настройках профиля.
                       </p>
                     </div>
                   </div>
