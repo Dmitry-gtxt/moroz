@@ -48,8 +48,6 @@ const Auth = () => {
   // Password validation
   const passwordRequirements = [
     { label: 'Минимум 6 символов', check: (p: string) => p.length >= 6 },
-    { label: 'Хотя бы одна цифра', check: (p: string) => /\d/.test(p) },
-    { label: 'Хотя бы одна буква', check: (p: string) => /[a-zA-Zа-яА-ЯёЁ]/.test(p) },
   ];
 
   useEffect(() => {
