@@ -94,6 +94,29 @@ export async function smsBookingRejectedToCustomer(params: {
 }
 
 /**
+ * Send SMS to customer when performer cancels booking
+ * Template 81 (same as rejection - performer said no)
+ */
+export async function smsBookingCancelledToCustomer(params: {
+  customerPhone?: string;
+  customerId?: string; // Fallback if phone not available
+  bookingId: string;
+  performerName: string;
+  bookingDate: string;
+  bookingTime: string;
+}): Promise<boolean> {
+  return sendSmsNotification({
+    type: 'booking_rejected_to_customer', // Same template 81
+    phone: params.customerPhone,
+    userId: params.customerId,
+    bookingId: params.bookingId,
+    performerName: params.performerName,
+    bookingDate: params.bookingDate,
+    bookingTime: params.bookingTime,
+  });
+}
+
+/**
  * Send SMS to customer when performer proposes alternative slots
  * Template 82
  */
