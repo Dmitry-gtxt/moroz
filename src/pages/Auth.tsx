@@ -14,6 +14,7 @@ import { getReferralCode, clearReferralCode } from '@/lib/referral';
 
 type AuthMode = 'login' | 'register' | 'forgot-password';
 type RegisterStep = 'form' | 'sms-verification';
+type ForgotStep = 'phone' | 'sms-verification' | 'new-password';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -35,12 +36,19 @@ const Auth = () => {
 
   // SMS verification state
   const [registerStep, setRegisterStep] = useState<RegisterStep>('form');
+  const [forgotStep, setForgotStep] = useState<ForgotStep>('phone');
   const [smsCode, setSmsCode] = useState('');
   const [authId, setAuthId] = useState<string | null>(null);
   const [resendTimer, setResendTimer] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // New password for recovery
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [recoveryPhone, setRecoveryPhone] = useState('');
+  const [recoveryEmail, setRecoveryEmail] = useState('');
 
-  // Password validation for login
+  // Password validation
   const passwordRequirements = [
     { label: 'Минимум 6 символов', check: (p: string) => p.length >= 6 },
     { label: 'Хотя бы одна цифра', check: (p: string) => /\d/.test(p) },
@@ -49,12 +57,19 @@ const Auth = () => {
 
   useEffect(() => {
     setModeState(modeFromUrl);
-    // Reset registration step when mode changes
+    // Reset steps when mode changes
     if (modeFromUrl !== 'register') {
       setRegisterStep('form');
-      setSmsCode('');
-      setAuthId(null);
     }
+    if (modeFromUrl !== 'forgot-password') {
+      setForgotStep('phone');
+      setNewPassword('');
+      setConfirmPassword('');
+      setRecoveryPhone('');
+      setRecoveryEmail('');
+    }
+    setSmsCode('');
+    setAuthId(null);
   }, [modeFromUrl]);
 
   // Timer effect
@@ -75,10 +90,15 @@ const Auth = () => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set('mode', newMode);
     setSearchParams(newParams, { replace: true });
-    // Reset registration step when changing mode
+    // Reset steps
     setRegisterStep('form');
+    setForgotStep('phone');
     setSmsCode('');
     setAuthId(null);
+    setNewPassword('');
+    setConfirmPassword('');
+    setRecoveryPhone('');
+    setRecoveryEmail('');
   };
 
   useEffect(() => {
@@ -117,9 +137,9 @@ const Auth = () => {
     return digits;
   };
 
-  // Send 2FA code for registration
-  const sendRegistrationSms = async () => {
-    const formattedPhone = formatPhoneForApi(formData.phone);
+  // Send 2FA code
+  const send2FaCode = async (phone: string, templateId: number) => {
+    const formattedPhone = formatPhoneForApi(phone);
     
     if (formattedPhone.length < 10) {
       toast.error('Введите корректный номер телефона');
@@ -131,7 +151,7 @@ const Auth = () => {
       const { data, error } = await supabase.functions.invoke('send-2fa-code', {
         body: {
           phone: formattedPhone,
-          template_id: 78, // Registration template
+          template_id: templateId,
         },
       });
 
@@ -275,6 +295,55 @@ const Auth = () => {
     }
   };
 
+  // Find user by phone and update password
+  const completePasswordRecovery = async () => {
+    if (newPassword !== confirmPassword) {
+      toast.error('Пароли не совпадают');
+      return;
+    }
+    
+    const allReqsMet = passwordRequirements.every(req => req.check(newPassword));
+    if (!allReqsMet) {
+      toast.error('Пароль не соответствует требованиям');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // First, we need to find the user by phone and sign them in with admin API
+      // Since we can't directly update password without being signed in,
+      // we'll use the email we found and sign in with the new password flow
+      
+      // For now, we need to use a workaround - sign in with email magic link
+      // or use the admin API via edge function
+      
+      const { data, error } = await supabase.functions.invoke('reset-password-by-phone', {
+        body: {
+          phone: formatPhoneForApi(recoveryPhone),
+          new_password: newPassword,
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success('Пароль успешно изменён! Теперь вы можете войти.');
+        setMode('login');
+        // Pre-fill email if we have it
+        if (data.email) {
+          setFormData(prev => ({ ...prev, email: data.email }));
+        }
+      } else if (data?.error) {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      toast.error(error.message || 'Ошибка смены пароля');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -302,7 +371,7 @@ const Auth = () => {
           }
           
           // Send SMS
-          const sent = await sendRegistrationSms();
+          const sent = await send2FaCode(formData.phone, 78); // Registration template
           if (sent) {
             setRegisterStep('sms-verification');
             toast.success('SMS с паролем отправлено на ваш телефон');
@@ -312,12 +381,28 @@ const Auth = () => {
           await completeRegistration();
         }
       } else if (mode === 'forgot-password') {
-        const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-          redirectTo: `${window.location.origin}/auth?mode=reset`,
-        });
-        if (error) throw error;
-        toast.success('Письмо для сброса пароля отправлено на вашу почту');
-        setMode('login');
+        if (forgotStep === 'phone') {
+          if (!recoveryPhone) {
+            toast.error('Введите номер телефона');
+            setLoading(false);
+            return;
+          }
+          
+          // Send SMS with recovery template
+          const sent = await send2FaCode(recoveryPhone, 79); // Password recovery template
+          if (sent) {
+            setForgotStep('sms-verification');
+            toast.success('SMS с кодом отправлено на ваш телефон');
+          }
+        } else if (forgotStep === 'sms-verification') {
+          const verified = await verifySmsCode();
+          if (verified) {
+            setForgotStep('new-password');
+            toast.success('Код подтверждён! Введите новый пароль');
+          }
+        } else if (forgotStep === 'new-password') {
+          await completePasswordRecovery();
+        }
       }
     } catch (error: any) {
       let message = 'Произошла ошибка';
@@ -338,7 +423,11 @@ const Auth = () => {
 
   const handleResendSms = async () => {
     if (resendTimer > 0) return;
-    const sent = await sendRegistrationSms();
+    
+    const phone = mode === 'register' ? formData.phone : recoveryPhone;
+    const templateId = mode === 'register' ? 78 : 79;
+    
+    const sent = await send2FaCode(phone, templateId);
     if (sent) {
       toast.success('SMS отправлено повторно');
     }
@@ -380,17 +469,22 @@ const Auth = () => {
                 {mode === 'login' && 'Вход в аккаунт'}
                 {mode === 'register' && registerStep === 'form' && 'Регистрация'}
                 {mode === 'register' && registerStep === 'sms-verification' && 'Подтверждение'}
-                {mode === 'forgot-password' && 'Восстановление пароля'}
+                {mode === 'forgot-password' && forgotStep === 'phone' && 'Восстановление пароля'}
+                {mode === 'forgot-password' && forgotStep === 'sms-verification' && 'Подтверждение'}
+                {mode === 'forgot-password' && forgotStep === 'new-password' && 'Новый пароль'}
               </h1>
               <p className="text-snow-400 mt-2">
                 {mode === 'login' && 'Войдите, чтобы забронировать Деда Мороза'}
                 {mode === 'register' && registerStep === 'form' && 'Создайте аккаунт для бронирования'}
                 {mode === 'register' && registerStep === 'sms-verification' && `Введите код из SMS, отправленного на ${formData.phone}`}
-                {mode === 'forgot-password' && 'Введите email для сброса пароля'}
+                {mode === 'forgot-password' && forgotStep === 'phone' && 'Введите телефон, указанный при регистрации'}
+                {mode === 'forgot-password' && forgotStep === 'sms-verification' && `Введите код из SMS, отправленного на ${recoveryPhone}`}
+                {mode === 'forgot-password' && forgotStep === 'new-password' && 'Придумайте новый пароль'}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* REGISTRATION - Form step */}
               {mode === 'register' && registerStep === 'form' && (
                 <>
                   <div>
@@ -454,6 +548,7 @@ const Auth = () => {
                 </>
               )}
 
+              {/* REGISTRATION - SMS verification step */}
               {mode === 'register' && registerStep === 'sms-verification' && (
                 <>
                   <div>
@@ -505,6 +600,7 @@ const Auth = () => {
                 </>
               )}
 
+              {/* LOGIN */}
               {mode === 'login' && (
                 <>
                   <div>
@@ -561,18 +657,18 @@ const Auth = () => {
                 </>
               )}
 
-              {mode === 'forgot-password' && (
+              {/* FORGOT PASSWORD - Phone step */}
+              {mode === 'forgot-password' && forgotStep === 'phone' && (
                 <div>
-                  <Label htmlFor="email" className="text-snow-200">Email</Label>
+                  <Label htmlFor="recoveryPhone" className="text-snow-200">Номер телефона</Label>
                   <div className="relative mt-1">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
                     <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="example@mail.com"
+                      id="recoveryPhone"
+                      type="tel"
+                      value={recoveryPhone}
+                      onChange={(e) => setRecoveryPhone(e.target.value)}
+                      placeholder="+7 (995) 382-97-36"
                       className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
                       required
                     />
@@ -580,6 +676,118 @@ const Auth = () => {
                 </div>
               )}
 
+              {/* FORGOT PASSWORD - SMS verification step */}
+              {mode === 'forgot-password' && forgotStep === 'sms-verification' && (
+                <>
+                  <div>
+                    <Label htmlFor="smsCodeRecovery" className="text-snow-200">Код из SMS</Label>
+                    <div className="relative mt-1">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
+                      <Input
+                        id="smsCodeRecovery"
+                        type="text"
+                        value={smsCode}
+                        onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="000000"
+                        className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50 text-center text-2xl tracking-widest font-mono"
+                        maxLength={6}
+                        autoFocus
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleResendSms}
+                    disabled={resendTimer > 0 || loading}
+                    className={`w-full text-sm py-2 rounded-lg transition-colors ${
+                      resendTimer > 0 
+                        ? 'text-snow-500 bg-winter-900/30 cursor-not-allowed' 
+                        : 'text-magic-gold hover:bg-magic-gold/10'
+                    }`}
+                  >
+                    {resendTimer > 0 
+                      ? `Повторно отправить SMS (${resendTimer} сек)` 
+                      : 'Повторно отправить мне SMS'
+                    }
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotStep('phone');
+                      setSmsCode('');
+                      setAuthId(null);
+                    }}
+                    className="w-full text-sm text-snow-400 hover:text-snow-200 flex items-center justify-center gap-1"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Изменить номер
+                  </button>
+                </>
+              )}
+
+              {/* FORGOT PASSWORD - New password step */}
+              {mode === 'forgot-password' && forgotStep === 'new-password' && (
+                <>
+                  <div>
+                    <Label htmlFor="newPassword" className="text-snow-200">Новый пароль</Label>
+                    <div className="relative mt-1">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
+                      <Input
+                        id="newPassword"
+                        type={showPassword ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="pl-10 pr-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-snow-500 hover:text-snow-300 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      {passwordRequirements.map((req, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs">
+                          <span className={`w-1.5 h-1.5 rounded-full transition-colors ${req.check(newPassword) ? 'bg-green-500' : 'bg-red-500'}`} />
+                          <span className={`transition-colors ${req.check(newPassword) ? 'text-green-400' : 'text-snow-500'}`}>
+                            {req.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="confirmPassword" className="text-snow-200">Подтвердите пароль</Label>
+                    <div className="relative mt-1">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
+                      <Input
+                        id="confirmPassword"
+                        type={showPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                    {confirmPassword && newPassword !== confirmPassword && (
+                      <p className="text-xs text-red-400 mt-1">Пароли не совпадают</p>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Terms checkboxes for registration */}
               {mode === 'register' && registerStep === 'form' && (
                 <div className="space-y-3 pt-2">
                   <div className="flex items-start space-x-2">
@@ -622,12 +830,15 @@ const Auth = () => {
                   mode === 'login' ? 'Войти' : 
                   mode === 'register' && registerStep === 'form' ? 'Получить пароль в SMS' :
                   mode === 'register' && registerStep === 'sms-verification' ? 'Подтвердить и войти' :
-                  'Отправить ссылку'
+                  mode === 'forgot-password' && forgotStep === 'phone' ? 'Получить код в SMS' :
+                  mode === 'forgot-password' && forgotStep === 'sms-verification' ? 'Подтвердить код' :
+                  mode === 'forgot-password' && forgotStep === 'new-password' ? 'Сохранить новый пароль' :
+                  'Продолжить'
                 )}
               </button>
             </form>
 
-            {mode === 'forgot-password' ? (
+            {mode === 'forgot-password' && forgotStep === 'phone' ? (
               <div className="mt-6 text-center">
                 <button
                   type="button"
@@ -638,7 +849,7 @@ const Auth = () => {
                   Вернуться к входу
                 </button>
               </div>
-            ) : (
+            ) : mode !== 'forgot-password' && (
               <div className="mt-6 text-center">
                 <p className="text-sm text-snow-400">
                   {mode === 'login' ? 'Ещё нет аккаунта?' : 'Уже есть аккаунт?'}
