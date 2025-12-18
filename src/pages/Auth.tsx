@@ -29,6 +29,7 @@ const Auth = () => {
     password: '',
     fullName: '',
     phone: '',
+    loginPhone: '', // Phone for login
   });
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
@@ -330,10 +331,8 @@ const Auth = () => {
       if (data?.success) {
         toast.success('Пароль успешно изменён!');
         setMode('login');
-        // Pre-fill email if we have it
-        if (data.email) {
-          setFormData(prev => ({ ...prev, email: data.email }));
-        }
+        // Pre-fill phone for login
+        setFormData(prev => ({ ...prev, loginPhone: recoveryPhone }));
       } else if (data?.error) {
         throw new Error(data.error);
       }
@@ -351,8 +350,10 @@ const Auth = () => {
 
     try {
       if (mode === 'login') {
+        // Convert phone to email format for auth
+        const emailFromPhone = `${formatPhoneForApi(formData.loginPhone)}@ded-morozy-rf.ru`;
         const { error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
+          email: emailFromPhone,
           password: formData.password,
         });
         if (error) throw error;
@@ -367,6 +368,20 @@ const Auth = () => {
           }
           if (!formData.phone) {
             toast.error('Введите номер телефона для получения SMS с паролем');
+            setLoading(false);
+            return;
+          }
+          
+          // Check if phone already registered in profiles
+          const formattedPhone = formatPhoneForApi(formData.phone);
+          const { data: existingProfiles } = await supabase
+            .from('profiles')
+            .select('phone')
+            .or(`phone.eq.${formData.phone},phone.eq.+${formattedPhone},phone.eq.${formattedPhone}`)
+            .limit(1);
+          
+          if (existingProfiles && existingProfiles.length > 0) {
+            toast.error('Пользователь с таким номером телефона уже зарегистрирован');
             setLoading(false);
             return;
           }
@@ -409,13 +424,13 @@ const Auth = () => {
     } catch (error: any) {
       let message = 'Произошла ошибка';
       if (error.message.includes('Invalid login credentials')) {
-        message = 'Неверный email или пароль';
+        message = 'Неверный номер телефона или пароль';
       } else if (error.message.includes('User already registered')) {
-        message = 'Пользователь с таким email уже зарегистрирован';
+        message = 'Пользователь с таким номером уже зарегистрирован';
       } else if (error.message.includes('Password')) {
-        message = 'Пароль должен быть не менее 6 символов';
+        message = 'Пароль должен быть не менее 7 символов';
       } else if (error.message.includes('Email not confirmed')) {
-        message = 'Подтвердите email перед входом';
+        message = 'Аккаунт не подтверждён';
       }
       toast.error(message);
     } finally {
@@ -618,19 +633,20 @@ const Auth = () => {
                 </div>
               )}
 
+              {/* LOGIN */}
               {mode === 'login' && (
                 <>
                   <div>
-                    <Label htmlFor="email" className="text-snow-200">Email</Label>
+                    <Label htmlFor="loginPhone" className="text-snow-200">Номер телефона</Label>
                     <div className="relative mt-1">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
                       <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
+                        id="loginPhone"
+                        name="loginPhone"
+                        type="tel"
+                        value={formData.loginPhone}
                         onChange={handleInputChange}
-                        placeholder="example@mail.com"
+                        placeholder="+7 (995) 382-97-36"
                         className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
                         required
                       />
