@@ -23,29 +23,45 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     // Verify the caller is an admin
     const authHeader = req.headers.get('authorization');
+    console.log("Auth header present:", !!authHeader);
+    
     if (!authHeader) {
       throw new Error("No authorization header");
     }
 
-    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-    const supabaseClient = createClient(
-      SUPABASE_URL!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    // Extract the token from "Bearer <token>"
+    const token = authHeader.replace('Bearer ', '');
+    console.log("Token extracted, length:", token.length);
 
-    // Get current user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
+    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    
+    // Verify user using the token directly
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    
+    if (userError) {
+      console.error("User verification error:", userError.message);
+      throw new Error("Unauthorized");
+    }
+    
+    if (!user) {
+      console.error("No user found from token");
       throw new Error("Unauthorized");
     }
 
-    // Check if user is admin
-    const { data: roles } = await supabaseAdmin
+    console.log("User verified:", user.id);
+
+    // Check if user is admin using service role
+    const { data: roles, error: rolesError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .eq('role', 'admin');
+
+    if (rolesError) {
+      console.error("Roles check error:", rolesError.message);
+    }
+
+    console.log("Admin roles found:", roles?.length || 0);
 
     if (!roles || roles.length === 0) {
       throw new Error("Forbidden: Admin access required");
