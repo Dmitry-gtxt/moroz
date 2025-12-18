@@ -37,16 +37,42 @@ export function PriceCalendarStrip() {
       const [rate] = await Promise.all([getCommissionRate()]);
       setCommissionRate(rate);
 
-      // Fetch all slots in date range
-      const { data: slots } = await supabase
+      // Fetch free slots in date range
+      const { data: freeSlots } = await supabase
         .from('availability_slots')
-        .select('date, price, performer_id')
+        .select('id, date, price, performer_id, status')
         .gte('date', format(startDate, 'yyyy-MM-dd'))
         .lte('date', format(endDate, 'yyyy-MM-dd'))
         .eq('status', 'free');
 
+      // Fetch booked slots that have unconfirmed bookings (pending or counter_proposed)
+      const { data: bookedSlots } = await supabase
+        .from('availability_slots')
+        .select('id, date, price, performer_id, status')
+        .gte('date', format(startDate, 'yyyy-MM-dd'))
+        .lte('date', format(endDate, 'yyyy-MM-dd'))
+        .eq('status', 'booked');
+
+      // Get bookings for booked slots to check their status
+      const bookedSlotIds = bookedSlots?.map(s => s.id) || [];
+      let unconfirmedBookedSlots: typeof bookedSlots = [];
+      
+      if (bookedSlotIds.length > 0) {
+        const { data: bookings } = await supabase
+          .from('bookings')
+          .select('slot_id, status')
+          .in('slot_id', bookedSlotIds)
+          .in('status', ['pending', 'counter_proposed']);
+        
+        const unconfirmedSlotIds = new Set(bookings?.map(b => b.slot_id) || []);
+        unconfirmedBookedSlots = bookedSlots?.filter(s => unconfirmedSlotIds.has(s.id)) || [];
+      }
+
+      // Combine free slots and unconfirmed booked slots
+      const availableSlots = [...(freeSlots || []), ...unconfirmedBookedSlots];
+
       // Fetch performer base prices for slots without custom price
-      const performerIds = [...new Set(slots?.map(s => s.performer_id) || [])];
+      const performerIds = [...new Set(availableSlots?.map(s => s.performer_id) || [])];
       const { data: performers } = await supabase
         .from('performer_profiles')
         .select('id, base_price')
@@ -60,7 +86,7 @@ export function PriceCalendarStrip() {
       
       while (currentDate <= endDate) {
         const dateStr = format(currentDate, 'yyyy-MM-dd');
-        const daySlots = slots?.filter(s => s.date === dateStr) || [];
+        const daySlots = availableSlots?.filter(s => s.date === dateStr) || [];
         
         const prices = daySlots.map(s => s.price ?? performerPrices.get(s.performer_id) ?? 3000);
         const avgPrice = prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : null;
