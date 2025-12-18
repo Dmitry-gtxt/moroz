@@ -160,7 +160,18 @@ const Auth = () => {
       } else if (data?.error) {
         // Специальная обработка ошибки "номер уже зарегистрирован"
         if (data?.code === 'PHONE_EXISTS') {
-          toast.error('Этот номер уже зарегистрирован. Войдите в систему или используйте другой номер.');
+          toast.error(
+            <div className="flex flex-col gap-2">
+              <span>Этот номер уже зарегистрирован.</span>
+              <button 
+                onClick={() => setMode('login')}
+                className="text-primary underline text-left hover:text-primary/80"
+              >
+                Войти в систему →
+              </button>
+            </div>,
+            { duration: 6000 }
+          );
         } else {
           throw new Error(data.error);
         }
