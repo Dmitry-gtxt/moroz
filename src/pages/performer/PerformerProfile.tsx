@@ -13,6 +13,7 @@ import { FloatingSaveButton } from '@/components/ui/floating-save-button';
 import { UploadProgress } from '@/components/ui/upload-progress';
 import { useVideoUpload } from '@/hooks/useVideoUpload';
 import { sendProfileVerificationNotification } from '@/lib/notifications';
+import { cleanVerificationPhone } from '@/lib/utils';
 import { PushNotificationToggle } from '@/components/notifications/PushNotificationToggle';
 import { toast } from 'sonner';
 import { Loader2, Upload, X, Video, Trash2, AlertTriangle, Send, Bell } from 'lucide-react';
@@ -88,7 +89,8 @@ export default function PerformerProfilePage() {
         const p = profileRes.data;
         setProfile(p);
         setDisplayName(p.display_name);
-        setDescription(p.description || '');
+        // Clean verification phone from description when loading for editing
+        setDescription(cleanVerificationPhone(p.description));
         setSelectedTypes(p.performer_types as PerformerType[]);
         setSelectedFormats(p.formats as EventFormat[]);
         setSelectedDistricts(p.district_slugs);

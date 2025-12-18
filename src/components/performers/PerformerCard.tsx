@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { getCustomerPrice, getPerformerNetAmount } from '@/lib/pricing';
+import { cleanVerificationPhone } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -199,9 +200,9 @@ export function PerformerCard({
         )}
 
         {/* Description */}
-        {!selectedDate && performer.description && (
+        {!selectedDate && performer.description && cleanVerificationPhone(performer.description) && (
           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-            {performer.description}
+            {cleanVerificationPhone(performer.description)}
           </p>
         )}
 

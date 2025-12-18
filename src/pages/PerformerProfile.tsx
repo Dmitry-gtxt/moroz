@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { getCustomerPrice, getCommissionRate } from '@/lib/pricing';
+import { cleanVerificationPhone } from '@/lib/utils';
 import { 
   Star, MapPin, Clock, Users, Video, CheckCircle, 
   ChevronLeft, ChevronRight, Calendar, Play, MessageCircle, Loader2, X
@@ -445,10 +446,10 @@ const PerformerProfile = () => {
               </div>
 
               {/* Description */}
-              {performer.description && (
+              {performer.description && cleanVerificationPhone(performer.description) && (
                 <div className="bg-card rounded-2xl p-6 border border-border">
                   <h2 className="font-display text-xl font-semibold mb-4">О себе</h2>
-                  <p className="text-muted-foreground whitespace-pre-line">{performer.description}</p>
+                  <p className="text-muted-foreground whitespace-pre-line">{cleanVerificationPhone(performer.description)}</p>
                 </div>
               )}
 
