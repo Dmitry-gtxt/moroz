@@ -5,11 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { FloatingSaveButton } from '@/components/ui/floating-save-button';
 import { PushNotificationToggle } from '@/components/notifications/PushNotificationToggle';
 import { toast } from 'sonner';
-import { User, Mail, Phone, Bell } from 'lucide-react';
+import { User, Mail, Phone, Bell, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function CustomerProfile() {
   const { user } = useAuth();
@@ -18,6 +19,19 @@ export default function CustomerProfile() {
     fullName: '',
     phone: '',
   });
+
+  // Password change state
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+
+  const passwordRequirements = [
+    { label: 'Минимум 6 символов', check: (p: string) => p.length >= 6 },
+    { label: 'Хотя бы одна цифра', check: (p: string) => /\d/.test(p) },
+    { label: 'Хотя бы одна буква', check: (p: string) => /[a-zA-Zа-яА-ЯёЁ]/.test(p) },
+  ];
 
   useEffect(() => {
     if (user) {
@@ -65,6 +79,50 @@ export default function CustomerProfile() {
     }
   };
 
+  const handlePasswordChange = async () => {
+    if (!oldPassword || !newPassword) {
+      toast.error('Заполните оба поля');
+      return;
+    }
+
+    const allReqsMet = passwordRequirements.every(req => req.check(newPassword));
+    if (!allReqsMet) {
+      toast.error('Новый пароль не соответствует требованиям');
+      return;
+    }
+
+    setPasswordLoading(true);
+
+    try {
+      // First verify old password by attempting to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user!.email!,
+        password: oldPassword,
+      });
+
+      if (signInError) {
+        toast.error('Неверный текущий пароль');
+        setPasswordLoading(false);
+        return;
+      }
+
+      // Update to new password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) throw updateError;
+
+      toast.success('Пароль успешно изменён');
+      setOldPassword('');
+      setNewPassword('');
+    } catch (error: any) {
+      toast.error(error.message || 'Ошибка при смене пароля');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   return (
     <CustomerLayout>
       <SEOHead title="Мой профиль" />
@@ -76,7 +134,7 @@ export default function CustomerProfile() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -133,6 +191,83 @@ export default function CustomerProfile() {
                       />
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Password Change Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="h-5 w-5" />
+                  Смена пароля
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="oldPassword">Текущий пароль</Label>
+                    <div className="relative mt-1">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="oldPassword"
+                        type={showOldPassword ? 'text' : 'password'}
+                        value={oldPassword}
+                        onChange={(e) => setOldPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="pl-10 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowOldPassword(!showOldPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="newPassword">Новый пароль</Label>
+                    <div className="relative mt-1">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="newPassword"
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="pl-10 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {newPassword && (
+                      <div className="mt-2 space-y-1">
+                        {passwordRequirements.map((req, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-xs">
+                            <span className={`w-1.5 h-1.5 rounded-full transition-colors ${req.check(newPassword) ? 'bg-green-500' : 'bg-red-500'}`} />
+                            <span className={`transition-colors ${req.check(newPassword) ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                              {req.label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <Button
+                    onClick={handlePasswordChange}
+                    disabled={passwordLoading || !oldPassword || !newPassword}
+                    className="w-full"
+                  >
+                    {passwordLoading ? 'Сохранение...' : 'Изменить пароль'}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
