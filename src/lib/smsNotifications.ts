@@ -52,7 +52,8 @@ export async function sendSmsNotification(params: SmsNotificationParams): Promis
  * Template 80
  */
 export async function smsNewBookingToPerformer(params: {
-  performerPhone: string;
+  performerPhone?: string;
+  performerId?: string; // Fallback if phone not available
   bookingId: string;
   customerName: string;
   bookingDate: string;
@@ -61,6 +62,7 @@ export async function smsNewBookingToPerformer(params: {
   return sendSmsNotification({
     type: 'new_booking_to_performer',
     phone: params.performerPhone,
+    userId: params.performerId,
     bookingId: params.bookingId,
     customerName: params.customerName,
     bookingDate: params.bookingDate,
