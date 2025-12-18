@@ -102,11 +102,14 @@ const handler = async (req: Request): Promise<Response> => {
     // Notificore 2FA Verify API
     const apiUrl = `https://one-api.notificore.ru/api/2fa/authentications/otp/${auth_id}/verify`;
 
+    // Log token format for debugging
+    console.log(`[2FA Verify] Token first 20 chars: ${bearerToken.substring(0, 20)}...`);
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer: ${bearerToken}`,
+        "Authorization": `Bearer ${bearerToken}`,
       },
       body: JSON.stringify({ access_code }),
     });
