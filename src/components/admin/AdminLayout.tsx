@@ -50,11 +50,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         setVerificationCount(pendingProfiles.length - modProfiles.length);
       }
 
-      // Fetch unread support messages from performers
+      // Fetch unread support messages from users (both performers and customers)
       const { count } = await supabase
         .from('support_messages')
         .select('id', { count: 'exact', head: true })
-        .eq('sender_type', 'performer')
+        .in('sender_type', ['performer', 'user'])
         .is('read_at', null);
 
       setUnreadMessagesCount(count || 0);
