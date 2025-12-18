@@ -40,7 +40,7 @@ const Students = () => {
                 Заработай до <span className="text-magic-gold font-bold">200 000 рублей</span> за праздничный период!
               </p>
               <Button asChild size="lg" className="gap-2">
-                <Link to="/performer-registration">
+                <Link to="/become-performer">
                   Подать заявку
                   <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -309,7 +309,7 @@ const Students = () => {
                 После подтверждения ты сразу получишь доступ к заказам.
               </p>
               <Button asChild size="lg" className="gap-2">
-                <Link to="/performer-registration">
+                <Link to="/become-performer">
                   Начать регистрацию
                   <ArrowRight className="w-4 h-4" />
                 </Link>
