@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
+import { smsSlotProposalToCustomer } from '@/lib/smsNotifications';
 import { toast } from 'sonner';
 import { format, isSameDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -36,6 +37,7 @@ interface ProposeAlternativeDialogProps {
   customerName: string;
   customerId: string;
   customerEmail?: string | null;
+  customerPhone?: string | null;
   originalDate: string;
   originalTime: string;
   basePrice: number;
@@ -51,6 +53,7 @@ export function ProposeAlternativeDialog({
   customerName,
   customerId,
   customerEmail,
+  customerPhone,
   originalDate,
   originalTime,
   basePrice,
@@ -220,6 +223,17 @@ export function ProposeAlternativeDialog({
           url: '/customer/bookings',
         },
       });
+
+      // Send SMS notification to customer (priority channel) - Template 82
+      if (customerPhone) {
+        smsSlotProposalToCustomer({
+          customerPhone,
+          bookingId,
+          performerName,
+          bookingDate: format(new Date(originalDate), 'd MMMM', { locale: ru }),
+          bookingTime: originalTime,
+        });
+      }
 
       toast.success('Предложение отправлено клиенту');
       onSuccess();

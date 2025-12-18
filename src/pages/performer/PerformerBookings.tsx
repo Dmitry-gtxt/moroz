@@ -11,6 +11,7 @@ import { CancelBookingDialog } from '@/components/bookings/CancelBookingDialog';
 import { ProposeAlternativeDialog } from '@/components/bookings/ProposeAlternativeDialog';
 import { PerformerProposalsList } from '@/components/bookings/PerformerProposalsList';
 import { notifyBookingConfirmed, notifyBookingRejected, notifyBookingCancelled, scheduleBookingReminders, notifyAdminBookingCancelled } from '@/lib/pushNotifications';
+import { smsBookingConfirmedToCustomer, smsBookingRejectedToCustomer } from '@/lib/smsNotifications';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -159,6 +160,17 @@ export default function PerformerBookings() {
           booking.booking_time
         );
 
+        // Send SMS notification to customer (priority channel) - Template 83
+        if (booking.customer_phone) {
+          smsBookingConfirmedToCustomer({
+            customerPhone: booking.customer_phone,
+            bookingId: booking.id!,
+            performerName: performerName,
+            bookingDate: format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+            bookingTime: booking.booking_time!,
+          });
+        }
+
         // Schedule booking reminders if payment is confirmed
         if (booking.payment_status === 'prepayment_paid' || booking.payment_status === 'fully_paid') {
           scheduleBookingReminders(
@@ -214,6 +226,17 @@ export default function PerformerBookings() {
       performerName,
       format(new Date(booking.booking_date), 'd MMMM', { locale: ru })
     );
+
+    // Send SMS notification to customer (priority channel) - Template 81
+    if (booking.customer_phone) {
+      smsBookingRejectedToCustomer({
+        customerPhone: booking.customer_phone,
+        bookingId: booking.id!,
+        performerName: performerName,
+        bookingDate: format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+        bookingTime: booking.booking_time!,
+      });
+    }
 
     // Notify admin about rejection
     notifyAdminBookingCancelled(
@@ -694,6 +717,7 @@ export default function PerformerBookings() {
             customerName={proposeDialog.booking.customer_name || 'Клиент'}
             customerId={proposeDialog.booking.customer_id!}
             customerEmail={proposeDialog.booking.customer_email}
+            customerPhone={proposeDialog.booking.customer_phone}
             originalDate={proposeDialog.booking.booking_date!}
             originalTime={proposeDialog.booking.booking_time!}
             basePrice={basePrice}

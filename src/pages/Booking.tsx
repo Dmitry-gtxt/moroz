@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { sendBookingNotification } from '@/lib/notifications';
 import { notifyNewBookingRequest } from '@/lib/pushNotifications';
+import { smsNewBookingToPerformer } from '@/lib/smsNotifications';
 import { toast } from 'sonner';
 import { 
   Calendar, Clock, MapPin, Users, 
@@ -277,6 +278,23 @@ const Booking = () => {
             slotDate,
             slotTime
           );
+
+          // Send SMS notification to performer (priority channel)
+          const { data: performerProfile } = await supabase
+            .from('profiles')
+            .select('phone')
+            .eq('user_id', performer.user_id)
+            .maybeSingle();
+
+          if (performerProfile?.phone) {
+            smsNewBookingToPerformer({
+              performerPhone: performerProfile.phone,
+              bookingId: booking.id,
+              customerName: formData.customerName,
+              bookingDate: slotDate,
+              bookingTime: slotTime,
+            });
+          }
         }
 
         toast.success('Бронирование успешно создано!');
