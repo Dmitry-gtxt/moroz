@@ -381,7 +381,19 @@ const Auth = () => {
             .limit(1);
           
           if (existingProfiles && existingProfiles.length > 0) {
-            toast.error('Пользователь с таким номером телефона уже зарегистрирован');
+            toast.error(
+              'Пользователь с таким номером уже зарегистрирован. Забыли пароль?',
+              {
+                action: {
+                  label: 'Восстановить',
+                  onClick: () => {
+                    setRecoveryPhone(formData.phone);
+                    setMode('forgot-password');
+                  },
+                },
+                duration: 8000,
+              }
+            );
             setLoading(false);
             return;
           }
