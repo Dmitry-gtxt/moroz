@@ -115,14 +115,19 @@ const Booking = () => {
   // Pre-fill form with user data when logged in
   useEffect(() => {
     if (user) {
-      // Don't pre-fill generated emails (format: phone@ded-morozy-rf.ru)
       const email = user.email || '';
       const isGeneratedEmail = email.endsWith('@ded-morozy-rf.ru') && /^\d+@/.test(email);
+      
+      // Get phone: first try user_metadata, then extract from email (phone@ded-morozy-rf.ru)
+      let customerPhone = user.user_metadata?.phone || '';
+      if (!customerPhone && isGeneratedEmail) {
+        customerPhone = email.split('@')[0]; // Extract phone from email
+      }
       
       setFormData(prev => ({
         ...prev,
         customerName: user.user_metadata?.full_name || '',
-        customerPhone: user.user_metadata?.phone || '',
+        customerPhone: customerPhone,
         customerEmail: isGeneratedEmail ? '' : email,
       }));
     }
