@@ -18,20 +18,14 @@ interface UserData {
   created_at: string;
 }
 
-interface TestPerformer {
-  id: string;
-  display_name: string;
-  created_at: string;
-}
-
 export default function AdminUsers() {
   const [users, setUsers] = useState<UserData[]>([]);
-  const [testPerformers, setTestPerformers] = useState<TestPerformer[]>([]);
+  const [testPerformersCount, setTestPerformersCount] = useState(0);
+  const [testPerformersActive, setTestPerformersActive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-  const [deletingPerformerId, setDeletingPerformerId] = useState<string | null>(null);
-  const [showTestPerformers, setShowTestPerformers] = useState(false);
+  const [togglingTestPerformers, setTogglingTestPerformers] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -43,16 +37,17 @@ export default function AdminUsers() {
           .order('created_at', { ascending: false }),
         supabase
           .from('performer_profiles')
-          .select('id, display_name, created_at')
+          .select('id, is_active')
           .like('display_name', '[TEST]%')
-          .order('created_at', { ascending: false })
       ]);
 
       if (usersRes.error) throw usersRes.error;
       if (performersRes.error) throw performersRes.error;
       
       setUsers(usersRes.data || []);
-      setTestPerformers(performersRes.data || []);
+      setTestPerformersCount(performersRes.data?.length || 0);
+      // Check if any test performers are active
+      setTestPerformersActive(performersRes.data?.some(p => p.is_active) || false);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Ошибка загрузки данных');
@@ -88,27 +83,40 @@ export default function AdminUsers() {
     }
   };
 
-  const handleDeleteTestPerformer = async (performerId: string) => {
-    setDeletingPerformerId(performerId);
+  const handleToggleTestPerformers = async () => {
+    setTogglingTestPerformers(true);
     try {
-      // Delete related data first
-      await supabase.from('availability_slots').delete().eq('performer_id', performerId);
-      await supabase.from('reviews').delete().eq('performer_id', performerId);
+      const newActiveState = !testPerformersActive;
+      
+      // Get all test performer IDs
+      const { data: testPerformers, error: fetchError } = await supabase
+        .from('performer_profiles')
+        .select('id')
+        .like('display_name', '[TEST]%');
+
+      if (fetchError) throw fetchError;
+      
+      if (!testPerformers || testPerformers.length === 0) {
+        toast.info('Нет тестовых исполнителей');
+        return;
+      }
+
+      const ids = testPerformers.map(p => p.id);
       
       const { error } = await supabase
         .from('performer_profiles')
-        .delete()
-        .eq('id', performerId);
+        .update({ is_active: newActiveState })
+        .in('id', ids);
 
       if (error) throw error;
 
-      toast.success('Тестовый исполнитель удалён');
-      setTestPerformers(prev => prev.filter(p => p.id !== performerId));
+      setTestPerformersActive(newActiveState);
+      toast.success(newActiveState ? 'Тестовые исполнители опубликованы' : 'Тестовые исполнители сняты с публикации');
     } catch (error: any) {
-      console.error('Error deleting test performer:', error);
-      toast.error(`Ошибка удаления: ${error.message}`);
+      console.error('Error toggling test performers:', error);
+      toast.error(`Ошибка: ${error.message}`);
     } finally {
-      setDeletingPerformerId(null);
+      setTogglingTestPerformers(false);
     }
   };
 
@@ -123,88 +131,33 @@ export default function AdminUsers() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Все пользователи</h1>
             <p className="text-muted-foreground">Управление пользователями системы</p>
           </div>
-          <Button
-            variant={showTestPerformers ? "default" : "outline"}
-            onClick={() => setShowTestPerformers(!showTestPerformers)}
-            className="gap-2"
-          >
-            {showTestPerformers ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {showTestPerformers ? 'Скрыть тестовых' : 'Показать тестовых'} ({testPerformers.length})
-          </Button>
+          {testPerformersCount > 0 && (
+            <Button
+              variant={testPerformersActive ? "default" : "outline"}
+              onClick={handleToggleTestPerformers}
+              disabled={togglingTestPerformers}
+              className="gap-2"
+            >
+              {togglingTestPerformers ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : testPerformersActive ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+              {testPerformersActive ? 'Скрыть тестовых' : 'Показать тестовых'} ({testPerformersCount})
+            </Button>
+          )}
         </div>
-
-        {showTestPerformers && testPerformers.length > 0 && (
-          <Card className="border-dashed border-orange-300 bg-orange-50/50">
-            <CardHeader>
-              <CardTitle className="text-orange-700">Тестовые исполнители ({testPerformers.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Имя</TableHead>
-                    <TableHead>Дата создания</TableHead>
-                    <TableHead className="w-20">Действия</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {testPerformers.map((performer) => (
-                    <TableRow key={performer.id}>
-                      <TableCell className="font-medium">{performer.display_name}</TableCell>
-                      <TableCell>
-                        {format(new Date(performer.created_at), 'dd MMM yyyy, HH:mm', { locale: ru })}
-                      </TableCell>
-                      <TableCell>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              disabled={deletingPerformerId === performer.id}
-                            >
-                              {deletingPerformerId === performer.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Удалить тестового исполнителя?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Удалить <strong>{performer.display_name}</strong>? Это действие необратимо.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Отмена</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteTestPerformer(performer.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Удалить
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            <CardTitle className="flex items-center justify-between flex-wrap gap-4">
               <span>Список пользователей ({filteredUsers.length})</span>
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
