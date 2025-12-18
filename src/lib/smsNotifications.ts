@@ -8,7 +8,8 @@ type SmsNotificationType =
 
 interface SmsNotificationParams {
   type: SmsNotificationType;
-  phone: string;
+  phone?: string;
+  userId?: string; // Fallback: if phone is empty, lookup by userId
   bookingId?: string;
   performerName?: string;
   customerName?: string;
@@ -72,7 +73,8 @@ export async function smsNewBookingToPerformer(params: {
  * Template 81
  */
 export async function smsBookingRejectedToCustomer(params: {
-  customerPhone: string;
+  customerPhone?: string;
+  customerId?: string; // Fallback if phone not available
   bookingId: string;
   performerName: string;
   bookingDate: string;
@@ -81,6 +83,7 @@ export async function smsBookingRejectedToCustomer(params: {
   return sendSmsNotification({
     type: 'booking_rejected_to_customer',
     phone: params.customerPhone,
+    userId: params.customerId,
     bookingId: params.bookingId,
     performerName: params.performerName,
     bookingDate: params.bookingDate,
@@ -93,7 +96,8 @@ export async function smsBookingRejectedToCustomer(params: {
  * Template 82
  */
 export async function smsSlotProposalToCustomer(params: {
-  customerPhone: string;
+  customerPhone?: string;
+  customerId?: string; // Fallback if phone not available
   bookingId: string;
   performerName: string;
   bookingDate: string;
@@ -102,6 +106,7 @@ export async function smsSlotProposalToCustomer(params: {
   return sendSmsNotification({
     type: 'slot_proposal_to_customer',
     phone: params.customerPhone,
+    userId: params.customerId,
     bookingId: params.bookingId,
     performerName: params.performerName,
     bookingDate: params.bookingDate,
@@ -114,7 +119,8 @@ export async function smsSlotProposalToCustomer(params: {
  * Template 83
  */
 export async function smsBookingConfirmedToCustomer(params: {
-  customerPhone: string;
+  customerPhone?: string;
+  customerId?: string; // Fallback if phone not available
   bookingId: string;
   performerName: string;
   bookingDate: string;
@@ -123,6 +129,7 @@ export async function smsBookingConfirmedToCustomer(params: {
   return sendSmsNotification({
     type: 'booking_confirmed_to_customer',
     phone: params.customerPhone,
+    userId: params.customerId,
     bookingId: params.bookingId,
     performerName: params.performerName,
     bookingDate: params.bookingDate,

@@ -225,15 +225,15 @@ export function ProposeAlternativeDialog({
       });
 
       // Send SMS notification to customer (priority channel) - Template 82
-      if (customerPhone) {
-        smsSlotProposalToCustomer({
-          customerPhone,
-          bookingId,
-          performerName,
-          bookingDate: format(new Date(originalDate), 'd MMMM', { locale: ru }),
-          bookingTime: originalTime,
-        });
-      }
+      // Use customerId as fallback since customerPhone may be masked by RLS
+      smsSlotProposalToCustomer({
+        customerPhone: customerPhone || undefined,
+        customerId,
+        bookingId,
+        performerName,
+        bookingDate: format(new Date(originalDate), 'd MMMM', { locale: ru }),
+        bookingTime: originalTime,
+      });
 
       toast.success('Предложение отправлено клиенту');
       onSuccess();
