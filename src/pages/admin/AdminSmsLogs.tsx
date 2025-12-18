@@ -96,8 +96,7 @@ const AdminSmsLogs = () => {
     const { data, error } = await supabase
       .from("sms_logs")
       .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching SMS logs:", error);
@@ -105,6 +104,118 @@ const AdminSmsLogs = () => {
       setLogs((data as SmsLog[]) ?? []);
     }
     setLoading(false);
+  };
+
+  // Определение типа SMS по template_id и контенту
+  const getSmsTypeInfo = (log: SmsLog): { title: string; description: string; color: string } => {
+    const payload = log.request_payload as Record<string, unknown> | null;
+    const templateId = payload?.template_id?.toString() || '';
+    const message = log.message.toLowerCase();
+    
+    // По template_id (2FA шаблоны)
+    if (templateId === '78') {
+      return {
+        title: '📝 Регистрация',
+        description: 'Код подтверждения при регистрации нового пользователя',
+        color: 'bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300'
+      };
+    }
+    if (templateId === '79') {
+      return {
+        title: '🔑 Восстановление пароля',
+        description: 'Код для сброса пароля пользователя',
+        color: 'bg-orange-500/10 border-orange-500/30 text-orange-700 dark:text-orange-300'
+      };
+    }
+    if (templateId === '80') {
+      return {
+        title: '📥 Новая заявка исполнителю',
+        description: 'Клиент создал бронирование → SMS исполнителю',
+        color: 'bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-300'
+      };
+    }
+    if (templateId === '81') {
+      return {
+        title: '❌ Отказ/Отмена клиенту',
+        description: 'Исполнитель отклонил или отменил заказ → SMS клиенту',
+        color: 'bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300'
+      };
+    }
+    if (templateId === '82') {
+      return {
+        title: '🔄 Предложение слотов клиенту',
+        description: 'Исполнитель предложил альтернативное время → SMS клиенту',
+        color: 'bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-300'
+      };
+    }
+    if (templateId === '83') {
+      return {
+        title: '✅ Подтверждение клиенту',
+        description: 'Исполнитель подтвердил заказ → SMS клиенту',
+        color: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+      };
+    }
+    
+    // По содержимому сообщения (для произвольных SMS)
+    if (message.includes('код') || message.includes('code')) {
+      return {
+        title: '🔐 Код подтверждения',
+        description: 'SMS с кодом верификации',
+        color: 'bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300'
+      };
+    }
+    if (message.includes('заказ') || message.includes('бронирован')) {
+      return {
+        title: '📋 Уведомление о заказе',
+        description: 'Информация о бронировании',
+        color: 'bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-300'
+      };
+    }
+    if (message.includes('отмен') || message.includes('отказ')) {
+      return {
+        title: '🚫 Отмена',
+        description: 'Уведомление об отмене',
+        color: 'bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300'
+      };
+    }
+    
+    return {
+      title: '📨 Произвольная SMS',
+      description: 'Тестовое или ручное сообщение админа',
+      color: 'bg-gray-500/10 border-gray-500/30 text-gray-700 dark:text-gray-300'
+    };
+  };
+
+  // Получение контекста SMS (кому, от кого)
+  const getSmsContext = (log: SmsLog): string => {
+    const payload = log.request_payload as Record<string, unknown> | null;
+    const templateId = payload?.template_id?.toString() || '';
+    const phone = log.phone;
+    
+    // Форматирование телефона для отображения
+    const formatPhone = (p: string) => {
+      if (!p) return 'неизвестный';
+      return p.startsWith('+') ? p : `+${p}`;
+    };
+    
+    const formattedPhone = formatPhone(phone);
+    
+    switch (templateId) {
+      case '78':
+        return `Новый пользователь: ${formattedPhone}`;
+      case '79':
+        return `Восстановление для: ${formattedPhone}`;
+      case '80':
+        return `Исполнитель получил заявку: ${formattedPhone}`;
+      case '81':
+        return `Клиент уведомлён об отказе: ${formattedPhone}`;
+      case '82':
+        return `Клиент получил предложение: ${formattedPhone}`;
+      case '83':
+        return `Клиент получил подтверждение: ${formattedPhone}`;
+      default:
+        return `Получатель: ${formattedPhone}`;
+    }
   };
 
   useEffect(() => {
@@ -471,89 +582,110 @@ const AdminSmsLogs = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="border rounded-lg p-4 space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {log.success ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <XCircle className="h-5 w-5 text-red-500" />
-                        )}
+                {filteredLogs.map((log) => {
+                  const typeInfo = getSmsTypeInfo(log);
+                  const context = getSmsContext(log);
+                  
+                  return (
+                    <div
+                      key={log.id}
+                      className={`border rounded-lg overflow-hidden ${typeInfo.color}`}
+                    >
+                      {/* Header с типом SMS */}
+                      <div className="px-4 py-2 border-b border-current/10 flex items-center justify-between">
                         <div>
-                          <div className="font-medium">{log.phone}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {format(new Date(log.created_at), "dd MMM yyyy, HH:mm:ss", {
-                              locale: ru,
-                            })}
-                          </div>
+                          <span className="font-semibold">{typeInfo.title}</span>
+                          <span className="text-xs ml-2 opacity-70">{typeInfo.description}</span>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={log.success ? "default" : "destructive"}>
-                          {log.response_status ?? "N/A"}
+                        <Badge variant={log.success ? "default" : "destructive"} className="text-xs">
+                          {log.success ? 'Доставлено' : 'Ошибка'}
                         </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleExpand(log.id)}
-                        >
-                          {expandedId === log.id ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </Button>
+                      </div>
+                      
+                      <div className="p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {log.success ? (
+                              <CheckCircle className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <XCircle className="h-5 w-5 text-red-500" />
+                            )}
+                            <div>
+                              <div className="font-medium text-foreground">{log.phone}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {context}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {format(new Date(log.created_at), "dd MMM yyyy, HH:mm:ss", {
+                                  locale: ru,
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              HTTP {log.response_status ?? "N/A"}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleExpand(log.id)}
+                            >
+                              {expandedId === log.id ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="text-sm bg-background/50 rounded p-2 text-foreground">
+                          {log.message.length > 150 && expandedId !== log.id
+                            ? log.message.substring(0, 150) + "..."
+                            : log.message}
+                        </div>
+
+                        {log.error_message && (
+                          <div className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 rounded p-2">
+                            Ошибка: {log.error_message}
+                          </div>
+                        )}
+
+                        {expandedId === log.id && (
+                          <div className="space-y-2 pt-2 border-t border-current/10">
+                            <div>
+                              <div className="text-xs font-medium text-muted-foreground mb-1">
+                                Reference:
+                              </div>
+                              <code className="text-xs bg-background p-1 rounded text-foreground">
+                                {log.reference ?? "N/A"}
+                              </code>
+                            </div>
+
+                            <div>
+                              <div className="text-xs font-medium text-muted-foreground mb-1">
+                                Запрос (Request Payload):
+                              </div>
+                              <pre className="text-xs bg-background p-2 rounded overflow-x-auto text-foreground">
+                                {JSON.stringify(log.request_payload, null, 2)}
+                              </pre>
+                            </div>
+
+                            <div>
+                              <div className="text-xs font-medium text-muted-foreground mb-1">
+                                Ответ сервера (Response):
+                              </div>
+                              <pre className="text-xs bg-background p-2 rounded overflow-x-auto text-foreground">
+                                {JSON.stringify(log.response_body, null, 2)}
+                              </pre>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-
-                    <div className="text-sm bg-muted/50 rounded p-2">
-                      {log.message.length > 100 && expandedId !== log.id
-                        ? log.message.substring(0, 100) + "..."
-                        : log.message}
-                    </div>
-
-                    {log.error_message && (
-                      <div className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 rounded p-2">
-                        Ошибка: {log.error_message}
-                      </div>
-                    )}
-
-                    {expandedId === log.id && (
-                      <div className="space-y-2 pt-2 border-t">
-                        <div>
-                          <div className="text-xs font-medium text-muted-foreground mb-1">
-                            Reference:
-                          </div>
-                          <code className="text-xs bg-muted p-1 rounded">
-                            {log.reference ?? "N/A"}
-                          </code>
-                        </div>
-
-                        <div>
-                          <div className="text-xs font-medium text-muted-foreground mb-1">
-                            Запрос (Request Payload):
-                          </div>
-                          <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-                            {JSON.stringify(log.request_payload, null, 2)}
-                          </pre>
-                        </div>
-
-                        <div>
-                          <div className="text-xs font-medium text-muted-foreground mb-1">
-                            Ответ сервера (Response):
-                          </div>
-                          <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-                            {JSON.stringify(log.response_body, null, 2)}
-                          </pre>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
