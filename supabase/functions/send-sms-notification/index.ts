@@ -124,8 +124,31 @@ const handler = async (req: Request): Promise<Response> => {
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseKey);
       
+      let authUserId = userId;
+      
+      // Check if this is a performer_profile.id (for performer notifications)
+      // If type is for performer, we need to lookup the auth user_id from performer_profiles
+      if (type === 'new_booking_to_performer') {
+        console.log(`[SMS-NOTIFY] Looking up performer auth user_id for performer_profile.id: ${userId}`);
+        const { data: performerData, error: performerError } = await supabase
+          .from('performer_profiles')
+          .select('user_id')
+          .eq('id', userId)
+          .single();
+        
+        if (performerError || !performerData?.user_id) {
+          console.error(`[SMS-NOTIFY] Failed to get performer user_id: ${performerError?.message}`);
+          return new Response(
+            JSON.stringify({ success: false, error: "Could not find performer user" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        authUserId = performerData.user_id;
+        console.log(`[SMS-NOTIFY] Found performer auth user_id: ${authUserId}`);
+      }
+      
       // Get user's email from auth.users (email is in format phone@ded-morozy-rf.ru)
-      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(authUserId);
       
       if (userError || !userData?.user?.email) {
         console.error(`[SMS-NOTIFY] Failed to get user email: ${userError?.message}`);
