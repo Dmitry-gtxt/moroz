@@ -232,7 +232,18 @@ export default function PerformerRegistration() {
       if (data.error) {
         // Специальная обработка ошибки "номер уже зарегистрирован"
         if (data?.code === 'PHONE_EXISTS') {
-          toast.error('Этот номер телефона уже зарегистрирован в системе. Используйте другой номер.');
+          toast.error(
+            <div className="flex flex-col gap-2">
+              <span>Этот номер уже зарегистрирован в системе.</span>
+              <a 
+                href="/auth?mode=login"
+                className="text-primary underline hover:text-primary/80"
+              >
+                Войти в систему →
+              </a>
+            </div>,
+            { duration: 6000 }
+          );
           return false;
         }
         throw new Error(data.error);
