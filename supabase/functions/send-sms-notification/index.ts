@@ -20,7 +20,8 @@ const SMS_TEMPLATES = {
 
 interface SmsNotificationRequest {
   type: keyof typeof SMS_TEMPLATES;
-  phone: string;
+  phone?: string;
+  userId?: string; // If phone is empty, lookup phone by userId from auth.users
   // Optional metadata for logging
   bookingId?: string;
   performerName?: string;
@@ -104,11 +105,54 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const requestBody: SmsNotificationRequest = await req.json();
-    const { type, phone, bookingId, performerName, customerName, bookingDate, bookingTime } = requestBody;
+    const { type, phone, userId, bookingId, performerName, customerName, bookingDate, bookingTime } = requestBody;
 
-    if (!type || !phone) {
+    if (!type) {
       return new Response(
-        JSON.stringify({ success: false, error: "Type and phone are required" }),
+        JSON.stringify({ success: false, error: "Type is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get phone: either from request or lookup by userId
+    let recipientPhone = phone || "";
+    
+    if (!recipientPhone && userId) {
+      console.log(`[SMS-NOTIFY] Phone not provided, looking up by userId: ${userId}`);
+      
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Get user's email from auth.users (email is in format phone@ded-morozy-rf.ru)
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+      
+      if (userError || !userData?.user?.email) {
+        console.error(`[SMS-NOTIFY] Failed to get user email: ${userError?.message}`);
+        return new Response(
+          JSON.stringify({ success: false, error: "Could not find user phone" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      const userEmail = userData.user.email;
+      
+      // Check if email is in format phone@ded-morozy-rf.ru
+      if (userEmail.endsWith("@ded-morozy-rf.ru") && /^\d+@/.test(userEmail)) {
+        recipientPhone = userEmail.split("@")[0];
+        console.log(`[SMS-NOTIFY] Extracted phone from email: ${recipientPhone}`);
+      } else {
+        console.error(`[SMS-NOTIFY] Email is not in phone format: ${userEmail}`);
+        return new Response(
+          JSON.stringify({ success: false, error: "User email is not a phone number" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    if (!recipientPhone) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Phone or userId is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -122,7 +166,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Format phone: remove everything except digits
-    let formattedPhone = phone.replace(/\D/g, "");
+    let formattedPhone = recipientPhone.replace(/\D/g, "");
     
     // Remove leading 8 for Russian numbers, keep country code
     if (formattedPhone.startsWith("8") && formattedPhone.length === 11) {

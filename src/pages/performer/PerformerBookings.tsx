@@ -161,15 +161,14 @@ export default function PerformerBookings() {
         );
 
         // Send SMS notification to customer (priority channel) - Template 83
-        if (booking.customer_phone) {
-          smsBookingConfirmedToCustomer({
-            customerPhone: booking.customer_phone,
-            bookingId: booking.id!,
-            performerName: performerName,
-            bookingDate: format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
-            bookingTime: booking.booking_time!,
-          });
-        }
+        smsBookingConfirmedToCustomer({
+          customerPhone: booking.customer_phone || undefined,
+          customerId: booking.customer_id || undefined,
+          bookingId: booking.id!,
+          performerName: performerName,
+          bookingDate: format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+          bookingTime: booking.booking_time!,
+        });
 
         // Schedule booking reminders if payment is confirmed
         if (booking.payment_status === 'prepayment_paid' || booking.payment_status === 'fully_paid') {
@@ -228,15 +227,14 @@ export default function PerformerBookings() {
     );
 
     // Send SMS notification to customer (priority channel) - Template 81
-    if (booking.customer_phone) {
-      smsBookingRejectedToCustomer({
-        customerPhone: booking.customer_phone,
-        bookingId: booking.id!,
-        performerName: performerName,
-        bookingDate: format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
-        bookingTime: booking.booking_time!,
-      });
-    }
+    smsBookingRejectedToCustomer({
+      customerPhone: booking.customer_phone || undefined,
+      customerId: booking.customer_id || undefined,
+      bookingId: booking.id!,
+      performerName: performerName,
+      bookingDate: format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+      bookingTime: booking.booking_time!,
+    });
 
     // Notify admin about rejection
     notifyAdminBookingCancelled(
