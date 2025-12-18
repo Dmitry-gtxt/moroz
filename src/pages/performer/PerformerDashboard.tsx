@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { useUnreadSupportMessages } from '@/hooks/useUnreadSupportMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +42,7 @@ export function PerformerLayout({ children }: PerformerLayoutProps) {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const unreadCount = useUnreadMessages();
+  const unreadSupportCount = useUnreadSupportMessages();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Close mobile menu on route change
@@ -91,7 +93,12 @@ export function PerformerLayout({ children }: PerformerLayoutProps) {
           trigger={
             <button className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-muted-foreground hover:bg-muted hover:text-foreground w-full text-left">
               <Headphones className="h-5 w-5" />
-              <span className="font-medium">Написать в поддержку</span>
+              <span className="font-medium flex-1">Написать в поддержку</span>
+              {unreadSupportCount > 0 && (
+                <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs">
+                  {unreadSupportCount > 99 ? '99+' : unreadSupportCount}
+                </Badge>
+              )}
             </button>
           }
         />

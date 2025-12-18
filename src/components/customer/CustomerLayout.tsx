@@ -2,6 +2,7 @@ import { Link, useLocation, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { useUnreadSupportMessages } from '@/hooks/useUnreadSupportMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -38,6 +39,7 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
   const { user, signOut, loading } = useAuth();
   const location = useLocation();
   const unreadCount = useUnreadMessages();
+  const unreadSupportCount = useUnreadSupportMessages();
   const [hasPerformerProfile, setHasPerformerProfile] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -119,7 +121,12 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
           trigger={
             <button className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-muted-foreground hover:bg-muted hover:text-foreground w-full text-left">
               <Headphones className="h-5 w-5" />
-              <span className="font-medium">Написать в поддержку</span>
+              <span className="font-medium flex-1">Написать в поддержку</span>
+              {unreadSupportCount > 0 && (
+                <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs">
+                  {unreadSupportCount > 99 ? '99+' : unreadSupportCount}
+                </Badge>
+              )}
             </button>
           }
         />
