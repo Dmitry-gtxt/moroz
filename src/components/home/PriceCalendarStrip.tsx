@@ -37,13 +37,30 @@ export function PriceCalendarStrip() {
       const [rate] = await Promise.all([getCommissionRate()]);
       setCommissionRate(rate);
 
-      // Fetch free slots in date range
+      // First fetch only published performers (is_active=true AND verification_status='verified')
+      const { data: publishedPerformers } = await supabase
+        .from('performer_profiles')
+        .select('id, base_price')
+        .eq('is_active', true)
+        .eq('verification_status', 'verified');
+
+      const publishedPerformerIds = publishedPerformers?.map(p => p.id) || [];
+      const performerPrices = new Map(publishedPerformers?.map(p => [p.id, p.base_price]) || []);
+
+      if (publishedPerformerIds.length === 0) {
+        setDayPrices([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch free slots in date range ONLY from published performers
       const { data: freeSlots } = await supabase
         .from('availability_slots')
         .select('id, date, price, performer_id, status')
         .gte('date', format(startDate, 'yyyy-MM-dd'))
         .lte('date', format(endDate, 'yyyy-MM-dd'))
-        .eq('status', 'free');
+        .eq('status', 'free')
+        .in('performer_id', publishedPerformerIds);
 
       // Fetch booked slots that have unconfirmed bookings (pending or counter_proposed)
       const { data: bookedSlots } = await supabase
@@ -51,7 +68,8 @@ export function PriceCalendarStrip() {
         .select('id, date, price, performer_id, status')
         .gte('date', format(startDate, 'yyyy-MM-dd'))
         .lte('date', format(endDate, 'yyyy-MM-dd'))
-        .eq('status', 'booked');
+        .eq('status', 'booked')
+        .in('performer_id', publishedPerformerIds);
 
       // Get bookings for booked slots to check their status
       const bookedSlotIds = bookedSlots?.map(s => s.id) || [];
@@ -70,15 +88,6 @@ export function PriceCalendarStrip() {
 
       // Combine free slots and unconfirmed booked slots
       const availableSlots = [...(freeSlots || []), ...unconfirmedBookedSlots];
-
-      // Fetch performer base prices for slots without custom price
-      const performerIds = [...new Set(availableSlots?.map(s => s.performer_id) || [])];
-      const { data: performers } = await supabase
-        .from('performer_profiles')
-        .select('id, base_price')
-        .in('id', performerIds);
-
-      const performerPrices = new Map(performers?.map(p => [p.id, p.base_price]) || []);
 
       // Generate days array
       const days: DayPrice[] = [];
