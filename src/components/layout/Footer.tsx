@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin, Sparkles, Snowflake, Star, Heart } from 'lucide-react';
+import { Phone, Mail, Sparkles, Snowflake, Star, Heart } from 'lucide-react';
 import santaHatLogo from '@/assets/santa-hat-logo.png';
 
 export function Footer() {
@@ -169,12 +169,6 @@ export function Footer() {
                   </div>
                   ded-morozy@gtxt.biz
                 </a>
-              </li>
-              <li className="flex items-start gap-3 text-snow-400 py-2">
-                <div className="p-2 rounded-lg bg-magic-gold/10 border border-magic-gold/20">
-                  <MapPin className="h-4 w-4 text-magic-gold" />
-                </div>
-                <span>г. Ярцево,<br/>Смоленская область</span>
               </li>
             </ul>
           </div>
