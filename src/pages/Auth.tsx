@@ -14,7 +14,7 @@ import { getReferralCode, clearReferralCode } from '@/lib/referral';
 
 type AuthMode = 'login' | 'register' | 'forgot-password';
 type RegisterStep = 'form' | 'sms-verification';
-type ForgotStep = 'phone' | 'sms-verification' | 'new-password';
+type ForgotStep = 'phone' | 'sms-verification';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -42,11 +42,8 @@ const Auth = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
-  // New password for recovery
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  // Recovery phone
   const [recoveryPhone, setRecoveryPhone] = useState('');
-  const [recoveryEmail, setRecoveryEmail] = useState('');
 
   // Password validation
   const passwordRequirements = [
@@ -63,10 +60,7 @@ const Auth = () => {
     }
     if (modeFromUrl !== 'forgot-password') {
       setForgotStep('phone');
-      setNewPassword('');
-      setConfirmPassword('');
       setRecoveryPhone('');
-      setRecoveryEmail('');
     }
     setSmsCode('');
     setAuthId(null);
@@ -95,10 +89,7 @@ const Auth = () => {
     setForgotStep('phone');
     setSmsCode('');
     setAuthId(null);
-    setNewPassword('');
-    setConfirmPassword('');
     setRecoveryPhone('');
-    setRecoveryEmail('');
   };
 
   useEffect(() => {
@@ -295,39 +286,24 @@ const Auth = () => {
     }
   };
 
-  // Find user by phone and update password
+  // Find user by phone and update password using SMS code
   const completePasswordRecovery = async () => {
-    if (newPassword !== confirmPassword) {
-      toast.error('Пароли не совпадают');
-      return;
-    }
-    
-    const allReqsMet = passwordRequirements.every(req => req.check(newPassword));
-    if (!allReqsMet) {
-      toast.error('Пароль не соответствует требованиям');
-      return;
-    }
+    const verified = await verifySmsCode();
+    if (!verified) return;
 
     setLoading(true);
     try {
-      // First, we need to find the user by phone and sign them in with admin API
-      // Since we can't directly update password without being signed in,
-      // we'll use the email we found and sign in with the new password flow
-      
-      // For now, we need to use a workaround - sign in with email magic link
-      // or use the admin API via edge function
-      
       const { data, error } = await supabase.functions.invoke('reset-password-by-phone', {
         body: {
           phone: formatPhoneForApi(recoveryPhone),
-          new_password: newPassword,
+          new_password: smsCode, // Use SMS code as new password
         },
       });
 
       if (error) throw error;
       
       if (data?.success) {
-        toast.success('Пароль успешно изменён! Теперь вы можете войти.');
+        toast.success('Пароль изменён на код из SMS. Теперь вы можете войти.');
         setMode('login');
         // Pre-fill email if we have it
         if (data.email) {
@@ -395,12 +371,7 @@ const Auth = () => {
             toast.success('SMS с кодом отправлено на ваш телефон');
           }
         } else if (forgotStep === 'sms-verification') {
-          const verified = await verifySmsCode();
-          if (verified) {
-            setForgotStep('new-password');
-            toast.success('Код подтверждён! Введите новый пароль');
-          }
-        } else if (forgotStep === 'new-password') {
+          // Verify SMS code and use it as new password
           await completePasswordRecovery();
         }
       }
@@ -470,16 +441,14 @@ const Auth = () => {
                 {mode === 'register' && registerStep === 'form' && 'Регистрация'}
                 {mode === 'register' && registerStep === 'sms-verification' && 'Подтверждение'}
                 {mode === 'forgot-password' && forgotStep === 'phone' && 'Восстановление пароля'}
-                {mode === 'forgot-password' && forgotStep === 'sms-verification' && 'Подтверждение'}
-                {mode === 'forgot-password' && forgotStep === 'new-password' && 'Новый пароль'}
+                {mode === 'forgot-password' && forgotStep === 'sms-verification' && 'Новый пароль'}
               </h1>
               <p className="text-snow-400 mt-2">
                 {mode === 'login' && 'Войдите, чтобы забронировать Деда Мороза'}
                 {mode === 'register' && registerStep === 'form' && 'Создайте аккаунт для бронирования'}
                 {mode === 'register' && registerStep === 'sms-verification' && `Введите код из SMS, отправленного на ${formData.phone}`}
                 {mode === 'forgot-password' && forgotStep === 'phone' && 'Введите телефон, указанный при регистрации'}
-                {mode === 'forgot-password' && forgotStep === 'sms-verification' && `Введите код из SMS, отправленного на ${recoveryPhone}`}
-                {mode === 'forgot-password' && forgotStep === 'new-password' && 'Придумайте новый пароль'}
+                {mode === 'forgot-password' && forgotStep === 'sms-verification' && `Введите код из SMS — он станет вашим новым паролем`}
               </p>
             </div>
 
@@ -727,66 +696,6 @@ const Auth = () => {
                   </button>
                 </>
               )}
-
-              {/* FORGOT PASSWORD - New password step */}
-              {mode === 'forgot-password' && forgotStep === 'new-password' && (
-                <>
-                  <div>
-                    <Label htmlFor="newPassword" className="text-snow-200">Новый пароль</Label>
-                    <div className="relative mt-1">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
-                      <Input
-                        id="newPassword"
-                        type={showPassword ? 'text' : 'password'}
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="pl-10 pr-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
-                        required
-                        minLength={6}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-snow-500 hover:text-snow-300 transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    <div className="mt-2 space-y-1">
-                      {passwordRequirements.map((req, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-xs">
-                          <span className={`w-1.5 h-1.5 rounded-full transition-colors ${req.check(newPassword) ? 'bg-green-500' : 'bg-red-500'}`} />
-                          <span className={`transition-colors ${req.check(newPassword) ? 'text-green-400' : 'text-snow-500'}`}>
-                            {req.label}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="confirmPassword" className="text-snow-200">Подтвердите пароль</Label>
-                    <div className="relative mt-1">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
-                      <Input
-                        id="confirmPassword"
-                        type={showPassword ? 'text' : 'password'}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
-                        required
-                        minLength={6}
-                      />
-                    </div>
-                    {confirmPassword && newPassword !== confirmPassword && (
-                      <p className="text-xs text-red-400 mt-1">Пароли не совпадают</p>
-                    )}
-                  </div>
-                </>
-              )}
-
               {/* Terms checkboxes for registration */}
               {mode === 'register' && registerStep === 'form' && (
                 <div className="space-y-3 pt-2">
@@ -831,8 +740,7 @@ const Auth = () => {
                   mode === 'register' && registerStep === 'form' ? 'Получить пароль в SMS' :
                   mode === 'register' && registerStep === 'sms-verification' ? 'Подтвердить и войти' :
                   mode === 'forgot-password' && forgotStep === 'phone' ? 'Получить код в SMS' :
-                  mode === 'forgot-password' && forgotStep === 'sms-verification' ? 'Подтвердить код' :
-                  mode === 'forgot-password' && forgotStep === 'new-password' ? 'Сохранить новый пароль' :
+                  mode === 'forgot-password' && forgotStep === 'sms-verification' ? 'Сохранить как новый пароль' :
                   'Продолжить'
                 )}
               </button>
