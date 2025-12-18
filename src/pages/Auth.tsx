@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/layout/Header';
@@ -8,11 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Snowflake, Mail, Lock, User, Phone, ArrowLeft, Sparkles, Star, Eye, EyeOff } from 'lucide-react';
+import { Snowflake, Mail, Lock, User, Phone, ArrowLeft, Sparkles, Star, Eye, EyeOff, MessageSquare } from 'lucide-react';
 import { autoSubscribeToPush } from '@/lib/pushNotifications';
 import { getReferralCode, clearReferralCode } from '@/lib/referral';
 
 type AuthMode = 'login' | 'register' | 'forgot-password';
+type RegisterStep = 'form' | 'sms-verification';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -32,7 +33,14 @@ const Auth = () => {
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Password validation
+  // SMS verification state
+  const [registerStep, setRegisterStep] = useState<RegisterStep>('form');
+  const [smsCode, setSmsCode] = useState('');
+  const [authId, setAuthId] = useState<string | null>(null);
+  const [resendTimer, setResendTimer] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Password validation for login
   const passwordRequirements = [
     { label: 'Минимум 6 символов', check: (p: string) => p.length >= 6 },
     { label: 'Хотя бы одна цифра', check: (p: string) => /\d/.test(p) },
@@ -41,12 +49,36 @@ const Auth = () => {
 
   useEffect(() => {
     setModeState(modeFromUrl);
+    // Reset registration step when mode changes
+    if (modeFromUrl !== 'register') {
+      setRegisterStep('form');
+      setSmsCode('');
+      setAuthId(null);
+    }
   }, [modeFromUrl]);
+
+  // Timer effect
+  useEffect(() => {
+    if (resendTimer > 0) {
+      timerRef.current = setTimeout(() => {
+        setResendTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [resendTimer]);
 
   const setMode = (newMode: AuthMode) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set('mode', newMode);
     setSearchParams(newParams, { replace: true });
+    // Reset registration step when changing mode
+    setRegisterStep('form');
+    setSmsCode('');
+    setAuthId(null);
   };
 
   useEffect(() => {
@@ -72,6 +104,177 @@ const Auth = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Format phone for API (remove all non-digits)
+  const formatPhoneForApi = (phone: string): string => {
+    const digits = phone.replace(/\D/g, '');
+    // Ensure it starts with 7 for Russian numbers
+    if (digits.startsWith('8') && digits.length === 11) {
+      return '7' + digits.slice(1);
+    }
+    if (digits.startsWith('+')) {
+      return digits.slice(1);
+    }
+    return digits;
+  };
+
+  // Send 2FA code for registration
+  const sendRegistrationSms = async () => {
+    const formattedPhone = formatPhoneForApi(formData.phone);
+    
+    if (formattedPhone.length < 10) {
+      toast.error('Введите корректный номер телефона');
+      return false;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-2fa-code', {
+        body: {
+          phone: formattedPhone,
+          template_id: 78, // Registration template
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data?.auth_id) {
+        setAuthId(data.auth_id);
+        setResendTimer(120);
+        return true;
+      } else if (data?.error) {
+        throw new Error(data.error);
+      }
+      
+      return false;
+    } catch (error: any) {
+      console.error('SMS send error:', error);
+      toast.error(error.message || 'Ошибка отправки SMS');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Verify 2FA code
+  const verifySmsCode = async (): Promise<boolean> => {
+    if (!authId || !smsCode) {
+      toast.error('Введите код из SMS');
+      return false;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-2fa-code', {
+        body: {
+          auth_id: authId,
+          access_code: smsCode,
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data?.verified) {
+        return true;
+      } else if (data?.error) {
+        toast.error(data.error);
+        return false;
+      }
+      
+      toast.error('Неверный код');
+      return false;
+    } catch (error: any) {
+      console.error('Verify error:', error);
+      toast.error(error.message || 'Ошибка проверки кода');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Complete registration with verified SMS code as password
+  const completeRegistration = async () => {
+    const verified = await verifySmsCode();
+    if (!verified) return;
+
+    setLoading(true);
+    try {
+      // Use the SMS code as password
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: smsCode, // Use SMS code as password
+        options: {
+          emailRedirectTo: `${window.location.origin}${redirectTo}`,
+          data: {
+            full_name: formData.fullName,
+            phone: formData.phone,
+          },
+        },
+      });
+      
+      if (error) throw error;
+      
+      // Send welcome email
+      supabase.functions.invoke('send-notification-email', {
+        body: {
+          type: 'welcome_email',
+          email: formData.email,
+          fullName: formData.fullName,
+        },
+      }).catch(err => console.error('Failed to send welcome email:', err));
+      
+      // Track referral registration if applicable
+      if (data.user?.id) {
+        const refCode = getReferralCode();
+        if (refCode) {
+          (async () => {
+            try {
+              const { data: partner } = await supabase
+                .from('partners')
+                .select('id')
+                .eq('referral_code', refCode)
+                .eq('is_active', true)
+                .single();
+              
+              if (partner) {
+                await supabase
+                  .from('referral_registrations')
+                  .insert({
+                    partner_id: partner.id,
+                    user_id: data.user!.id,
+                    user_type: 'customer',
+                  });
+                clearReferralCode();
+              }
+            } catch (err) {
+              console.log('Referral tracking skipped:', err);
+            }
+          })();
+        }
+        
+        // Auto-subscribe to push notifications
+        autoSubscribeToPush(data.user.id).then(success => {
+          if (success) {
+            toast.success('Push-уведомления включены!');
+          }
+        }).catch(err => 
+          console.log('Auto push subscription skipped:', err)
+        );
+      }
+      
+      toast.success('Регистрация успешна! Добро пожаловать!');
+    } catch (error: any) {
+      let message = 'Произошла ошибка';
+      if (error.message.includes('User already registered')) {
+        message = 'Пользователь с таким email уже зарегистрирован';
+      } else if (error.message.includes('Password')) {
+        message = 'Ошибка создания пароля';
+      }
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -85,74 +288,29 @@ const Auth = () => {
         if (error) throw error;
         toast.success('Добро пожаловать!');
       } else if (mode === 'register') {
-        if (!acceptTerms || !acceptPrivacy) {
-          toast.error('Необходимо принять Пользовательское соглашение и Политику конфиденциальности');
-          setLoading(false);
-          return;
-        }
-        const { data, error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}${redirectTo}`,
-            data: {
-              full_name: formData.fullName,
-              phone: formData.phone,
-            },
-          },
-        });
-        if (error) throw error;
-        
-        // Send welcome email
-        supabase.functions.invoke('send-notification-email', {
-          body: {
-            type: 'welcome_email',
-            email: formData.email,
-            fullName: formData.fullName,
-          },
-        }).catch(err => console.error('Failed to send welcome email:', err));
-        
-        // Track referral registration if applicable
-        if (data.user?.id) {
-          const refCode = getReferralCode();
-          if (refCode) {
-            // Find partner by referral code and create registration record
-            (async () => {
-              try {
-                const { data: partner } = await supabase
-                  .from('partners')
-                  .select('id')
-                  .eq('referral_code', refCode)
-                  .eq('is_active', true)
-                  .single();
-                
-                if (partner) {
-                  await supabase
-                    .from('referral_registrations')
-                    .insert({
-                      partner_id: partner.id,
-                      user_id: data.user!.id,
-                      user_type: 'customer',
-                    });
-                  clearReferralCode();
-                }
-              } catch (err) {
-                console.log('Referral tracking skipped:', err);
-              }
-            })();
+        if (registerStep === 'form') {
+          // Validate form first
+          if (!acceptTerms || !acceptPrivacy) {
+            toast.error('Необходимо принять Пользовательское соглашение и Политику конфиденциальности');
+            setLoading(false);
+            return;
+          }
+          if (!formData.phone) {
+            toast.error('Введите номер телефона для получения SMS с паролем');
+            setLoading(false);
+            return;
           }
           
-          // Auto-subscribe to push notifications
-          autoSubscribeToPush(data.user.id).then(success => {
-            if (success) {
-              toast.success('Push-уведомления включены! Вы будете получать уведомления о заказах и сообщениях.');
-            }
-          }).catch(err => 
-            console.log('Auto push subscription skipped:', err)
-          );
+          // Send SMS
+          const sent = await sendRegistrationSms();
+          if (sent) {
+            setRegisterStep('sms-verification');
+            toast.success('SMS с паролем отправлено на ваш телефон');
+          }
+        } else {
+          // Verify SMS and complete registration
+          await completeRegistration();
         }
-        
-        toast.success('Регистрация успешна! Добро пожаловать!');
       } else if (mode === 'forgot-password') {
         const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
           redirectTo: `${window.location.origin}/auth?mode=reset`,
@@ -175,6 +333,14 @@ const Auth = () => {
       toast.error(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendSms = async () => {
+    if (resendTimer > 0) return;
+    const sent = await sendRegistrationSms();
+    if (sent) {
+      toast.success('SMS отправлено повторно');
     }
   };
 
@@ -212,18 +378,20 @@ const Auth = () => {
               </div>
               <h1 className="font-display text-2xl font-bold text-snow-100">
                 {mode === 'login' && 'Вход в аккаунт'}
-                {mode === 'register' && 'Регистрация'}
+                {mode === 'register' && registerStep === 'form' && 'Регистрация'}
+                {mode === 'register' && registerStep === 'sms-verification' && 'Подтверждение'}
                 {mode === 'forgot-password' && 'Восстановление пароля'}
               </h1>
               <p className="text-snow-400 mt-2">
                 {mode === 'login' && 'Войдите, чтобы забронировать Деда Мороза'}
-                {mode === 'register' && 'Создайте аккаунт для бронирования'}
+                {mode === 'register' && registerStep === 'form' && 'Создайте аккаунт для бронирования'}
+                {mode === 'register' && registerStep === 'sms-verification' && `Введите код из SMS, отправленного на ${formData.phone}`}
                 {mode === 'forgot-password' && 'Введите email для сброса пароля'}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === 'register' && (
+              {mode === 'register' && registerStep === 'form' && (
                 <>
                   <div>
                     <Label htmlFor="fullName" className="text-snow-200">Ваше имя</Label>
@@ -242,7 +410,7 @@ const Auth = () => {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="phone" className="text-snow-200">Телефон</Label>
+                    <Label htmlFor="phone" className="text-snow-200">Телефон <span className="text-magic-gold">*</span></Label>
                     <div className="relative mt-1">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
                       <Input
@@ -251,83 +419,168 @@ const Auth = () => {
                         type="tel"
                         value={formData.phone}
                         onChange={handleInputChange}
-                        placeholder="+7 (846) 123-45-67"
+                        placeholder="+7 (995) 382-97-36"
                         className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
+                        required
                       />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="email" className="text-snow-200">Email</Label>
+                    <div className="relative mt-1">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        placeholder="example@mail.com"
+                        className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password info message */}
+                  <div className="bg-magic-purple/10 border border-magic-purple/30 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      <MessageSquare className="h-5 w-5 text-magic-purple mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-snow-300">
+                        Пароль придёт в SMS на указанный телефон. Его потом можно изменить в настройках профиля.
+                      </p>
                     </div>
                   </div>
                 </>
               )}
 
-              <div>
-                <Label htmlFor="email" className="text-snow-200">Email</Label>
-                <div className="relative mt-1">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="example@mail.com"
-                    className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
-                    required
-                  />
-                </div>
-              </div>
-
-              {mode !== 'forgot-password' && (
-                <div>
-                  <Label htmlFor="password" className="text-snow-200">Пароль</Label>
-                  <div className="relative mt-1">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
-                    <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      placeholder="••••••••"
-                      className="pl-10 pr-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
-                      required
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-snow-500 hover:text-snow-300 transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {mode === 'register' && (
-                    <div className="mt-2 space-y-1">
-                      {passwordRequirements.map((req, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-xs">
-                          <span className={`w-1.5 h-1.5 rounded-full transition-colors ${req.check(formData.password) ? 'bg-green-500' : 'bg-red-500'}`} />
-                          <span className={`transition-colors ${req.check(formData.password) ? 'text-green-400' : 'text-snow-500'}`}>
-                            {req.label}
-                          </span>
-                        </div>
-                      ))}
+              {mode === 'register' && registerStep === 'sms-verification' && (
+                <>
+                  <div>
+                    <Label htmlFor="smsCode" className="text-snow-200">Введите пароль из SMS</Label>
+                    <div className="relative mt-1">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
+                      <Input
+                        id="smsCode"
+                        type="text"
+                        value={smsCode}
+                        onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="000000"
+                        className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50 text-center text-2xl tracking-widest font-mono"
+                        maxLength={6}
+                        autoFocus
+                        required
+                      />
                     </div>
-                  )}
-                </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleResendSms}
+                    disabled={resendTimer > 0 || loading}
+                    className={`w-full text-sm py-2 rounded-lg transition-colors ${
+                      resendTimer > 0 
+                        ? 'text-snow-500 bg-winter-900/30 cursor-not-allowed' 
+                        : 'text-magic-gold hover:bg-magic-gold/10'
+                    }`}
+                  >
+                    {resendTimer > 0 
+                      ? `Повторно отправить SMS (${resendTimer} сек)` 
+                      : 'Повторно отправить мне SMS'
+                    }
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRegisterStep('form');
+                      setSmsCode('');
+                      setAuthId(null);
+                    }}
+                    className="w-full text-sm text-snow-400 hover:text-snow-200 flex items-center justify-center gap-1"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Изменить данные
+                  </button>
+                </>
               )}
 
               {mode === 'login' && (
-                <div className="text-right">
-                  <button
-                    type="button"
-                    onClick={() => setMode('forgot-password')}
-                    className="text-sm text-magic-gold hover:underline"
-                  >
-                    Забыли пароль?
-                  </button>
+                <>
+                  <div>
+                    <Label htmlFor="email" className="text-snow-200">Email</Label>
+                    <div className="relative mt-1">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        placeholder="example@mail.com"
+                        className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="password" className="text-snow-200">Пароль</Label>
+                    <div className="relative mt-1">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        placeholder="••••••••"
+                        className="pl-10 pr-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-snow-500 hover:text-snow-300 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => setMode('forgot-password')}
+                      className="text-sm text-magic-gold hover:underline"
+                    >
+                      Забыли пароль?
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {mode === 'forgot-password' && (
+                <div>
+                  <Label htmlFor="email" className="text-snow-200">Email</Label>
+                  <div className="relative mt-1">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="example@mail.com"
+                      className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
+                      required
+                    />
+                  </div>
                 </div>
               )}
 
-              {mode === 'register' && (
+              {mode === 'register' && registerStep === 'form' && (
                 <div className="space-y-3 pt-2">
                   <div className="flex items-start space-x-2">
                     <Checkbox 
@@ -367,7 +620,8 @@ const Auth = () => {
               >
                 {loading ? 'Загрузка...' : (
                   mode === 'login' ? 'Войти' : 
-                  mode === 'register' ? 'Зарегистрироваться' : 
+                  mode === 'register' && registerStep === 'form' ? 'Получить пароль в SMS' :
+                  mode === 'register' && registerStep === 'sms-verification' ? 'Подтвердить и войти' :
                   'Отправить ссылку'
                 )}
               </button>
@@ -400,10 +654,12 @@ const Auth = () => {
             )}
 
             <div className="mt-6 pt-6 border-t border-snow-700/20 text-center">
-              <Link to="/" className="text-sm text-snow-500 hover:text-snow-300 transition-colors inline-flex items-center gap-1">
-                <ArrowLeft className="h-3 w-3" />
-                Вернуться на главную
-              </Link>
+              <p className="text-xs text-snow-500">
+                Хотите стать Дедом Морозом?{' '}
+                <Link to="/performer-registration" className="text-magic-gold hover:underline">
+                  Подать заявку
+                </Link>
+              </p>
             </div>
           </div>
         </div>
