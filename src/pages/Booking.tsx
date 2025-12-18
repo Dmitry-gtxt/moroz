@@ -115,11 +115,15 @@ const Booking = () => {
   // Pre-fill form with user data when logged in
   useEffect(() => {
     if (user) {
+      // Don't pre-fill generated emails (format: phone@ded-morozy-rf.ru)
+      const email = user.email || '';
+      const isGeneratedEmail = email.endsWith('@ded-morozy-rf.ru') && /^\d+@/.test(email);
+      
       setFormData(prev => ({
         ...prev,
         customerName: user.user_metadata?.full_name || '',
         customerPhone: user.user_metadata?.phone || '',
-        customerEmail: user.email || '',
+        customerEmail: isGeneratedEmail ? '' : email,
       }));
     }
   }, [user]);
