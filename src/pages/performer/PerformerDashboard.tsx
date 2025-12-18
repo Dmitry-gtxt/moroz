@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { UserSupportDialog } from '@/components/support/UserSupportDialog';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
@@ -17,7 +18,8 @@ import {
   UserCircle,
   Menu,
   Snowflake,
-  MessageCircle
+  MessageCircle,
+  Headphones
 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -83,6 +85,16 @@ export function PerformerLayout({ children }: PerformerLayoutProps) {
             </Link>
           );
         })}
+        
+        {/* Support button */}
+        <UserSupportDialog
+          trigger={
+            <button className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-muted-foreground hover:bg-muted hover:text-foreground w-full text-left">
+              <Headphones className="h-5 w-5" />
+              <span className="font-medium">Написать в поддержку</span>
+            </button>
+          }
+        />
       </nav>
 
       <div className="p-4 border-t border-border space-y-2">
