@@ -141,6 +141,7 @@ const Auth = () => {
         body: {
           phone: formattedPhone,
           template_id: templateId,
+          code_digits: 8,
         },
       });
 
@@ -210,11 +211,10 @@ const Auth = () => {
       // Generate email from phone if not provided
       const emailToUse = formData.email.trim() || `${formatPhoneForApi(formData.phone)}@ded-morozy-rf.ru`;
       
-      // Use the SMS code with "SM" prefix as password (Supabase requires 8+ chars)
-      const passwordFromCode = `SM${smsCode}`;
+      // Use the SMS code directly as password (8 digits)
       const { data, error } = await supabase.auth.signUp({
         email: emailToUse,
-        password: passwordFromCode,
+        password: smsCode,
         options: {
           emailRedirectTo: `${window.location.origin}${redirectTo}`,
           data: {
@@ -298,19 +298,18 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      // Use the SMS code with "SM" prefix as password (Supabase requires 8+ chars)
-      const passwordFromCode = `SM${smsCode}`;
+      // Use the SMS code directly as password (8 digits)
       const { data, error } = await supabase.functions.invoke('reset-password-by-phone', {
         body: {
           phone: formatPhoneForApi(recoveryPhone),
-          new_password: passwordFromCode,
+          new_password: smsCode,
         },
       });
 
       if (error) throw error;
       
       if (data?.success) {
-        toast.success('Пароль изменён на SM + код из SMS. Теперь вы можете войти.');
+        toast.success('Пароль изменён на код из SMS. Теперь вы можете войти.');
         setMode('login');
         // Pre-fill email if we have it
         if (data.email) {
@@ -453,9 +452,9 @@ const Auth = () => {
               <p className="text-snow-400 mt-2">
                 {mode === 'login' && 'Войдите, чтобы забронировать Деда Мороза'}
                 {mode === 'register' && registerStep === 'form' && 'Создайте аккаунт для бронирования'}
-                {mode === 'register' && registerStep === 'sms-verification' && `Введите код из SMS — ваш пароль будет SM + код`}
+                {mode === 'register' && registerStep === 'sms-verification' && `Введите 8-значный код из SMS — это ваш пароль`}
                 {mode === 'forgot-password' && forgotStep === 'phone' && 'Введите телефон, указанный при регистрации'}
-                {mode === 'forgot-password' && forgotStep === 'sms-verification' && `Введите код из SMS — ваш новый пароль будет SM + код`}
+                {mode === 'forgot-password' && forgotStep === 'sms-verification' && `Введите 8-значный код из SMS — это ваш новый пароль`}
               </p>
             </div>
 
@@ -516,7 +515,7 @@ const Auth = () => {
                     <div className="flex items-start gap-3">
                       <MessageSquare className="h-5 w-5 text-magic-purple mt-0.5 flex-shrink-0" />
                       <p className="text-sm text-snow-300">
-                        Пароль придёт в SMS на указанный телефон. Ваш пароль для входа: SM + код из SMS. Его можно изменить в настройках профиля.
+                        Пароль придёт в SMS на указанный телефон. 8-значный код из SMS — это ваш пароль для входа. Его можно изменить в настройках профиля.
                       </p>
                     </div>
                   </div>
@@ -534,8 +533,8 @@ const Auth = () => {
                         id="smsCode"
                         type="text"
                         value={smsCode}
-                        onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        placeholder="000000"
+                        onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                        placeholder="00000000"
                         className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50 text-center text-2xl tracking-widest font-mono"
                         maxLength={6}
                         autoFocus
@@ -662,8 +661,8 @@ const Auth = () => {
                         id="smsCodeRecovery"
                         type="text"
                         value={smsCode}
-                        onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        placeholder="000000"
+                        onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                        placeholder="00000000"
                         className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50 text-center text-2xl tracking-widest font-mono"
                         maxLength={6}
                         autoFocus
