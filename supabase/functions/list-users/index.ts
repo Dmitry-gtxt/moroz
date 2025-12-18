@@ -67,7 +67,7 @@ serve(async (req) => {
     const formattedUsers = users.map(user => ({
       id: user.id,
       email: user.email,
-      phone: user.phone,
+      phone: user.phone || user.user_metadata?.phone || null,
       full_name: user.user_metadata?.full_name || user.email || user.phone || 'Без имени',
       created_at: user.created_at,
       last_sign_in_at: user.last_sign_in_at,
