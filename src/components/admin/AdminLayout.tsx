@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
-import { Users, FileCheck, ShoppingCart, LayoutDashboard, LogOut, Star, History, CreditCard, Shield, MessageCircle, ClipboardCheck, Handshake, Menu, MessageSquareText } from 'lucide-react';
+import { Users, FileCheck, ShoppingCart, LayoutDashboard, LogOut, Star, History, CreditCard, Shield, MessageCircle, ClipboardCheck, Handshake, Menu, MessageSquareText, UserRound } from 'lucide-react';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -75,6 +75,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   const navItems = [
     { to: '/admin', icon: LayoutDashboard, label: 'Обзор' },
+    { to: '/admin/users', icon: UserRound, label: 'Все пользователи' },
     { to: '/admin/performers', icon: Users, label: 'Исполнители' },
     { to: '/admin/verification', icon: FileCheck, label: 'Верификация', badge: verificationCount },
     { to: '/admin/moderation', icon: ClipboardCheck, label: 'Модерация', badge: moderationCount },
