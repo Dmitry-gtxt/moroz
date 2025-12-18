@@ -10,11 +10,22 @@ interface VerifyRequest {
   access_code: string;
 }
 
+
+// Normalize tokens to avoid issues with accidental "Bearer " prefix, quotes or whitespace
+function normalizeNotificoreBearerToken(raw: string): string {
+  let t = raw.trim();
+  // remove accidental surrounding quotes
+  t = t.replace(/^"+|"+$/g, "");
+  // remove accidental Bearer prefix (we add it in Authorization header)
+  t = t.replace(/^Bearer\s+/i, "");
+  return t.trim();
+}
+
 // Get JWT bearer token from Notificore API
 async function getNotificoreBearerToken(apiKey: string): Promise<string | null> {
   try {
     console.log("[2FA Verify] Getting bearer token from Notificore...");
-    
+
     const response = await fetch("https://one-api.notificore.ru/api/auth/login", {
       method: "POST",
       headers: {
@@ -25,18 +36,21 @@ async function getNotificoreBearerToken(apiKey: string): Promise<string | null> 
 
     const responseText = await response.text();
     console.log(`[2FA Verify] Auth response status: ${response.status}`);
-    
+
     if (!response.ok) {
       console.error(`[2FA Verify] Auth failed: ${responseText}`);
       return null;
     }
 
     const data = JSON.parse(responseText);
-    if (data.bearer) {
-      console.log(`[2FA Verify] Bearer token received, len=${data.bearer.length}`);
-      return data.bearer;
+    const rawBearer = typeof data?.bearer === "string" ? data.bearer : "";
+
+    if (rawBearer) {
+      const token = normalizeNotificoreBearerToken(rawBearer);
+      console.log(`[2FA Verify] Bearer token received, len=${token.length}`);
+      return token;
     }
-    
+
     console.error("[2FA Verify] No bearer in response:", responseText);
     return null;
   } catch (error) {
@@ -44,6 +58,7 @@ async function getNotificoreBearerToken(apiKey: string): Promise<string | null> 
     return null;
   }
 }
+
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight
