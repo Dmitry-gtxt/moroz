@@ -536,7 +536,7 @@ const Auth = () => {
                         onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
                         placeholder="00000000"
                         className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50 text-center text-2xl tracking-widest font-mono"
-                        maxLength={6}
+                        maxLength={8}
                         autoFocus
                         required
                       />
@@ -664,7 +664,7 @@ const Auth = () => {
                         onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
                         placeholder="00000000"
                         className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50 text-center text-2xl tracking-widest font-mono"
-                        maxLength={6}
+                        maxLength={8}
                         autoFocus
                         required
                       />
