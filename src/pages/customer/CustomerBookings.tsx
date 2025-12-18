@@ -22,6 +22,7 @@ import { scheduleBookingReminders } from '@/lib/pushNotifications';
 import { format, parseISO, differenceInMinutes } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import type { Database } from '@/integrations/supabase/types';
+import { trackPayment } from '@/lib/analytics';
 
 type Booking = Database['public']['Tables']['bookings']['Row'];
 type BookingStatus = Database['public']['Enums']['booking_status'];
@@ -307,6 +308,12 @@ export default function CustomerBookings() {
       toast.error('Ошибка симуляции оплаты');
       return;
     }
+
+    // Track payment event for analytics
+    trackPayment({
+      booking_id: booking.id,
+      amount: booking.prepayment_amount,
+    });
 
     // Schedule booking reminders
     if (booking.performer) {

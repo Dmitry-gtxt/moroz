@@ -22,6 +22,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { bookingStep1Schema, bookingStep2Schema } from '@/lib/validations/booking';
 import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment, getCommissionRate, getPrepaymentPercentage } from '@/lib/pricing';
 import { ZodError } from 'zod';
+import { trackBooking } from '@/lib/analytics';
 
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
 type District = Database['public']['Tables']['districts']['Row'];
@@ -298,6 +299,13 @@ const Booking = () => {
             bookingTime: slotTime,
           });
         }
+
+        // Track booking event for analytics
+        trackBooking({
+          performer_id: performer.id,
+          price: customerPrice,
+          event_type: formData.eventType,
+        });
 
         toast.success('Бронирование успешно создано!');
         setStep(4);
