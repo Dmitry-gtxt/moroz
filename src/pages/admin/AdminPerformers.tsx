@@ -111,6 +111,7 @@ export default function AdminPerformers() {
     const phoneMap = new Map(profiles?.map(p => [p.user_id, p.phone]) ?? []);
     
     let emailMap = new Map<string, string>();
+    let authPhoneMap = new Map<string, string>();
     if (userIds.length > 0) {
       try {
         const { data: emailsData } = await supabase.functions.invoke('get-user-emails', {
@@ -118,6 +119,9 @@ export default function AdminPerformers() {
         });
         if (emailsData?.emails) {
           emailMap = new Map(Object.entries(emailsData.emails));
+        }
+        if (emailsData?.phones) {
+          authPhoneMap = new Map(Object.entries(emailsData.phones));
         }
       } catch (err) {
         console.error('Failed to fetch emails:', err);
@@ -127,7 +131,8 @@ export default function AdminPerformers() {
     const performersWithContacts: PerformerProfile[] = performersData.map(performer => ({
       ...performer,
       user_email: performer.user_id ? (emailMap.get(performer.user_id) || '') : '',
-      user_phone: performer.user_id ? (phoneMap.get(performer.user_id) || '') : '',
+      // Prefer phone from auth.users, fallback to profiles table
+      user_phone: performer.user_id ? (authPhoneMap.get(performer.user_id) || phoneMap.get(performer.user_id) || '') : '',
     }));
     
     setPerformers(performersWithContacts);
