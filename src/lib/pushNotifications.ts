@@ -270,13 +270,16 @@ export async function notifyBookingCancelled(
   recipientUserId: string,
   cancellerName: string,
   bookingDate: string,
-  cancelledBy: 'customer' | 'performer'
+  cancelledBy: 'customer' | 'performer' | 'admin'
 ): Promise<void> {
+  const url = cancelledBy === 'customer' ? '/performer/bookings' : '/customer/bookings';
   await sendPushNotification({
     userId: recipientUserId,
     title: '😔 Бронирование отменено',
-    body: `${cancellerName} отменил заказ на ${bookingDate}`,
-    url: cancelledBy === 'customer' ? '/performer/bookings' : '/customer/bookings',
+    body: cancelledBy === 'admin' 
+      ? `Администратор отменил заказ на ${bookingDate}` 
+      : `${cancellerName} отменил заказ на ${bookingDate}`,
+    url,
     tag: 'booking-cancelled'
   });
 }

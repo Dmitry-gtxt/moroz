@@ -10,7 +10,8 @@ import { Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { notifyPaymentReceived } from '@/lib/pushNotifications';
+import { notifyPaymentReceived, notifyBookingCancelled } from '@/lib/pushNotifications';
+import { smsBookingCancelledToCustomer } from '@/lib/smsNotifications';
 import type { Database } from '@/integrations/supabase/types';
 
 type Booking = Database['public']['Tables']['bookings']['Row'];
@@ -95,15 +96,46 @@ export default function AdminOrders() {
   }, [statusFilter]);
 
   async function updateBookingStatus(id: string, newStatus: Database['public']['Enums']['booking_status']) {
+    const booking = bookings.find(b => b.id === id);
+    
     const { error } = await supabase
       .from('bookings')
-      .update({ status: newStatus })
+      .update({ 
+        status: newStatus,
+        ...(newStatus === 'cancelled' ? { cancelled_by: 'admin' } : {})
+      })
       .eq('id', id);
 
     if (error) {
       toast.error('Ошибка обновления статуса');
     } else {
       toast.success('Статус заказа обновлён');
+      
+      // Send notifications when admin cancels booking
+      if (booking && newStatus === 'cancelled') {
+        const performerName = booking.performer_profiles?.display_name || 'Исполнитель';
+        
+        // Push notification to customer
+        if (booking.customer_id) {
+          notifyBookingCancelled(
+            booking.customer_id,
+            performerName,
+            format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+            'admin'
+          );
+        }
+        
+        // SMS notification to customer (priority channel) - Template 81
+        smsBookingCancelledToCustomer({
+          customerPhone: booking.customer_phone || undefined,
+          customerId: booking.customer_id || undefined,
+          bookingId: booking.id,
+          performerName: performerName,
+          bookingDate: format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+          bookingTime: booking.booking_time,
+        });
+      }
+      
       fetchBookings();
     }
   }
