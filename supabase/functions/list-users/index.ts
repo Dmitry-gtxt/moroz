@@ -63,6 +63,21 @@ serve(async (req) => {
       throw error;
     }
 
+    // Get all user roles
+    const { data: rolesData } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_id, role');
+
+    const rolesMap = new Map<string, string[]>();
+    if (rolesData) {
+      for (const r of rolesData) {
+        if (!rolesMap.has(r.user_id)) {
+          rolesMap.set(r.user_id, []);
+        }
+        rolesMap.get(r.user_id)!.push(r.role);
+      }
+    }
+
     // Format users for response
     const formattedUsers = users.map(user => ({
       id: user.id,
@@ -71,6 +86,7 @@ serve(async (req) => {
       full_name: user.user_metadata?.full_name || user.email || user.phone || 'Без имени',
       created_at: user.created_at,
       last_sign_in_at: user.last_sign_in_at,
+      roles: rolesMap.get(user.id) || ['customer'],
     }));
 
     return new Response(
