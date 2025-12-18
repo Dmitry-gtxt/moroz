@@ -284,20 +284,33 @@ const Booking = () => {
           );
 
           // Send SMS notification to performer (priority channel)
-          const { data: performerProfile } = await supabase
+          // Try to get phone from profiles first, then fallback to performer_profiles description
+          const { data: performerProfileData } = await supabase
             .from('profiles')
             .select('phone')
             .eq('user_id', performer.user_id)
             .maybeSingle();
 
-          if (performerProfile?.phone) {
+          let performerPhone = performerProfileData?.phone;
+          
+          // Fallback: extract phone from performer description "[Телефон для верификации: XXX]"
+          if (!performerPhone && performer.description) {
+            const phoneMatch = performer.description.match(/\[Телефон для верификации:\s*([^\]]+)\]/);
+            if (phoneMatch) {
+              performerPhone = phoneMatch[1].trim();
+            }
+          }
+
+          if (performerPhone) {
             smsNewBookingToPerformer({
-              performerPhone: performerProfile.phone,
+              performerPhone: performerPhone,
               bookingId: booking.id,
               customerName: formData.customerName,
               bookingDate: slotDate,
               bookingTime: slotTime,
             });
+          } else {
+            console.warn('No phone found for performer, SMS notification skipped');
           }
         }
 
