@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -11,10 +11,11 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Upload, X, Check, Loader2, Phone } from 'lucide-react';
+import { Upload, X, Check, Loader2, Phone, CheckCircle, XCircle } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 import { getReferralCode, clearReferralCode } from '@/lib/referral';
 import { cleanVerificationPhone } from '@/lib/utils';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 type PerformerType = Database['public']['Enums']['performer_type'];
 type EventFormat = Database['public']['Enums']['event_format'];
@@ -64,6 +65,20 @@ export default function PerformerRegistration() {
   const [programDuration, setProgramDuration] = useState('30');
   const [programDescription, setProgramDescription] = useState('');
   const [commissionRate, setCommissionRate] = useState<number | null>(null);
+  
+  // Phone verification states
+  const [registeredPhone, setRegisteredPhone] = useState('');
+  const [phoneConfirmed, setPhoneConfirmed] = useState<boolean | null>(null);
+  const [showPhoneChange, setShowPhoneChange] = useState(false);
+  const [newPhone, setNewPhone] = useState('');
+  const [authId, setAuthId] = useState('');
+  const [smsCode, setSmsCode] = useState('');
+  const [smsLoading, setSmsLoading] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [phoneChangeSuccess, setPhoneChangeSuccess] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Consent checkboxes
   const [acceptAgreement, setAcceptAgreement] = useState(false);
@@ -142,6 +157,165 @@ export default function PerformerRegistration() {
     }
     fetchCommissionRate();
   }, []);
+
+  // Fetch registered phone from profile
+  useEffect(() => {
+    async function fetchRegisteredPhone() {
+      if (!user) return;
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('phone')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (data?.phone) {
+          setRegisteredPhone(data.phone);
+          setVerificationPhone(data.phone);
+        }
+      } catch (err) {
+        console.error('Failed to fetch registered phone:', err);
+      }
+    }
+    fetchRegisteredPhone();
+  }, [user]);
+
+  // Timer cleanup
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
+
+  // Resend timer effect
+  useEffect(() => {
+    if (resendTimer > 0) {
+      timerRef.current = setInterval(() => {
+        setResendTimer(prev => prev - 1);
+      }, 1000);
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+      };
+    }
+  }, [resendTimer]);
+
+  const formatPhoneForApi = (phone: string): string => {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.startsWith('8') && digits.length === 11) {
+      return '+7' + digits.slice(1);
+    }
+    if (!digits.startsWith('7') && digits.length === 10) {
+      return '+7' + digits;
+    }
+    return '+' + digits;
+  };
+
+  const send2FaCode = async (phone: string) => {
+    setSmsLoading(true);
+    try {
+      const formattedPhone = formatPhoneForApi(phone);
+      const { data, error } = await supabase.functions.invoke('send-2fa-code', {
+        body: { 
+          phone: formattedPhone,
+          template_id: 78,
+          code_digits: 6,
+          code_lifetime: 120,
+          code_max_tries: 3,
+        },
+      });
+      
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      
+      setAuthId(data.auth_id);
+      setResendTimer(120);
+      toast.success('Код отправлен на ' + formattedPhone);
+      return true;
+    } catch (err: any) {
+      console.error('2FA send error:', err);
+      toast.error(err.message || 'Ошибка отправки SMS');
+      return false;
+    } finally {
+      setSmsLoading(false);
+    }
+  };
+
+  const verifySmsCode = async (code: string) => {
+    setVerifyingCode(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-2fa-code', {
+        body: { auth_id: authId, access_code: code },
+      });
+      
+      if (error) throw error;
+      if (!data.verified) throw new Error('Неверный код');
+      
+      return true;
+    } catch (err: any) {
+      console.error('Verification error:', err);
+      toast.error(err.message || 'Ошибка проверки кода');
+      return false;
+    } finally {
+      setVerifyingCode(false);
+    }
+  };
+
+  const handlePhoneConfirm = (confirmed: boolean) => {
+    setPhoneConfirmed(confirmed);
+    if (confirmed) {
+      setVerificationPhone(registeredPhone);
+    } else {
+      setShowPhoneChange(true);
+    }
+  };
+
+  const handleSendCodeForNewPhone = async () => {
+    if (!newPhone.trim()) {
+      toast.error('Введите новый номер телефона');
+      return;
+    }
+    await send2FaCode(newPhone);
+  };
+
+  const handleVerifyNewPhone = async () => {
+    if (smsCode.length !== 6) {
+      toast.error('Введите 6-значный код');
+      return;
+    }
+    
+    const verified = await verifySmsCode(smsCode);
+    if (!verified) return;
+    
+    // Update password to the SMS code with S prefix
+    const passwordWithPrefix = 'S' + smsCode;
+    
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordWithPrefix,
+      });
+      
+      if (updateError) throw updateError;
+      
+      // Update phone in profile
+      const formattedPhone = formatPhoneForApi(newPhone);
+      await supabase
+        .from('profiles')
+        .update({ phone: formattedPhone })
+        .eq('user_id', user!.id);
+      
+      setVerificationPhone(formattedPhone);
+      setPhoneChangeSuccess(true);
+      setNewPassword(passwordWithPrefix);
+      setPhoneConfirmed(true);
+      toast.success('Номер телефона изменён и подтверждён!');
+    } catch (err: any) {
+      console.error('Password update error:', err);
+      toast.error('Ошибка обновления: ' + (err.message || 'Попробуйте снова'));
+    }
+  };
 
   // Redirect to auth if not logged in (after all hooks)
   if (!authLoading && !user) {
@@ -264,8 +438,8 @@ export default function PerformerRegistration() {
       return true;
     }
     if (currentStep === 4) {
-      if (!verificationPhone.trim()) {
-        toast.error('Укажите номер телефона для верификации');
+      if (phoneConfirmed !== true && !phoneChangeSuccess) {
+        toast.error('Подтвердите номер телефона');
         return false;
       }
       if (!acceptAgreement || !acceptCode || !acceptImageUsage) {
@@ -883,7 +1057,7 @@ export default function PerformerRegistration() {
               <CardHeader>
                 <CardTitle>Верификация</CardTitle>
                 <CardDescription>
-                  Укажите номер телефона для подтверждения личности
+                  Подтвердите номер телефона для связи с заказчиками
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -900,18 +1074,145 @@ export default function PerformerRegistration() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="verificationPhone">Номер телефона для связи *</Label>
-                  <Input
-                    id="verificationPhone"
-                    type="tel"
-                    value={verificationPhone}
-                    onChange={(e) => setVerificationPhone(e.target.value)}
-                    placeholder="+7 (XXX) XXX-XX-XX"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Убедитесь, что номер активен и вы можете принимать звонки
-                  </p>
+                {/* Phone Confirmation Section */}
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <div className="space-y-2">
+                    <Label className="text-base font-medium">Ваш номер телефона при регистрации:</Label>
+                    <p className="text-xl font-bold text-foreground">{registeredPhone || 'Не указан'}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Этот номер будет доступен заказчику после внесения предоплаты на сайте.
+                    </p>
+                  </div>
+
+                  {phoneConfirmed === null && !phoneChangeSuccess && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium">Актуален ли этот номер телефона?</p>
+                      <div className="flex gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={() => handlePhoneConfirm(true)}
+                          className="flex-1 gap-2"
+                        >
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          Да, актуален
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => handlePhoneConfirm(false)}
+                          className="flex-1 gap-2"
+                        >
+                          <XCircle className="h-4 w-4 text-red-500" />
+                          Нет, изменить
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {phoneConfirmed === true && !phoneChangeSuccess && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-sm text-green-700">Номер телефона подтверждён</span>
+                    </div>
+                  )}
+
+                  {showPhoneChange && !phoneChangeSuccess && (
+                    <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+                      <div className="space-y-2">
+                        <Label htmlFor="newPhone">Новый номер телефона</Label>
+                        <Input
+                          id="newPhone"
+                          type="tel"
+                          value={newPhone}
+                          onChange={(e) => setNewPhone(e.target.value)}
+                          placeholder="+7 (XXX) XXX-XX-XX"
+                          disabled={!!authId}
+                        />
+                      </div>
+
+                      {!authId ? (
+                        <Button
+                          onClick={handleSendCodeForNewPhone}
+                          disabled={smsLoading || !newPhone.trim()}
+                          className="w-full"
+                        >
+                          {smsLoading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Отправка...
+                            </>
+                          ) : (
+                            'Отправить код подтверждения'
+                          )}
+                        </Button>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Введите код из СМС</Label>
+                            <InputOTP 
+                              maxLength={6} 
+                              value={smsCode}
+                              onChange={setSmsCode}
+                            >
+                              <InputOTPGroup>
+                                <InputOTPSlot index={0} />
+                                <InputOTPSlot index={1} />
+                                <InputOTPSlot index={2} />
+                                <InputOTPSlot index={3} />
+                                <InputOTPSlot index={4} />
+                                <InputOTPSlot index={5} />
+                              </InputOTPGroup>
+                            </InputOTP>
+                          </div>
+
+                          <Button
+                            onClick={handleVerifyNewPhone}
+                            disabled={verifyingCode || smsCode.length !== 6}
+                            className="w-full"
+                          >
+                            {verifyingCode ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Проверка...
+                              </>
+                            ) : (
+                              'Подтвердить'
+                            )}
+                          </Button>
+
+                          {resendTimer > 0 ? (
+                            <p className="text-sm text-center text-muted-foreground">
+                              Повторная отправка через {resendTimer} сек.
+                            </p>
+                          ) : (
+                            <Button
+                              variant="link"
+                              onClick={() => send2FaCode(newPhone)}
+                              disabled={smsLoading}
+                              className="w-full"
+                            >
+                              Отправить код повторно
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {phoneChangeSuccess && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <span className="font-medium text-green-700">Номер телефона изменён и подтверждён!</span>
+                      </div>
+                      <p className="text-sm text-green-700">Ваш пароль изменён на:</p>
+                      <p className="text-3xl font-bold text-green-800 text-center py-2 bg-white rounded-lg border border-green-300">
+                        {newPassword}
+                      </p>
+                      <p className="text-xs text-green-600 text-center">
+                        Запомните или сохраните этот пароль для входа в аккаунт
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-3">
@@ -974,7 +1275,11 @@ export default function PerformerRegistration() {
                   <Button variant="outline" onClick={prevStep} className="flex-1">
                     Назад
                   </Button>
-                  <Button onClick={handleSubmit} disabled={loading} className="flex-1">
+                  <Button 
+                    onClick={handleSubmit} 
+                    disabled={loading || (phoneConfirmed === null && !phoneChangeSuccess)} 
+                    className="flex-1"
+                  >
                     {loading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
