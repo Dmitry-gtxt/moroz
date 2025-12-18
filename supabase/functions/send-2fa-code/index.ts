@@ -14,32 +14,69 @@ interface TwoFaRequest {
   code_max_tries?: number;
 }
 
+// Get JWT bearer token from Notificore API
+async function getNotificoreBearerToken(apiKey: string): Promise<string | null> {
+  try {
+    console.log("[2FA] Getting bearer token from Notificore...");
+    
+    const response = await fetch("https://one-api.notificore.ru/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ api_key: apiKey }),
+    });
+
+    const responseText = await response.text();
+    console.log(`[2FA] Auth response status: ${response.status}`);
+    
+    if (!response.ok) {
+      console.error(`[2FA] Auth failed: ${responseText}`);
+      return null;
+    }
+
+    const data = JSON.parse(responseText);
+    if (data.bearer) {
+      console.log(`[2FA] Bearer token received, len=${data.bearer.length}`);
+      return data.bearer;
+    }
+    
+    console.error("[2FA] No bearer in response:", responseText);
+    return null;
+  } catch (error) {
+    console.error("[2FA] Auth error:", error);
+    return null;
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const tokenRaw = Deno.env.get("NOTIFICORE_2FA_BEARER_TOKEN") ?? "";
-  const tokenTrimmed = tokenRaw.trim();
-  const tokenNoAuthPrefix = tokenTrimmed.replace(/^Authorization:\s*/i, "").trim();
-  const tokenUnquoted = tokenNoAuthPrefix.replace(/^['"]|['"]$/g, "").trim();
-  const tokenClean = tokenUnquoted.replace(/^Bearer\s+/i, "").trim();
-
-  // Never log the token itself
-  console.log(
-    `[2FA] Token sanity: len=${tokenClean.length}, dots=${Math.max(0, tokenClean.split(".").length - 1)}`,
-  );
-
-  if (!tokenClean) {
+  // Get API key from secrets
+  const apiKey = Deno.env.get("NOTIFICORE_2FA_BEARER_TOKEN")?.trim() || "";
+  
+  if (!apiKey) {
     console.error("NOTIFICORE_2FA_BEARER_TOKEN is not set");
     return new Response(
-      JSON.stringify({ success: false, error: "2FA Bearer token not configured" }),
+      JSON.stringify({ success: false, error: "2FA API key not configured" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
-  const NOTIFICORE_2FA_AUTH_HEADER = `Bearer ${tokenClean}`;
+  console.log(`[2FA] API key sanity: len=${apiKey.length}, prefix=${apiKey.substring(0, 5)}`);
+
+  // Get JWT bearer token
+  const bearerToken = await getNotificoreBearerToken(apiKey);
+  
+  if (!bearerToken) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Failed to authenticate with Notificore" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
 
   try {
     const { 
@@ -86,7 +123,7 @@ const handler = async (req: Request): Promise<Response> => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": NOTIFICORE_2FA_AUTH_HEADER,
+        "Authorization": `Bearer ${bearerToken}`,
       },
       body: JSON.stringify(payload),
     });
