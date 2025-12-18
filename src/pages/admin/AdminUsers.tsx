@@ -14,6 +14,7 @@ import { ru } from 'date-fns/locale';
 interface UserData {
   id: string;
   email: string | null;
+  phone: string | null;
   full_name: string;
   created_at: string;
   last_sign_in_at: string | null;
@@ -123,6 +124,7 @@ export default function AdminUsers() {
     const searchLower = searchTerm.toLowerCase();
     return (
       user.full_name.toLowerCase().includes(searchLower) ||
+      (user.phone && user.phone.includes(searchTerm)) ||
       (user.email && user.email.toLowerCase().includes(searchLower))
     );
   });
@@ -184,6 +186,7 @@ export default function AdminUsers() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Имя</TableHead>
+                      <TableHead>Телефон</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Дата регистрации</TableHead>
                       <TableHead className="w-20">Действия</TableHead>
@@ -193,6 +196,7 @@ export default function AdminUsers() {
                     {filteredUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.full_name}</TableCell>
+                        <TableCell>{user.phone || '—'}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{user.email || '—'}</TableCell>
                         <TableCell>
                           {format(new Date(user.created_at), 'dd MMM yyyy, HH:mm', { locale: ru })}
