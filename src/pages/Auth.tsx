@@ -209,9 +209,12 @@ const Auth = () => {
 
     setLoading(true);
     try {
+      // Generate email from phone if not provided
+      const emailToUse = formData.email.trim() || `${formatPhoneForApi(formData.phone)}@ded-morozy-rf.ru`;
+      
       // Use the SMS code as password
       const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
+        email: emailToUse,
         password: smsCode, // Use SMS code as password
         options: {
           emailRedirectTo: `${window.location.origin}${redirectTo}`,
@@ -224,14 +227,16 @@ const Auth = () => {
       
       if (error) throw error;
       
-      // Send welcome email
-      supabase.functions.invoke('send-notification-email', {
-        body: {
-          type: 'welcome_email',
-          email: formData.email,
-          fullName: formData.fullName,
-        },
-      }).catch(err => console.error('Failed to send welcome email:', err));
+      // Send welcome email only if user provided a real email
+      if (formData.email.trim()) {
+        supabase.functions.invoke('send-notification-email', {
+          body: {
+            type: 'welcome_email',
+            email: formData.email,
+            fullName: formData.fullName,
+          },
+        }).catch(err => console.error('Failed to send welcome email:', err));
+      }
       
       // Track referral registration if applicable
       if (data.user?.id) {
@@ -489,7 +494,7 @@ const Auth = () => {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="email" className="text-snow-200">Email</Label>
+                    <Label htmlFor="email" className="text-snow-200">Email <span className="text-snow-500 text-sm">(необязательно)</span></Label>
                     <div className="relative mt-1">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
                       <Input
@@ -500,7 +505,6 @@ const Auth = () => {
                         onChange={handleInputChange}
                         placeholder="example@mail.com"
                         className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
-                        required
                       />
                     </div>
                   </div>
