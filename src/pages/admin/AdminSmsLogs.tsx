@@ -78,6 +78,16 @@ const AdminSmsLogs = () => {
     error?: string;
     details?: Record<string, unknown>;
   } | null>(null);
+  
+  // 2FA Verify test
+  const [verifyAuthId, setVerifyAuthId] = useState("");
+  const [verifyCode, setVerifyCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<{
+    verified: boolean;
+    error?: string;
+    details?: Record<string, unknown>;
+  } | null>(null);
 
   const smsInfo = useMemo(() => calculateSmsInfo(testMessage), [testMessage]);
 
@@ -182,6 +192,43 @@ const AdminSmsLogs = () => {
       setTwoFaSending(false);
     }
   };
+  
+  // Verify 2FA code
+  const verify2FaCode = async () => {
+    if (!verifyAuthId || !verifyCode) {
+      toast.error("Введите Auth ID и код");
+      return;
+    }
+    
+    setVerifying(true);
+    setVerifyResult(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-2fa-code", {
+        body: { 
+          auth_id: verifyAuthId, 
+          access_code: verifyCode,
+        },
+      });
+      
+      if (error) throw error;
+      
+      setVerifyResult(data);
+      
+      if (data?.verified) {
+        toast.success("Код верифицирован успешно!");
+      } else {
+        toast.error(data?.error || "Неверный код");
+      }
+    } catch (err: unknown) {
+      console.error("Verify error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Ошибка проверки";
+      setVerifyResult({ verified: false, error: errorMessage });
+      toast.error(errorMessage);
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const filteredLogs = logs.filter(
     (log) =>
@@ -280,6 +327,58 @@ const AdminSmsLogs = () => {
                 )}
               </div>
             )}
+            
+            {/* Verify 2FA section */}
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-medium mb-3 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Проверка кода
+              </h4>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Auth ID</label>
+                  <Input
+                    placeholder="auth_id из ответа выше"
+                    value={verifyAuthId}
+                    onChange={(e) => setVerifyAuthId(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Код из SMS</label>
+                  <Input
+                    placeholder="123456"
+                    value={verifyCode}
+                    onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    maxLength={6}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button onClick={verify2FaCode} disabled={verifying || !verifyAuthId || !verifyCode} variant="secondary">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    {verifying ? "Проверка..." : "Проверить код"}
+                  </Button>
+                </div>
+              </div>
+              
+              {verifyResult && (
+                <div className={`mt-3 p-3 rounded-lg border ${
+                  verifyResult.verified 
+                    ? "bg-green-500/10 border-green-500/30" 
+                    : "bg-red-500/10 border-red-500/30"
+                }`}>
+                  {verifyResult.verified ? (
+                    <div className="text-sm text-green-500 font-medium">✓ Код верифицирован успешно!</div>
+                  ) : (
+                    <div className="text-sm text-red-500">✗ Ошибка: {verifyResult.error}</div>
+                  )}
+                  {verifyResult.details && (
+                    <pre className="text-xs mt-2 bg-muted/50 p-2 rounded overflow-x-auto">
+                      {JSON.stringify(verifyResult.details, null, 2)}
+                    </pre>
+                  )}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
