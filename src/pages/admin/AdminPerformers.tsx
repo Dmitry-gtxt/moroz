@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SupportChatDialog } from '@/components/admin/SupportChatDialog';
 import { RatingAdjustDialog } from '@/components/admin/RatingAdjustDialog';
 import { AdminReviewDialog } from '@/components/admin/AdminReviewDialog';
-import { Eye, Star, MessageSquare, ArrowUpDown, ArrowUp, ArrowDown, MessageCirclePlus, Filter } from 'lucide-react';
+import { Eye, Star, MessageSquare, ArrowUpDown, ArrowUp, ArrowDown, MessageCirclePlus, Filter, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getCustomerPrice, getPrepaymentAmount, getCommissionRate } from '@/lib/pricing';
 import type { Database } from '@/integrations/supabase/types';
@@ -283,12 +284,77 @@ export default function AdminPerformers() {
     }
   }
 
+  // Count test performers
+  const testPerformersCount = performers.filter(p => p.display_name.startsWith('[TEST]')).length;
+
+  async function deleteTestPerformers() {
+    const testPerformerIds = performers
+      .filter(p => p.display_name.startsWith('[TEST]'))
+      .map(p => p.id);
+    
+    if (testPerformerIds.length === 0) {
+      toast.info('Нет тестовых исполнителей для удаления');
+      return;
+    }
+
+    // Delete slots first
+    const { error: slotsError } = await supabase
+      .from('availability_slots')
+      .delete()
+      .in('performer_id', testPerformerIds);
+
+    if (slotsError) {
+      console.error('Error deleting slots:', slotsError);
+    }
+
+    // Delete performers
+    const { error } = await supabase
+      .from('performer_profiles')
+      .delete()
+      .in('id', testPerformerIds);
+
+    if (error) {
+      toast.error('Ошибка удаления тестовых исполнителей');
+      console.error(error);
+    } else {
+      toast.success(`Удалено ${testPerformerIds.length} тестовых исполнителей`);
+      fetchPerformers();
+    }
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Исполнители</h1>
-          <p className="text-muted-foreground mt-1">Управление профилями исполнителей</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-display font-bold text-foreground">Исполнители</h1>
+            <p className="text-muted-foreground mt-1">Управление профилями исполнителей</p>
+          </div>
+          
+          {testPerformersCount > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Удалить тестовых ({testPerformersCount})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Удалить тестовых исполнителей?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Будет удалено {testPerformersCount} тестовых исполнителей с префиксом [TEST] и все их слоты. Это действие необратимо.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Отмена</AlertDialogCancel>
+                  <AlertDialogAction onClick={deleteTestPerformers} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Удалить
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
 
         {/* Filters */}
