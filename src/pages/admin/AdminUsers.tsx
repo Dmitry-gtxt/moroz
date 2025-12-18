@@ -12,10 +12,12 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 interface UserData {
-  user_id: string;
-  full_name: string;
+  id: string;
+  email: string | null;
   phone: string | null;
+  full_name: string;
   created_at: string;
+  last_sign_in_at: string | null;
 }
 
 export default function AdminUsers() {
@@ -30,27 +32,26 @@ export default function AdminUsers() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [usersRes, performersRes] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('user_id, full_name, phone, created_at')
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('performer_profiles')
-          .select('id, is_active')
-          .like('display_name', '[TEST]%')
-      ]);
-
-      if (usersRes.error) throw usersRes.error;
-      if (performersRes.error) throw performersRes.error;
+      // Fetch users from edge function
+      const { data: usersData, error: usersError } = await supabase.functions.invoke('list-users');
       
-      setUsers(usersRes.data || []);
-      setTestPerformersCount(performersRes.data?.length || 0);
-      // Check if any test performers are active
-      setTestPerformersActive(performersRes.data?.some(p => p.is_active) || false);
-    } catch (error) {
+      if (usersError) throw usersError;
+      if (!usersData.success) throw new Error(usersData.error);
+
+      // Fetch test performers count
+      const { data: performersData, error: performersError } = await supabase
+        .from('performer_profiles')
+        .select('id, is_active')
+        .like('display_name', '[TEST]%');
+
+      if (performersError) throw performersError;
+      
+      setUsers(usersData.users || []);
+      setTestPerformersCount(performersData?.length || 0);
+      setTestPerformersActive(performersData?.some(p => p.is_active) || false);
+    } catch (error: any) {
       console.error('Error fetching data:', error);
-      toast.error('Ошибка загрузки данных');
+      toast.error(`Ошибка загрузки: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -71,7 +72,7 @@ export default function AdminUsers() {
 
       if (data.success) {
         toast.success('Пользователь полностью удалён');
-        setUsers(prev => prev.filter(u => u.user_id !== userId));
+        setUsers(prev => prev.filter(u => u.id !== userId));
       } else {
         throw new Error(data.error || 'Неизвестная ошибка');
       }
@@ -88,7 +89,6 @@ export default function AdminUsers() {
     try {
       const newActiveState = !testPerformersActive;
       
-      // Get all test performer IDs
       const { data: testPerformers, error: fetchError } = await supabase
         .from('performer_profiles')
         .select('id')
@@ -124,7 +124,8 @@ export default function AdminUsers() {
     const searchLower = searchTerm.toLowerCase();
     return (
       user.full_name.toLowerCase().includes(searchLower) ||
-      (user.phone && user.phone.includes(searchTerm))
+      (user.phone && user.phone.includes(searchTerm)) ||
+      (user.email && user.email.toLowerCase().includes(searchLower))
     );
   });
 
@@ -162,7 +163,7 @@ export default function AdminUsers() {
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Поиск по имени или телефону..."
+                  placeholder="Поиск..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
@@ -180,71 +181,75 @@ export default function AdminUsers() {
                 {searchTerm ? 'Пользователи не найдены' : 'Нет пользователей'}
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Имя</TableHead>
-                    <TableHead>Телефон</TableHead>
-                    <TableHead>Дата регистрации</TableHead>
-                    <TableHead className="w-20">Действия</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.user_id}>
-                      <TableCell className="font-medium">{user.full_name}</TableCell>
-                      <TableCell>{user.phone || '—'}</TableCell>
-                      <TableCell>
-                        {format(new Date(user.created_at), 'dd MMM yyyy, HH:mm', { locale: ru })}
-                      </TableCell>
-                      <TableCell>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              disabled={deletingUserId === user.user_id}
-                            >
-                              {deletingUserId === user.user_id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Удалить пользователя?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Вы уверены, что хотите полностью удалить пользователя <strong>{user.full_name}</strong>?
-                                <br /><br />
-                                Это действие необратимо. Будут удалены:
-                                <ul className="list-disc pl-4 mt-2 space-y-1">
-                                  <li>Аккаунт пользователя</li>
-                                  <li>Профиль и все данные</li>
-                                  <li>Бронирования</li>
-                                  <li>Сообщения и отзывы</li>
-                                  <li>Профиль исполнителя (если есть)</li>
-                                </ul>
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Отмена</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteUser(user.user_id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Удалить навсегда
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Имя</TableHead>
+                      <TableHead>Телефон</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Дата регистрации</TableHead>
+                      <TableHead className="w-20">Действия</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.full_name}</TableCell>
+                        <TableCell>{user.phone || '—'}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{user.email || '—'}</TableCell>
+                        <TableCell>
+                          {format(new Date(user.created_at), 'dd MMM yyyy, HH:mm', { locale: ru })}
+                        </TableCell>
+                        <TableCell>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                disabled={deletingUserId === user.id}
+                              >
+                                {deletingUserId === user.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Удалить пользователя?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Вы уверены, что хотите полностью удалить пользователя <strong>{user.full_name}</strong>?
+                                  <br /><br />
+                                  Это действие необратимо. Будут удалены:
+                                  <ul className="list-disc pl-4 mt-2 space-y-1">
+                                    <li>Аккаунт пользователя</li>
+                                    <li>Профиль и все данные</li>
+                                    <li>Бронирования</li>
+                                    <li>Сообщения и отзывы</li>
+                                    <li>Профиль исполнителя (если есть)</li>
+                                  </ul>
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Удалить навсегда
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
