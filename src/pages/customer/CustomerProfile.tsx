@@ -28,7 +28,7 @@ export default function CustomerProfile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
 
   const passwordRequirements = [
-    { label: 'Минимум 6 символов', check: (p: string) => p.length >= 6 },
+    { label: 'Минимум 8 символов', check: (p: string) => p.length >= 8 },
   ];
 
   useEffect(() => {
