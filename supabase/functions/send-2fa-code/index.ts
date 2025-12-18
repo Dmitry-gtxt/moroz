@@ -73,7 +73,7 @@ const handler = async (req: Request): Promise<Response> => {
     const payload = {
       channel: "sms",
       recipient: formattedPhone,
-      sender: "Ded-Morozy",
+      sender: "ded-morozy",
       template_id: String(template_id),
       code_digits: String(code_digits),
       code_max_tries: String(code_max_tries),
