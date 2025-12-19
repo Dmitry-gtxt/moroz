@@ -15,7 +15,7 @@ import { RatingAdjustDialog } from '@/components/admin/RatingAdjustDialog';
 import { AdminReviewDialog } from '@/components/admin/AdminReviewDialog';
 import { Eye, Star, MessageSquare, ArrowUpDown, ArrowUp, ArrowDown, MessageCirclePlus, Filter, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getCustomerPrice, getPrepaymentAmount, getCommissionRate } from '@/lib/pricing';
+import { getCustomerPrice, getPrepaymentAmount, getCommissionRate, getPerformerNetAmount } from '@/lib/pricing';
 import type { Database } from '@/integrations/supabase/types';
 
 type PerformerProfileDB = Database['public']['Tables']['performer_profiles']['Row'];
@@ -500,7 +500,8 @@ export default function AdminPerformers() {
                       const verification = verificationLabels[performer.verification_status] ?? verificationLabels.unverified;
                       const performerPrice = performer.base_price;
                       const customerPrice = getCustomerPrice(performerPrice, commissionRate);
-                      const prepayment = getPrepaymentAmount(performerPrice, commissionRate);
+                      const prepayment = getPrepaymentAmount(customerPrice, commissionRate);
+                      const performerNet = getPerformerNetAmount(customerPrice, commissionRate);
                       
                       return (
                         <TableRow key={performer.id}>
@@ -541,7 +542,7 @@ export default function AdminPerformers() {
                                 {customerPrice.toLocaleString()} ₽
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                исп: {performerPrice.toLocaleString()} + бронь: {prepayment.toLocaleString()}
+                                аванс: {prepayment.toLocaleString()} / на руки: {performerNet.toLocaleString()}
                               </div>
                             </div>
                           </TableCell>
