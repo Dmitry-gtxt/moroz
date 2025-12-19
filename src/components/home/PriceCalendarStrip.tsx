@@ -54,13 +54,15 @@ export function PriceCalendarStrip() {
       }
 
       // Fetch free slots in date range ONLY from published performers
+      // Note: We need to handle the 1000 row default limit
       const { data: freeSlots } = await supabase
         .from('availability_slots')
         .select('id, date, price, performer_id, status')
         .gte('date', format(startDate, 'yyyy-MM-dd'))
         .lte('date', format(endDate, 'yyyy-MM-dd'))
         .eq('status', 'free')
-        .in('performer_id', publishedPerformerIds);
+        .in('performer_id', publishedPerformerIds)
+        .limit(5000);
 
       // Fetch booked slots that have unconfirmed bookings (pending or counter_proposed)
       const { data: bookedSlots } = await supabase
@@ -69,7 +71,8 @@ export function PriceCalendarStrip() {
         .gte('date', format(startDate, 'yyyy-MM-dd'))
         .lte('date', format(endDate, 'yyyy-MM-dd'))
         .eq('status', 'booked')
-        .in('performer_id', publishedPerformerIds);
+        .in('performer_id', publishedPerformerIds)
+        .limit(5000);
 
       // Get bookings for booked slots to check their status
       const bookedSlotIds = bookedSlots?.map(s => s.id) || [];
