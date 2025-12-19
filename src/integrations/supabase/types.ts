@@ -371,40 +371,67 @@ export type Database = {
         Row: {
           access_token: string
           contact_email: string | null
+          contact_person_name: string | null
           contact_phone: string | null
           created_at: string
           id: string
           is_active: boolean
           name: string
           notes: string | null
+          organization_address: string | null
           organization_type: string | null
           referral_code: string
+          registered_self: boolean | null
+          teacher_email: string | null
+          teacher_first_name: string | null
+          teacher_last_name: string | null
+          teacher_middle_name: string | null
+          teacher_phone: string | null
+          teacher_position: string | null
           updated_at: string
         }
         Insert: {
           access_token?: string
           contact_email?: string | null
+          contact_person_name?: string | null
           contact_phone?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
           name: string
           notes?: string | null
+          organization_address?: string | null
           organization_type?: string | null
           referral_code: string
+          registered_self?: boolean | null
+          teacher_email?: string | null
+          teacher_first_name?: string | null
+          teacher_last_name?: string | null
+          teacher_middle_name?: string | null
+          teacher_phone?: string | null
+          teacher_position?: string | null
           updated_at?: string
         }
         Update: {
           access_token?: string
           contact_email?: string | null
+          contact_person_name?: string | null
           contact_phone?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
           name?: string
           notes?: string | null
+          organization_address?: string | null
           organization_type?: string | null
           referral_code?: string
+          registered_self?: boolean | null
+          teacher_email?: string | null
+          teacher_first_name?: string | null
+          teacher_last_name?: string | null
+          teacher_middle_name?: string | null
+          teacher_phone?: string | null
+          teacher_position?: string | null
           updated_at?: string
         }
         Relationships: []
