@@ -11,18 +11,15 @@ import { ProposalsList } from '@/components/bookings/ProposalsList';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { notifyBookingCancelled, notifyPaymentReceived, notifyAdminBookingCancelled } from '@/lib/pushNotifications';
+import { notifyBookingCancelled, notifyAdminBookingCancelled } from '@/lib/pushNotifications';
 import { toast } from 'sonner';
 import { 
   Calendar, Clock, MapPin, Star, Loader2, Phone, HeadphonesIcon,
   Package, User, X, CheckCircle, CreditCard, Lock, Timer, AlertCircle, MessageSquare
 } from 'lucide-react';
-import { getCustomerPrice, getPrepaymentAmount, getPerformerPayment } from '@/lib/pricing';
-import { scheduleBookingReminders } from '@/lib/pushNotifications';
 import { format, parseISO, differenceInMinutes } from 'date-fns';
 import { ru } from 'date-fns/locale/ru';
 import type { Database } from '@/integrations/supabase/types';
-import { trackPayment } from '@/lib/analytics';
 
 type Booking = Database['public']['Tables']['bookings']['Row'];
 type BookingStatus = Database['public']['Enums']['booking_status'];
@@ -54,7 +51,7 @@ const eventTypeLabels: Record<string, string> = {
 };
 
 // Helper component for payment deadline countdown
-function PaymentDeadlineBlock({ deadline, prepaymentAmount, onTestPayment }: { deadline: string; prepaymentAmount: number; onTestPayment?: () => void }) {
+function PaymentDeadlineBlock({ deadline, prepaymentAmount }: { deadline: string; prepaymentAmount: number }) {
   const [timeLeft, setTimeLeft] = useState('');
   const [isExpired, setIsExpired] = useState(false);
 
@@ -109,23 +106,12 @@ function PaymentDeadlineBlock({ deadline, prepaymentAmount, onTestPayment }: { d
             Предоплата {prepaymentAmount.toLocaleString()} ₽ — иначе бронирование будет отменено
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="gold" size="sm">
+        <Button variant="gold" size="sm" asChild>
+          <a href="https://t.me/gtxt_biz" target="_blank" rel="noopener noreferrer">
             <CreditCard className="h-4 w-4 mr-2" />
             Оплатить
-          </Button>
-          {/* TEST BUTTON - REMOVE AFTER TESTING */}
-          {onTestPayment && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="bg-black text-white hover:bg-gray-800 border-black text-xs"
-              onClick={onTestPayment}
-            >
-              (тест: оплачено)
-            </Button>
-          )}
-        </div>
+          </a>
+        </Button>
       </div>
     </div>
   );
@@ -295,66 +281,6 @@ export default function CustomerBookings() {
     fetchBookings();
   };
 
-  // TEST: Simulate payment received (temporary for testing)
-  const simulatePayment = async (booking: BookingWithPerformer) => {
-    if (!booking.id) return;
-    
-    const { error } = await supabase
-      .from('bookings')
-      .update({ payment_status: 'prepayment_paid' })
-      .eq('id', booking.id);
-
-    if (error) {
-      toast.error('Ошибка симуляции оплаты');
-      return;
-    }
-
-    // Track payment event for analytics
-    trackPayment({
-      booking_id: booking.id,
-      amount: booking.prepayment_amount,
-    });
-
-    // Schedule booking reminders
-    if (booking.performer) {
-      scheduleBookingReminders(
-        booking.id,
-        booking.booking_date,
-        booking.booking_time,
-        booking.customer_id,
-        booking.performer.id
-      );
-    }
-
-    // Send push notification to performer about successful payment
-    if (booking.performer?.user_id) {
-      notifyPaymentReceived(
-        booking.performer.user_id,
-        booking.customer_name,
-        format(parseISO(booking.booking_date), 'd MMMM', { locale: ru }),
-        booking.prepayment_amount
-      );
-    }
-
-    // Send email notification to performer about successful payment
-    if (booking.performer) {
-      supabase.functions.invoke('send-notification-email', {
-        body: {
-          type: 'payment_received',
-          performerId: booking.performer.id,
-          customerName: booking.customer_name,
-          performerName: booking.performer.display_name,
-          bookingDate: format(parseISO(booking.booking_date), 'd MMMM yyyy', { locale: ru }),
-          bookingTime: booking.booking_time,
-          amount: booking.prepayment_amount,
-          paymentStatus: 'prepayment_paid'
-        }
-      });
-    }
-
-    toast.success('Тест: оплата симулирована');
-    fetchBookings();
-  };
 
   const filteredBookings = bookings.filter(booking => {
     if (activeTab === 'all') return true;
@@ -514,7 +440,6 @@ export default function CustomerBookings() {
                       <PaymentDeadlineBlock 
                         deadline={booking.payment_deadline} 
                         prepaymentAmount={booking.prepayment_amount}
-                        onTestPayment={() => simulatePayment(booking)}
                       />
                     )}
 
@@ -530,21 +455,12 @@ export default function CustomerBookings() {
                               Оплатите {booking.prepayment_amount.toLocaleString()} ₽ для подтверждения
                             </p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Button variant="gold" size="sm">
+                          <Button variant="gold" size="sm" asChild>
+                            <a href="https://t.me/gtxt_biz" target="_blank" rel="noopener noreferrer">
                               <CreditCard className="h-4 w-4 mr-2" />
                               Оплатить
-                            </Button>
-                            {/* TEST BUTTON - REMOVE AFTER TESTING */}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="bg-black text-white hover:bg-gray-800 border-black text-xs"
-                              onClick={() => simulatePayment(booking)}
-                            >
-                              (тест: оплачено)
-                            </Button>
-                          </div>
+                            </a>
+                          </Button>
                         </div>
                       </div>
                     )}
