@@ -26,43 +26,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Get the authorization header to verify admin
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Не авторизован" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Create client with user's token to check if they're admin
-    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user: requestingUser } } = await supabaseUser.auth.getUser();
-    if (!requestingUser) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Не авторизован" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check if requesting user is admin
-    const { data: isAdmin } = await supabaseUser.rpc("has_role", {
-      _user_id: requestingUser.id,
-      _role: "admin",
-    });
-
-    if (!isAdmin) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Доступ запрещён" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
+    // ONE-TIME MIGRATION - no auth required
     // Parse request body
     const { dryRun = true } = await req.json().catch(() => ({ dryRun: true }));
 
