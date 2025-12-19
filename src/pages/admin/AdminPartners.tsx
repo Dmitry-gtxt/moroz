@@ -306,6 +306,27 @@ export default function AdminPartners() {
           </AlertDescription>
         </Alert>
 
+        <Alert className="bg-blue-950/30 border-blue-500/30">
+          <ExternalLink className="h-4 w-4 text-blue-400" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>
+              <strong>Ссылка для самостоятельной регистрации партнёров:</strong>
+            </span>
+            <div className="flex items-center gap-2 ml-4">
+              <code className="bg-muted px-2 py-1 rounded text-sm">
+                {window.location.origin}/dfuioh12-85tyHDksjdu374
+              </code>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => copyToClipboard(`${window.location.origin}/dfuioh12-85tyHDksjdu374`)}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+
         <Card>
           <CardHeader>
             <CardTitle>Список партнёров</CardTitle>
@@ -348,7 +369,12 @@ export default function AdminPartners() {
                       <TableRow key={partner.id}>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{partner.name}</div>
+                            <div className="font-medium flex items-center gap-2">
+                              {partner.name}
+                              {(partner as any).registered_self && (
+                                <Badge variant="secondary" className="text-xs">Сам</Badge>
+                              )}
+                            </div>
                             <div className="text-xs text-muted-foreground">
                               {partner.contact_email || partner.contact_phone || '—'}
                             </div>
