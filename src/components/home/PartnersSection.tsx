@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import partnerKolibri from '@/assets/partner-kolibri.png';
 import partnerPovuzam from '@/assets/partner-povuzam.png';
 import partnerUmius from '@/assets/partner-umius.png';
@@ -15,6 +16,7 @@ const partners = [
 ];
 
 export function PartnersSection() {
+  const isMobile = useIsMobile();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -23,21 +25,25 @@ export function PartnersSection() {
   const checkScroll = () => {
     if (scrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-      setCanScrollLeft(scrollLeft > 0);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
-      setNeedsScroll(scrollWidth > clientWidth);
+      setCanScrollLeft(scrollLeft > 5);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+      setNeedsScroll(scrollWidth > clientWidth + 10);
     }
   };
 
   useEffect(() => {
-    checkScroll();
+    // Small delay to ensure images are loaded
+    const timer = setTimeout(checkScroll, 100);
     window.addEventListener('resize', checkScroll);
-    return () => window.removeEventListener('resize', checkScroll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkScroll);
+    };
   }, []);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
-      const scrollAmount = 200;
+      const scrollAmount = isMobile ? 150 : 200;
       scrollRef.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth',
@@ -45,31 +51,39 @@ export function PartnersSection() {
     }
   };
 
+  const logoHeight = isMobile ? 'h-[45px]' : 'h-[65px]';
+  const gap = isMobile ? 'gap-6' : 'gap-10';
+  const padding = isMobile ? 'px-4' : 'px-8';
+
   return (
-    <section className="py-12 md:py-16 bg-snow-100">
-      <div className="container">
-        <h2 className="text-center text-xl md:text-2xl font-display font-semibold text-winter-900 mb-8">
+    <section className="py-10 md:py-14 bg-snow-100">
+      <div className={isMobile ? 'px-0' : 'container'}>
+        <h2 className="text-center text-xl md:text-2xl font-display font-semibold text-winter-900 mb-6 md:mb-8">
           Наши партнёры
         </h2>
         
         <div className="relative">
-          {/* Left arrow */}
+          {/* Left arrow - show only when can scroll */}
           {needsScroll && canScrollLeft && (
             <button
               onClick={() => scroll('left')}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 rounded-full p-2 shadow-md hover:bg-white transition-colors"
+              className={`absolute left-1 md:left-2 top-1/2 -translate-y-1/2 z-10 bg-snow-100 rounded-full p-1.5 md:p-2 shadow-lg border border-snow-200 hover:bg-white transition-colors`}
               aria-label="Предыдущий"
             >
-              <ChevronLeft className="w-5 h-5 text-winter-700" />
+              <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 text-winter-700" />
             </button>
           )}
 
-          {/* Partners container */}
+          {/* Scrollable container */}
           <div
             ref={scrollRef}
             onScroll={checkScroll}
-            className="flex items-center gap-8 md:gap-12 overflow-x-auto scrollbar-hide px-8 md:px-0 md:justify-center scroll-smooth"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            className={`flex items-center ${gap} overflow-x-auto scroll-smooth ${padding} ${!needsScroll ? 'justify-center' : ''}`}
+            style={{ 
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+            }}
           >
             {partners.map((partner, index) => (
               <a
@@ -82,20 +96,21 @@ export function PartnersSection() {
                 <img
                   src={partner.src}
                   alt={partner.alt}
-                  className="h-[60px] md:h-[80px] opacity-80 hover:opacity-100 transition-opacity"
+                  className={`${logoHeight} w-auto object-contain opacity-80 hover:opacity-100 transition-opacity`}
+                  onLoad={checkScroll}
                 />
               </a>
             ))}
           </div>
 
-          {/* Right arrow */}
+          {/* Right arrow - show only when can scroll */}
           {needsScroll && canScrollRight && (
             <button
               onClick={() => scroll('right')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 rounded-full p-2 shadow-md hover:bg-white transition-colors"
+              className={`absolute right-1 md:right-2 top-1/2 -translate-y-1/2 z-10 bg-snow-100 rounded-full p-1.5 md:p-2 shadow-lg border border-snow-200 hover:bg-white transition-colors`}
               aria-label="Следующий"
             >
-              <ChevronRight className="w-5 h-5 text-winter-700" />
+              <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-winter-700" />
             </button>
           )}
         </div>
