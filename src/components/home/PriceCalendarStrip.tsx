@@ -91,6 +91,10 @@ export function PriceCalendarStrip() {
 
       // Combine free slots and unconfirmed booked slots
       const availableSlots = [...(freeSlots || []), ...unconfirmedBookedSlots];
+      
+      // Debug: log slots count
+      console.log('PriceCalendarStrip: free slots fetched:', freeSlots?.length || 0);
+      console.log('PriceCalendarStrip: date range in response:', [...new Set(freeSlots?.map(s => s.date) || [])].sort());
 
       // Generate days array
       const days: DayPrice[] = [];
