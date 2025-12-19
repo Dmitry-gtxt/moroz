@@ -7,19 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { toast } from 'sonner';
 import { Copy, CheckCircle2 } from 'lucide-react';
 
-const organizationTypes = [
-  { value: 'event_agency', label: 'Event-агентство' },
-  { value: 'kids_center', label: 'Детский центр' },
-  { value: 'kindergarten', label: 'Садик' },
-  { value: 'school', label: 'Школа' },
-  { value: 'educational', label: 'Образовательное учреждение' },
-  { value: 'individual', label: 'Физическое лицо' },
-  { value: 'other', label: 'Другое' },
-];
 
 function generateReferralCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -36,7 +27,6 @@ export default function PartnerRegistration() {
   const [formData, setFormData] = useState({
     organization_name: '',
     organization_address: '',
-    organization_type: '',
     contact_person_name: '',
     contact_phone: '',
     teacher_last_name: '',
@@ -72,7 +62,6 @@ export default function PartnerRegistration() {
       .from('partners')
       .insert({
         name: formData.organization_name,
-        organization_type: formData.organization_type || null,
         organization_address: formData.organization_address || null,
         contact_person_name: formData.contact_person_name || null,
         contact_phone: formData.contact_phone || null,
@@ -182,66 +171,73 @@ export default function PartnerRegistration() {
           </CardHeader>
           <CardContent>
             {/* Introductory text */}
-            <div className="mb-6 p-4 bg-winter-800/50 rounded-lg border border-snow-700/20">
-              <p className="text-snow-300 text-sm leading-relaxed mb-3">
-                <strong className="text-snow-100">АНО ДПО «Умиус»</strong> — организация дополнительного образования, 
-                занимающаяся повышением квалификации учителей. Наше учреждение имеет лицензию на ведение образовательной деятельности.
-              </p>
-              <p className="text-snow-300 text-sm leading-relaxed mb-3">
-                Мы приглашаем педагогов пройти курс повышения квалификации на тему:{' '}
-                <strong className="text-magic-gold">«Современные педагогические технологии»</strong>.
-              </p>
-              <p className="text-snow-300 text-sm leading-relaxed mb-3">
-                Курс дистанционный, проходит на нашем портале (будет выслана ссылка после заполнения анкеты), 
-                займёт примерно 2-4 часа вашего времени.
-              </p>
+            <div className="mb-6 p-4 bg-winter-800/50 rounded-lg border border-snow-700/20 space-y-4">
+              <p className="text-snow-100 font-semibold text-lg">Уважаемые коллеги!</p>
+              
               <p className="text-snow-300 text-sm leading-relaxed">
-                По завершении курса вы получите <strong className="text-snow-100">удостоверение о повышении квалификации</strong> установленного образца (36 часов).
+                Мы ценим вас как партнеров проекта и в знак благодарности подготовили для ваших педагогов приятный новогодний подарок — бесплатный доступ к полезной образовательной программе.
+              </p>
+              
+              <p className="text-snow-300 text-sm leading-relaxed">
+                В рамках дистанционного курса педагоги познакомятся с основами мнемотехник для быстрого и легкого запоминания информации, а также получат практические инструменты, которые смогут применять в своей педагогической деятельности и на занятиях с обучающимися.
+              </p>
+              
+              <div className="bg-winter-900/50 p-3 rounded border border-snow-700/20">
+                <p className="text-snow-100 font-medium mb-2">Важная информация:</p>
+                <ul className="text-snow-300 text-sm space-y-1 list-disc list-inside">
+                  <li>От одной образовательной организации к участию в дистанционном обучении могут быть направлены не более трех педагогов.</li>
+                  <li>При этом на каждого педагога необходимо заполнить отдельную анкету.</li>
+                  <li>Номер телефона и адрес электронной почты должны быть уникальными для каждого педагога, действующими и регулярно используемыми.</li>
+                </ul>
+              </div>
+              
+              <p className="text-snow-300 text-sm leading-relaxed">
+                Обучение проходит в онлайн-формате на образовательной платформе партнера:{' '}
+                <a href="https://umius.ru/" target="_blank" rel="noopener noreferrer" className="text-magic-gold hover:underline">
+                  https://umius.ru/
+                </a>
+              </p>
+              
+              <p className="text-snow-300 text-sm leading-relaxed">
+                После заполнения анкеты в течение трех рабочих дней будет предоставлен бесплатный доступ к личному кабинету с курсом.
+              </p>
+              
+              <p className="text-snow-300 text-sm leading-relaxed">
+                Доступ к курсу предоставляется бесплатно сроком на 30 календарных дней.
+              </p>
+              
+              <p className="text-snow-300 text-sm leading-relaxed">
+                По итогам прохождения всех модулей и обязательных тестирований автоматически формируется электронный сертификат о прохождении курса.
+              </p>
+              
+              <p className="text-snow-300 text-sm leading-relaxed italic">
+                В завершение поздравляем вас с наступающим Новым годом и желаем приятных, спокойных праздников, вдохновения, профессиональных успехов и новых достижений в наступающем году!
               </p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Section 1: Organization data */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-snow-100 border-b border-snow-700/30 pb-2">
-                  1. Данные об организации
+                  1. Данные об образовательной организации
                 </h3>
                 
                 <div>
                   <Label htmlFor="organization_name" className="text-snow-300">
-                    Полное наименование организации *
+                    Полное наименование образовательной организации *
                   </Label>
                   <Input
                     id="organization_name"
                     value={formData.organization_name}
                     onChange={e => setFormData(prev => ({ ...prev, organization_name: e.target.value }))}
-                    placeholder="МБОУ СОШ №1"
+                    placeholder="МБОУ СОШ №1 г. Москвы"
                     required
                     className="bg-winter-800 border-snow-700/30 text-snow-100"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="organization_type" className="text-snow-300">
-                    Тип организации
-                  </Label>
-                  <Select
-                    value={formData.organization_type}
-                    onValueChange={v => setFormData(prev => ({ ...prev, organization_type: v }))}
-                  >
-                    <SelectTrigger className="bg-winter-800 border-snow-700/30 text-snow-100">
-                      <SelectValue placeholder="Выберите тип" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {organizationTypes.map(t => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
                   <Label htmlFor="organization_address" className="text-snow-300">
-                    Адрес организации
+                    Адрес образовательной организации
                   </Label>
                   <Input
                     id="organization_address"
@@ -254,7 +250,7 @@ export default function PartnerRegistration() {
 
                 <div>
                   <Label htmlFor="contact_person_name" className="text-snow-300">
-                    ФИО контактного лица
+                    ФИО контактного лица, заполняющего анкету
                   </Label>
                   <Input
                     id="contact_person_name"
@@ -313,7 +309,7 @@ export default function PartnerRegistration() {
                   </div>
                   <div>
                     <Label htmlFor="teacher_middle_name" className="text-snow-300">
-                      Отчество
+                      Отчество (при наличии)
                     </Label>
                     <Input
                       id="teacher_middle_name"
@@ -354,7 +350,7 @@ export default function PartnerRegistration() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="teacher_phone" className="text-snow-300">
-                      Контактный телефон
+                      Контактный номер телефона (уникальный, действующий)
                     </Label>
                     <Input
                       id="teacher_phone"
@@ -367,7 +363,7 @@ export default function PartnerRegistration() {
                   </div>
                   <div>
                     <Label htmlFor="teacher_email" className="text-snow-300">
-                      Email
+                      Адрес электронной почты (уникальный, действующий)
                     </Label>
                     <Input
                       id="teacher_email"
@@ -396,7 +392,7 @@ export default function PartnerRegistration() {
                       className="mt-0.5"
                     />
                     <Label htmlFor="confirm_max_teachers" className="text-snow-300 text-sm cursor-pointer">
-                      Подтверждаю корректность указанной информации
+                      Подтверждаю, что от одной образовательной организации направлено не более трех педагогов
                     </Label>
                   </div>
 
@@ -408,7 +404,7 @@ export default function PartnerRegistration() {
                       className="mt-0.5"
                     />
                     <Label htmlFor="confirm_data_correct" className="text-snow-300 text-sm cursor-pointer">
-                      Подтверждаю актуальность указанных контактных данных
+                      Подтверждаю корректность и актуальность указанных контактных данных
                     </Label>
                   </div>
 
@@ -420,14 +416,13 @@ export default function PartnerRegistration() {
                       className="mt-0.5"
                     />
                     <Label htmlFor="confirm_personal_data" className="text-snow-300 text-sm cursor-pointer">
-                      Даю{' '}
                       <a 
                         href="/privacy" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-magic-gold hover:underline"
                       >
-                        согласие на обработку персональных данных
+                        Согласие на обработку персональных данных
                       </a>{' '}
                       *
                     </Label>
@@ -441,7 +436,7 @@ export default function PartnerRegistration() {
                 size="lg"
                 disabled={loading}
               >
-                {loading ? 'Регистрация...' : 'Отправить'}
+                {loading ? 'Отправка...' : 'Отправить!'}
               </Button>
             </form>
           </CardContent>
