@@ -366,16 +366,25 @@ const Auth = () => {
     }
   };
 
+  // Check if input looks like an email
+  const isEmail = (input: string): boolean => {
+    return input.includes('@') && input.includes('.');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       if (mode === 'login') {
-        // Convert phone to email format for auth
-        const emailFromPhone = `${formatPhoneForApi(formData.loginPhone)}@ded-morozy-rf.ru`;
+        // Check if user entered email or phone
+        const loginInput = formData.loginPhone.trim();
+        const emailToUse = isEmail(loginInput) 
+          ? loginInput 
+          : `${formatPhoneForApi(loginInput)}@ded-morozy-rf.ru`;
+        
         const { error } = await supabase.auth.signInWithPassword({
-          email: emailFromPhone,
+          email: emailToUse,
           password: formData.password,
         });
         if (error) throw error;
