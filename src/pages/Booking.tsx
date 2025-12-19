@@ -63,7 +63,6 @@ const Booking = () => {
     comment: '',
     customerName: '',
     customerPhone: '',
-    customerEmail: '',
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   
@@ -129,7 +128,6 @@ const Booking = () => {
         ...prev,
         customerName: user.user_metadata?.full_name || '',
         customerPhone: customerPhone,
-        customerEmail: isGeneratedEmail ? '' : email,
       }));
     }
   }, [user]);
@@ -211,7 +209,6 @@ const Booking = () => {
         bookingStep2Schema.parse({
           customerName: formData.customerName,
           customerPhone: formData.customerPhone,
-          customerEmail: formData.customerEmail || undefined,
         });
         setStep(3);
       } catch (error) {
@@ -254,7 +251,6 @@ const Booking = () => {
           comment: formData.comment || null,
           customer_name: formData.customerName,
           customer_phone: formData.customerPhone,
-          customer_email: formData.customerEmail || null,
           price_total: customerPrice, // Total customer sees (with markup)
           prepayment_amount: prepaymentAmount, // Platform commission percentage
           status: 'pending', // Awaiting performer confirmation
@@ -547,20 +543,6 @@ const Booking = () => {
                           className={`mt-1 ${fieldErrors.customerPhone ? 'border-destructive' : ''}`}
                         />
                         {fieldErrors.customerPhone && <p className="text-destructive text-sm mt-1">{fieldErrors.customerPhone}</p>}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="customerEmail">Email (опционально)</Label>
-                        <Input
-                          id="customerEmail"
-                          name="customerEmail"
-                          type="email"
-                          value={formData.customerEmail}
-                          onChange={handleInputChange}
-                          placeholder="example@mail.com"
-                          className={`mt-1 ${fieldErrors.customerEmail ? 'border-destructive' : ''}`}
-                        />
-                        {fieldErrors.customerEmail && <p className="text-destructive text-sm mt-1">{fieldErrors.customerEmail}</p>}
                       </div>
                     </div>
 
