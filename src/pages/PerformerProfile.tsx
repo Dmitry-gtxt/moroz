@@ -226,17 +226,17 @@ const PerformerProfile = () => {
       <main className="flex-1">
         {/* Breadcrumb */}
         <div className="bg-card border-b border-border">
-          <div className="container py-3">
-            <nav className="flex items-center text-sm whitespace-nowrap overflow-x-auto scrollbar-hide">
-              <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+          <div className="container py-3 overflow-hidden">
+            <nav className="flex flex-nowrap items-center text-sm overflow-x-auto">
+              <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
                 Главная
               </Link>
-              <span className="text-muted-foreground/40 mx-2 flex-shrink-0">/</span>
-              <Link to="/catalog" className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+              <span className="text-muted-foreground/40 mx-2 shrink-0">/</span>
+              <Link to="/catalog" className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
                 Каталог
               </Link>
-              <span className="text-muted-foreground/40 mx-2 flex-shrink-0">/</span>
-              <span className="text-foreground font-medium truncate">{performer.display_name}</span>
+              <span className="text-muted-foreground/40 mx-2 shrink-0">/</span>
+              <span className="text-foreground font-medium shrink-0">{performer.display_name}</span>
             </nav>
           </div>
         </div>
