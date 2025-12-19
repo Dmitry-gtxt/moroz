@@ -26,7 +26,6 @@ const Auth = () => {
   const [mode, setModeState] = useState<AuthMode>(modeFromUrl);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
     password: '',
     fullName: '',
     phone: '',
@@ -239,8 +238,8 @@ const Auth = () => {
   const completeRegistration = async () => {
     setLoading(true);
     try {
-      // Generate email from phone if not provided
-      const emailToUse = formData.email.trim() || `${formatPhoneForApi(formData.phone)}@ded-morozy-rf.ru`;
+      // Generate email from phone (phone-based auth only)
+      const emailToUse = `${formatPhoneForApi(formData.phone)}@ded-morozy-rf.ru`;
       
       // Use the generated password with S prefix
       const { data, error } = await supabase.auth.signUp({
@@ -256,17 +255,6 @@ const Auth = () => {
       });
       
       if (error) throw error;
-      
-      // Send welcome email only if user provided a real email
-      if (formData.email.trim()) {
-        supabase.functions.invoke('send-notification-email', {
-          body: {
-            type: 'welcome_email',
-            email: formData.email,
-            fullName: formData.fullName,
-          },
-        }).catch(err => console.error('Failed to send welcome email:', err));
-      }
       
       // Track referral registration if applicable
       if (data.user?.id) {
@@ -578,21 +566,6 @@ const Auth = () => {
                         placeholder="+7 (995) 382-97-36"
                         className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
                         required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="email" className="text-snow-200">Email <span className="text-snow-500 text-sm">(необязательно)</span></Label>
-                    <div className="relative mt-1">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-snow-500" />
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        placeholder="example@mail.com"
-                        className="pl-10 bg-winter-900/50 border-snow-700/30 text-snow-100 placeholder:text-snow-600 focus:border-magic-gold/50"
                       />
                     </div>
                   </div>

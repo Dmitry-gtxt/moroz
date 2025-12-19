@@ -43,11 +43,6 @@ export const bookingStep2Schema = z.object({
       const cleaned = val.replace(/[\s-]/g, '');
       return phoneRegex.test(val) || (cleaned.length >= 9 && cleaned.length <= 15 && /^\+?\d+$/.test(cleaned));
     }, 'Введите корректный номер телефона'),
-  customerEmail: z
-    .string()
-    .email('Введите корректный email')
-    .optional()
-    .or(z.literal('')),
 });
 
 export const fullBookingSchema = bookingStep1Schema.merge(bookingStep2Schema);
