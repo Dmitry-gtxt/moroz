@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.get-performer-phone]
 verify_jwt = false
+
+[functions.migrate-user-emails]
+verify_jwt = true
