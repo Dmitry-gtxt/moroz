@@ -382,6 +382,7 @@ export type Database = {
           organization_type: string | null
           referral_code: string
           registered_self: boolean | null
+          teacher_birth_date: string | null
           teacher_email: string | null
           teacher_first_name: string | null
           teacher_last_name: string | null
@@ -404,6 +405,7 @@ export type Database = {
           organization_type?: string | null
           referral_code: string
           registered_self?: boolean | null
+          teacher_birth_date?: string | null
           teacher_email?: string | null
           teacher_first_name?: string | null
           teacher_last_name?: string | null
@@ -426,6 +428,7 @@ export type Database = {
           organization_type?: string | null
           referral_code?: string
           registered_self?: boolean | null
+          teacher_birth_date?: string | null
           teacher_email?: string | null
           teacher_first_name?: string | null
           teacher_last_name?: string | null

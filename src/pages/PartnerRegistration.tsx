@@ -45,6 +45,7 @@ export default function PartnerRegistration() {
     teacher_position: '',
     teacher_phone: '',
     teacher_email: '',
+    teacher_birth_date: '',
     confirm_max_teachers: false,
     confirm_data_correct: false,
     confirm_personal_data: false,
@@ -82,6 +83,7 @@ export default function PartnerRegistration() {
         teacher_position: formData.teacher_position || null,
         teacher_phone: formData.teacher_phone || null,
         teacher_email: formData.teacher_email || null,
+        teacher_birth_date: formData.teacher_birth_date || null,
         referral_code: referralCode,
         registered_self: true,
       })
@@ -173,12 +175,30 @@ export default function PartnerRegistration() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <Card className="max-w-2xl mx-auto bg-winter-900/50 border-snow-700/20">
           <CardHeader>
-            <CardTitle className="text-2xl text-snow-100">Анкета партнёра</CardTitle>
+            <CardTitle className="text-2xl text-snow-100">Анкета для педагогов</CardTitle>
             <CardDescription className="text-snow-400">
-              Заполните форму для регистрации в партнёрской программе
+              Регистрация на курс повышения квалификации
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Introductory text */}
+            <div className="mb-6 p-4 bg-winter-800/50 rounded-lg border border-snow-700/20">
+              <p className="text-snow-300 text-sm leading-relaxed mb-3">
+                <strong className="text-snow-100">АНО ДПО «Умиус»</strong> — организация дополнительного образования, 
+                занимающаяся повышением квалификации учителей. Наше учреждение имеет лицензию на ведение образовательной деятельности.
+              </p>
+              <p className="text-snow-300 text-sm leading-relaxed mb-3">
+                Мы приглашаем педагогов пройти курс повышения квалификации на тему:{' '}
+                <strong className="text-magic-gold">«Современные педагогические технологии»</strong>.
+              </p>
+              <p className="text-snow-300 text-sm leading-relaxed mb-3">
+                Курс дистанционный, проходит на нашем портале (будет выслана ссылка после заполнения анкеты), 
+                займёт примерно 2-4 часа вашего времени.
+              </p>
+              <p className="text-snow-300 text-sm leading-relaxed">
+                По завершении курса вы получите <strong className="text-snow-100">удостоверение о повышении квалификации</strong> установленного образца (36 часов).
+              </p>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Section 1: Organization data */}
               <div className="space-y-4">
@@ -260,10 +280,10 @@ export default function PartnerRegistration() {
                 </div>
               </div>
 
-              {/* Section 2: Teacher data */}
+              {/* Section 2: Listener data */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-snow-100 border-b border-snow-700/30 pb-2">
-                  2. Данные на ответственного
+                  2. Данные на слушателя дистанционного курса
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -314,6 +334,19 @@ export default function PartnerRegistration() {
                     value={formData.teacher_position}
                     onChange={e => setFormData(prev => ({ ...prev, teacher_position: e.target.value }))}
                     placeholder="Заместитель директора"
+                    className="bg-winter-800 border-snow-700/30 text-snow-100"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="teacher_birth_date" className="text-snow-300">
+                    Дата рождения
+                  </Label>
+                  <Input
+                    id="teacher_birth_date"
+                    type="date"
+                    value={formData.teacher_birth_date}
+                    onChange={e => setFormData(prev => ({ ...prev, teacher_birth_date: e.target.value }))}
                     className="bg-winter-800 border-snow-700/30 text-snow-100"
                   />
                 </div>
@@ -387,7 +420,16 @@ export default function PartnerRegistration() {
                       className="mt-0.5"
                     />
                     <Label htmlFor="confirm_personal_data" className="text-snow-300 text-sm cursor-pointer">
-                      Согласие на обработку персональных данных *
+                      Даю{' '}
+                      <a 
+                        href="/privacy" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-magic-gold hover:underline"
+                      >
+                        согласие на обработку персональных данных
+                      </a>{' '}
+                      *
                     </Label>
                   </div>
                 </div>
