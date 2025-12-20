@@ -7,11 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-
 import { toast } from 'sonner';
 import { Copy, CheckCircle2 } from 'lucide-react';
-
-
 function generateReferralCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
@@ -20,7 +17,6 @@ function generateReferralCode() {
   }
   return code;
 }
-
 export default function PartnerRegistration() {
   const [loading, setLoading] = useState(false);
   const [partnerLink, setPartnerLink] = useState<string | null>(null);
@@ -38,60 +34,49 @@ export default function PartnerRegistration() {
     teacher_birth_date: '',
     confirm_max_teachers: false,
     confirm_data_correct: false,
-    confirm_personal_data: false,
+    confirm_personal_data: false
   });
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    
     if (!formData.organization_name) {
       toast.error('Укажите название организации');
       return;
     }
-    
     if (!formData.confirm_personal_data) {
       toast.error('Необходимо согласие на обработку персональных данных');
       return;
     }
-
     setLoading(true);
-
     const referralCode = generateReferralCode();
-
-    const { data, error } = await supabase
-      .from('partners')
-      .insert({
-        name: formData.organization_name,
-        organization_address: formData.organization_address || null,
-        contact_person_name: formData.contact_person_name || null,
-        contact_phone: formData.contact_phone || null,
-        contact_email: formData.teacher_email || null,
-        teacher_last_name: formData.teacher_last_name || null,
-        teacher_first_name: formData.teacher_first_name || null,
-        teacher_middle_name: formData.teacher_middle_name || null,
-        teacher_position: formData.teacher_position || null,
-        teacher_phone: formData.teacher_phone || null,
-        teacher_email: formData.teacher_email || null,
-        teacher_birth_date: formData.teacher_birth_date || null,
-        referral_code: referralCode,
-        registered_self: true,
-      })
-      .select('access_token')
-      .single();
-
+    const {
+      data,
+      error
+    } = await supabase.from('partners').insert({
+      name: formData.organization_name,
+      organization_address: formData.organization_address || null,
+      contact_person_name: formData.contact_person_name || null,
+      contact_phone: formData.contact_phone || null,
+      contact_email: formData.teacher_email || null,
+      teacher_last_name: formData.teacher_last_name || null,
+      teacher_first_name: formData.teacher_first_name || null,
+      teacher_middle_name: formData.teacher_middle_name || null,
+      teacher_position: formData.teacher_position || null,
+      teacher_phone: formData.teacher_phone || null,
+      teacher_email: formData.teacher_email || null,
+      teacher_birth_date: formData.teacher_birth_date || null,
+      referral_code: referralCode,
+      registered_self: true
+    }).select('access_token').single();
     setLoading(false);
-
     if (error) {
       console.error('Error creating partner:', error);
       toast.error('Ошибка при регистрации. Попробуйте ещё раз.');
       return;
     }
-
     const link = `${window.location.origin}/partner/${data.access_token}`;
     setPartnerLink(link);
     toast.success('Регистрация прошла успешно!');
   }
-
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text);
     toast.success('Ссылка скопирована в буфер обмена');
@@ -99,8 +84,7 @@ export default function PartnerRegistration() {
 
   // Success screen with partner link
   if (partnerLink) {
-    return (
-      <div className="min-h-screen flex flex-col bg-winter-950">
+    return <div className="min-h-screen flex flex-col bg-winter-950">
         <Header />
         <main className="flex-1 flex items-center justify-center p-4">
           <Card className="max-w-lg w-full bg-winter-900/50 border-magic-gold/30">
@@ -127,22 +111,13 @@ export default function PartnerRegistration() {
                   <code className="flex-1 bg-winter-950 px-4 py-3 rounded text-magic-gold text-sm break-all">
                     {partnerLink}
                   </code>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => copyToClipboard(partnerLink)}
-                    className="shrink-0 border-magic-gold/30 text-magic-gold hover:bg-magic-gold/10"
-                  >
+                  <Button variant="outline" size="icon" onClick={() => copyToClipboard(partnerLink)} className="shrink-0 border-magic-gold/30 text-magic-gold hover:bg-magic-gold/10">
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
 
-              <Button 
-                className="w-full" 
-                onClick={() => copyToClipboard(partnerLink)}
-                size="lg"
-              >
+              <Button className="w-full" onClick={() => copyToClipboard(partnerLink)} size="lg">
                 <Copy className="h-4 w-4 mr-2" />
                 Скопировать ссылку
               </Button>
@@ -154,20 +129,15 @@ export default function PartnerRegistration() {
           </Card>
         </main>
         <Footer />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen flex flex-col bg-winter-950">
+  return <div className="min-h-screen flex flex-col bg-winter-950">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
         <Card className="max-w-2xl mx-auto bg-winter-900/50 border-snow-700/20">
           <CardHeader>
             <CardTitle className="text-2xl text-snow-100">Анкета для педагогов</CardTitle>
-            <CardDescription className="text-snow-400">
-              Регистрация на курс повышения квалификации
-            </CardDescription>
+            
           </CardHeader>
           <CardContent>
             {/* Introductory text */}
@@ -225,54 +195,40 @@ export default function PartnerRegistration() {
                   <Label htmlFor="organization_name" className="text-snow-300">
                     Полное наименование образовательной организации *
                   </Label>
-                  <Input
-                    id="organization_name"
-                    value={formData.organization_name}
-                    onChange={e => setFormData(prev => ({ ...prev, organization_name: e.target.value }))}
-                    placeholder="МБОУ СОШ №1 г. Москвы"
-                    required
-                    className="bg-winter-800 border-snow-700/30 text-snow-100"
-                  />
+                  <Input id="organization_name" value={formData.organization_name} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  organization_name: e.target.value
+                }))} placeholder="МБОУ СОШ №1 г. Москвы" required className="bg-winter-800 border-snow-700/30 text-snow-100" />
                 </div>
 
                 <div>
                   <Label htmlFor="organization_address" className="text-snow-300">
                     Адрес образовательной организации
                   </Label>
-                  <Input
-                    id="organization_address"
-                    value={formData.organization_address}
-                    onChange={e => setFormData(prev => ({ ...prev, organization_address: e.target.value }))}
-                    placeholder="г. Москва, ул. Примерная, д. 1"
-                    className="bg-winter-800 border-snow-700/30 text-snow-100"
-                  />
+                  <Input id="organization_address" value={formData.organization_address} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  organization_address: e.target.value
+                }))} placeholder="г. Москва, ул. Примерная, д. 1" className="bg-winter-800 border-snow-700/30 text-snow-100" />
                 </div>
 
                 <div>
                   <Label htmlFor="contact_person_name" className="text-snow-300">
                     ФИО контактного лица, заполняющего анкету
                   </Label>
-                  <Input
-                    id="contact_person_name"
-                    value={formData.contact_person_name}
-                    onChange={e => setFormData(prev => ({ ...prev, contact_person_name: e.target.value }))}
-                    placeholder="Иванов Иван Иванович"
-                    className="bg-winter-800 border-snow-700/30 text-snow-100"
-                  />
+                  <Input id="contact_person_name" value={formData.contact_person_name} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  contact_person_name: e.target.value
+                }))} placeholder="Иванов Иван Иванович" className="bg-winter-800 border-snow-700/30 text-snow-100" />
                 </div>
 
                 <div>
                   <Label htmlFor="contact_phone" className="text-snow-300">
                     Телефон контактного лица
                   </Label>
-                  <Input
-                    id="contact_phone"
-                    type="tel"
-                    value={formData.contact_phone}
-                    onChange={e => setFormData(prev => ({ ...prev, contact_phone: e.target.value }))}
-                    placeholder="+7 999 123-45-67"
-                    className="bg-winter-800 border-snow-700/30 text-snow-100"
-                  />
+                  <Input id="contact_phone" type="tel" value={formData.contact_phone} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  contact_phone: e.target.value
+                }))} placeholder="+7 999 123-45-67" className="bg-winter-800 border-snow-700/30 text-snow-100" />
                 </div>
               </div>
 
@@ -287,37 +243,28 @@ export default function PartnerRegistration() {
                     <Label htmlFor="teacher_last_name" className="text-snow-300">
                       Фамилия
                     </Label>
-                    <Input
-                      id="teacher_last_name"
-                      value={formData.teacher_last_name}
-                      onChange={e => setFormData(prev => ({ ...prev, teacher_last_name: e.target.value }))}
-                      placeholder="Иванов"
-                      className="bg-winter-800 border-snow-700/30 text-snow-100"
-                    />
+                    <Input id="teacher_last_name" value={formData.teacher_last_name} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    teacher_last_name: e.target.value
+                  }))} placeholder="Иванов" className="bg-winter-800 border-snow-700/30 text-snow-100" />
                   </div>
                   <div>
                     <Label htmlFor="teacher_first_name" className="text-snow-300">
                       Имя
                     </Label>
-                    <Input
-                      id="teacher_first_name"
-                      value={formData.teacher_first_name}
-                      onChange={e => setFormData(prev => ({ ...prev, teacher_first_name: e.target.value }))}
-                      placeholder="Иван"
-                      className="bg-winter-800 border-snow-700/30 text-snow-100"
-                    />
+                    <Input id="teacher_first_name" value={formData.teacher_first_name} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    teacher_first_name: e.target.value
+                  }))} placeholder="Иван" className="bg-winter-800 border-snow-700/30 text-snow-100" />
                   </div>
                   <div>
                     <Label htmlFor="teacher_middle_name" className="text-snow-300">
                       Отчество (при наличии)
                     </Label>
-                    <Input
-                      id="teacher_middle_name"
-                      value={formData.teacher_middle_name}
-                      onChange={e => setFormData(prev => ({ ...prev, teacher_middle_name: e.target.value }))}
-                      placeholder="Иванович"
-                      className="bg-winter-800 border-snow-700/30 text-snow-100"
-                    />
+                    <Input id="teacher_middle_name" value={formData.teacher_middle_name} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    teacher_middle_name: e.target.value
+                  }))} placeholder="Иванович" className="bg-winter-800 border-snow-700/30 text-snow-100" />
                   </div>
                 </div>
 
@@ -325,26 +272,20 @@ export default function PartnerRegistration() {
                   <Label htmlFor="teacher_position" className="text-snow-300">
                     Должность
                   </Label>
-                  <Input
-                    id="teacher_position"
-                    value={formData.teacher_position}
-                    onChange={e => setFormData(prev => ({ ...prev, teacher_position: e.target.value }))}
-                    placeholder="Заместитель директора"
-                    className="bg-winter-800 border-snow-700/30 text-snow-100"
-                  />
+                  <Input id="teacher_position" value={formData.teacher_position} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  teacher_position: e.target.value
+                }))} placeholder="Заместитель директора" className="bg-winter-800 border-snow-700/30 text-snow-100" />
                 </div>
 
                 <div>
                   <Label htmlFor="teacher_birth_date" className="text-snow-300">
                     Дата рождения
                   </Label>
-                  <Input
-                    id="teacher_birth_date"
-                    type="date"
-                    value={formData.teacher_birth_date}
-                    onChange={e => setFormData(prev => ({ ...prev, teacher_birth_date: e.target.value }))}
-                    className="bg-winter-800 border-snow-700/30 text-snow-100"
-                  />
+                  <Input id="teacher_birth_date" type="date" value={formData.teacher_birth_date} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  teacher_birth_date: e.target.value
+                }))} className="bg-winter-800 border-snow-700/30 text-snow-100" />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -352,27 +293,19 @@ export default function PartnerRegistration() {
                     <Label htmlFor="teacher_phone" className="text-snow-300">
                       Контактный номер телефона (уникальный, действующий)
                     </Label>
-                    <Input
-                      id="teacher_phone"
-                      type="tel"
-                      value={formData.teacher_phone}
-                      onChange={e => setFormData(prev => ({ ...prev, teacher_phone: e.target.value }))}
-                      placeholder="+7 999 123-45-67"
-                      className="bg-winter-800 border-snow-700/30 text-snow-100"
-                    />
+                    <Input id="teacher_phone" type="tel" value={formData.teacher_phone} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    teacher_phone: e.target.value
+                  }))} placeholder="+7 999 123-45-67" className="bg-winter-800 border-snow-700/30 text-snow-100" />
                   </div>
                   <div>
                     <Label htmlFor="teacher_email" className="text-snow-300">
                       Адрес электронной почты (уникальный, действующий)
                     </Label>
-                    <Input
-                      id="teacher_email"
-                      type="email"
-                      value={formData.teacher_email}
-                      onChange={e => setFormData(prev => ({ ...prev, teacher_email: e.target.value }))}
-                      placeholder="email@example.com"
-                      className="bg-winter-800 border-snow-700/30 text-snow-100"
-                    />
+                    <Input id="teacher_email" type="email" value={formData.teacher_email} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    teacher_email: e.target.value
+                  }))} placeholder="email@example.com" className="bg-winter-800 border-snow-700/30 text-snow-100" />
                   </div>
                 </div>
               </div>
@@ -385,43 +318,32 @@ export default function PartnerRegistration() {
 
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="confirm_max_teachers"
-                      checked={formData.confirm_max_teachers}
-                      onCheckedChange={v => setFormData(prev => ({ ...prev, confirm_max_teachers: v as boolean }))}
-                      className="mt-0.5"
-                    />
+                    <Checkbox id="confirm_max_teachers" checked={formData.confirm_max_teachers} onCheckedChange={v => setFormData(prev => ({
+                    ...prev,
+                    confirm_max_teachers: v as boolean
+                  }))} className="mt-0.5" />
                     <Label htmlFor="confirm_max_teachers" className="text-snow-300 text-sm cursor-pointer">
                       Подтверждаю, что от одной образовательной организации направлено не более трех педагогов
                     </Label>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="confirm_data_correct"
-                      checked={formData.confirm_data_correct}
-                      onCheckedChange={v => setFormData(prev => ({ ...prev, confirm_data_correct: v as boolean }))}
-                      className="mt-0.5"
-                    />
+                    <Checkbox id="confirm_data_correct" checked={formData.confirm_data_correct} onCheckedChange={v => setFormData(prev => ({
+                    ...prev,
+                    confirm_data_correct: v as boolean
+                  }))} className="mt-0.5" />
                     <Label htmlFor="confirm_data_correct" className="text-snow-300 text-sm cursor-pointer">
                       Подтверждаю корректность и актуальность указанных контактных данных
                     </Label>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="confirm_personal_data"
-                      checked={formData.confirm_personal_data}
-                      onCheckedChange={v => setFormData(prev => ({ ...prev, confirm_personal_data: v as boolean }))}
-                      className="mt-0.5"
-                    />
+                    <Checkbox id="confirm_personal_data" checked={formData.confirm_personal_data} onCheckedChange={v => setFormData(prev => ({
+                    ...prev,
+                    confirm_personal_data: v as boolean
+                  }))} className="mt-0.5" />
                     <Label htmlFor="confirm_personal_data" className="text-snow-300 text-sm cursor-pointer">
-                      <a 
-                        href="/privacy" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-magic-gold hover:underline"
-                      >
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-magic-gold hover:underline">
                         Согласие на обработку персональных данных
                       </a>{' '}
                       *
@@ -430,12 +352,7 @@ export default function PartnerRegistration() {
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full" 
-                size="lg"
-                disabled={loading}
-              >
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 {loading ? 'Отправка...' : 'Отправить!'}
               </Button>
             </form>
@@ -443,6 +360,5 @@ export default function PartnerRegistration() {
         </Card>
       </main>
       <Footer />
-    </div>
-  );
+    </div>;
 }
