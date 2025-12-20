@@ -14,9 +14,7 @@ import {
   Calendar,
   Wallet,
   HeadphonesIcon,
-  CheckCircle,
   Star,
-  Clock,
   MessageSquare,
   BarChart3,
   Bell,
@@ -172,7 +170,7 @@ export default function PerformerLanding() {
                     Начать зарабатывать
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="gap-2 text-lg px-8 py-6 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+                <Button asChild variant="secondary" size="lg" className="gap-2 text-lg px-8 py-6 bg-white/10 text-white border border-white/20 hover:bg-white/20">
                   <a href="#how-it-works">
                     Как это работает
                     <ArrowRight className="w-5 h-5" />
