@@ -415,7 +415,7 @@ const Booking = () => {
                           name="eventType"
                           value={formData.eventType}
                           onChange={handleInputChange}
-                          className="w-full h-10 px-3 mt-1 rounded-lg border border-input bg-background text-sm"
+                          className="w-full h-10 px-3 mt-1 rounded-lg border border-input bg-background text-foreground text-sm"
                         >
                           {Object.entries(eventTypeLabels).map(([value, label]) => (
                             <option key={value} value={value}>{label}</option>
@@ -430,7 +430,7 @@ const Booking = () => {
                           name="district"
                           value={formData.district}
                           onChange={handleInputChange}
-                          className={`w-full h-10 px-3 mt-1 rounded-lg border bg-background text-sm ${fieldErrors.district ? 'border-destructive' : 'border-input'}`}
+                          className={`w-full h-10 px-3 mt-1 rounded-lg border bg-background text-foreground text-sm ${fieldErrors.district ? 'border-destructive' : 'border-input'}`}
                         >
                         <option value="">Выберите район</option>
                           {districts
