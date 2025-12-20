@@ -161,14 +161,14 @@ function TestimonialCard({ text, name, role, variant }: TestimonialCardProps) {
             <Star key={star} className="w-5 h-5 fill-magic-gold text-magic-gold drop-shadow-sm" />
           ))}
         </div>
-        <div className="mb-4 flex-1">
-          <p className={`text-foreground italic ${!isExpanded ? 'line-clamp-3' : ''}`}>
+        <div className="mb-4">
+          <p className={`text-foreground italic text-sm sm:text-base ${!isExpanded ? 'line-clamp-3' : ''}`}>
             "{text}"
           </p>
-          {!isExpanded && text.length > 120 && (
+          {!isExpanded && text.length > 100 && (
             <button 
               onClick={() => setIsExpanded(true)}
-              className="text-primary hover:text-primary/80 text-sm font-medium mt-1 hover:underline"
+              className="text-primary hover:text-primary/80 text-sm font-medium mt-2 hover:underline min-h-[44px] inline-flex items-center"
             >
               Подробнее
             </button>
@@ -176,13 +176,13 @@ function TestimonialCard({ text, name, role, variant }: TestimonialCardProps) {
           {isExpanded && (
             <button 
               onClick={() => setIsExpanded(false)}
-              className="text-primary hover:text-primary/80 text-sm font-medium mt-1 hover:underline"
+              className="text-primary hover:text-primary/80 text-sm font-medium mt-2 hover:underline min-h-[44px] inline-flex items-center"
             >
               Свернуть
             </button>
           )}
         </div>
-        <div className="flex items-center gap-3 mt-auto">
+        <div className="flex items-center gap-3 mt-auto pt-2">
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center shadow-md">
             <Award className="w-6 h-6 text-primary" />
           </div>
@@ -241,24 +241,24 @@ export default function PerformerLanding() {
                 <span className="text-sm text-magic-gold font-medium">Набор исполнителей на сезон 2025/2026</span>
               </div>
 
-              <h1 className="font-display text-4xl md:text-6xl font-bold text-primary-foreground mb-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+              <h1 className="font-display text-3xl sm:text-4xl md:text-6xl font-bold text-primary-foreground mb-6 animate-fade-in px-2" style={{ animationDelay: '0.1s' }}>
                 Стань Дедом Морозом —<br />
                 <span className="text-magic-gold">зарабатывай на праздниках</span>
               </h1>
 
-              <p className="text-xl md:text-2xl text-primary-foreground/80 mb-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <p className="text-lg sm:text-xl md:text-2xl text-primary-foreground/80 mb-8 animate-fade-in px-2" style={{ animationDelay: '0.2s' }}>
                 Готовый поток клиентов. Гибкий график. До{' '}
                 <span className="text-magic-gold font-bold">200 000 ₽</span> за сезон.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.3s' }}>
-                <Button asChild size="lg" className="gap-2 text-lg px-8 py-6 shadow-glow">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center animate-fade-in px-4" style={{ animationDelay: '0.3s' }}>
+                <Button asChild size="lg" className="gap-2 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 shadow-glow min-h-[48px]">
                   <Link to="/become-performer">
                     <Gift className="w-5 h-5" />
                     Начать зарабатывать
                   </Link>
                 </Button>
-                <Button asChild variant="secondary" size="lg" className="gap-2 text-lg px-8 py-6 bg-white/10 text-white border border-white/20 hover:bg-white/20">
+                <Button asChild variant="secondary" size="lg" className="gap-2 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 bg-white/10 text-white border border-white/20 hover:bg-white/20 min-h-[48px]">
                   <a href="#how-it-works">
                     Как это работает
                     <ArrowRight className="w-5 h-5" />
@@ -291,10 +291,10 @@ export default function PerformerLanding() {
                 <Shield className="w-4 h-4 text-primary" />
                 <span className="text-sm text-primary font-medium">Надёжный сервис</span>
               </div>
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4 px-2">
                 Почему исполнители выбирают нас
               </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
                 Мы создали платформу, которая делает работу Дедом Морозом простой, выгодной и приятной
               </p>
             </div>
@@ -383,10 +383,10 @@ export default function PerformerLanding() {
         <section id="how-it-works" className="py-16 md:py-24 bg-background scroll-mt-20">
           <div className="container">
             <div className="text-center mb-12">
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4 px-2">
                 Как начать работать
               </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
                 От регистрации до первого заказа — простой путь в 6 шагов
               </p>
             </div>
@@ -423,10 +423,10 @@ export default function PerformerLanding() {
         <section className="py-16 md:py-24 bg-muted/50">
           <div className="container">
             <div className="text-center mb-12">
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4 px-2">
                 Всё для удобной работы
               </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
                 Личный кабинет с полным набором инструментов
               </p>
             </div>
@@ -464,7 +464,7 @@ export default function PerformerLanding() {
                   <Star className="w-4 h-4 text-magic-gold fill-magic-gold" />
                   <span className="text-sm text-magic-gold font-medium">Проверенный сервис</span>
                 </div>
-                <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+                <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4">
                   Нам доверяют
                 </h2>
               </div>
@@ -513,7 +513,7 @@ export default function PerformerLanding() {
           <div className="container">
             <div className="max-w-3xl mx-auto">
               <div className="text-center mb-12">
-                <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+                <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4">
                   Частые вопросы
                 </h2>
               </div>
@@ -525,7 +525,7 @@ export default function PerformerLanding() {
                     value={`item-${i}`}
                     className="bg-card rounded-xl border border-border px-6 data-[state=open]:border-primary/30"
                   >
-                    <AccordionTrigger className="text-left font-heading font-medium text-foreground hover:no-underline py-4">
+                    <AccordionTrigger className="text-left font-heading font-medium text-foreground hover:no-underline py-4 min-h-[48px] text-sm sm:text-base">
                       {item.question}
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground pb-4">
@@ -542,19 +542,20 @@ export default function PerformerLanding() {
         <section className="py-16 md:py-24 bg-gradient-hero">
           <div className="container">
             <div className="max-w-3xl mx-auto text-center">
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-primary-foreground mb-4 px-2">
                 Готовы дарить праздник и зарабатывать?
               </h2>
-              <p className="text-xl text-primary-foreground/80 mb-8">
+              <p className="text-lg sm:text-xl text-primary-foreground/80 mb-8 px-2">
                 Регистрация занимает 5 минут. Первые заказы — уже завтра.
               </p>
-              <Button asChild size="lg" className="gap-2 text-lg px-10 py-6 shadow-glow">
+              <Button asChild size="lg" className="gap-2 text-base sm:text-lg px-6 sm:px-10 py-4 sm:py-6 shadow-glow min-h-[48px]">
                 <Link to="/become-performer">
                   <Gift className="w-5 h-5" />
-                  Подать заявку на Дедушку Мороза
+                  <span className="hidden sm:inline">Подать заявку на Дедушку Мороза</span>
+                  <span className="sm:hidden">Подать заявку</span>
                 </Link>
               </Button>
-              <p className="text-primary-foreground/60 text-sm mt-6">
+              <p className="text-primary-foreground/60 text-xs sm:text-sm mt-6 px-2">
                 Бесплатная регистрация • Без обязательств • Начните зарабатывать сегодня
               </p>
             </div>
