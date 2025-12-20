@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -7,8 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { Copy, CheckCircle2 } from 'lucide-react';
+import { Copy, CheckCircle2, CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 function generateReferralCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
@@ -20,6 +25,7 @@ function generateReferralCode() {
 export default function PartnerRegistration() {
   const [loading, setLoading] = useState(false);
   const [partnerLink, setPartnerLink] = useState<string | null>(null);
+  const [birthDate, setBirthDate] = useState<Date | undefined>();
   const [formData, setFormData] = useState({
     organization_name: '',
     organization_address: '',
@@ -31,7 +37,6 @@ export default function PartnerRegistration() {
     teacher_position: '',
     teacher_phone: '',
     teacher_email: '',
-    teacher_birth_date: '',
     confirm_max_teachers: false,
     confirm_data_correct: false,
     confirm_personal_data: false
@@ -63,7 +68,7 @@ export default function PartnerRegistration() {
       teacher_position: formData.teacher_position || null,
       teacher_phone: formData.teacher_phone || null,
       teacher_email: formData.teacher_email || null,
-      teacher_birth_date: formData.teacher_birth_date || null,
+      teacher_birth_date: birthDate ? format(birthDate, 'yyyy-MM-dd') : null,
       referral_code: referralCode,
       registered_self: true
     }).select('access_token').single();
@@ -279,13 +284,41 @@ export default function PartnerRegistration() {
                 </div>
 
                 <div>
-                  <Label htmlFor="teacher_birth_date" className="text-snow-300">
+                  <Label className="text-snow-300">
                     Дата рождения
                   </Label>
-                  <Input id="teacher_birth_date" type="date" value={formData.teacher_birth_date} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  teacher_birth_date: e.target.value
-                }))} className="!bg-winter-800 border-snow-700/30 !text-snow-100 placeholder:text-snow-500 [color-scheme:dark]" />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal !bg-winter-800 border-snow-700/30 hover:!bg-winter-700",
+                          !birthDate && "text-snow-500"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4 text-snow-400" />
+                        {birthDate ? (
+                          <span className="text-snow-100">{format(birthDate, "dd.MM.yyyy")}</span>
+                        ) : (
+                          <span>Выберите дату</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-winter-800 border-snow-700/30" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={birthDate}
+                        onSelect={setBirthDate}
+                        disabled={(date) => date > new Date() || date < new Date("1940-01-01")}
+                        initialFocus
+                        locale={ru}
+                        className="pointer-events-auto"
+                        captionLayout="dropdown-buttons"
+                        fromYear={1940}
+                        toYear={new Date().getFullYear()}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
