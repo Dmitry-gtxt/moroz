@@ -368,7 +368,7 @@ export default function PerformerLanding() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-4xl mx-auto">
               {platformFeatures.map((feature, i) => (
                 <div
                   key={i}
