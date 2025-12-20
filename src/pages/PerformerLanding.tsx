@@ -91,7 +91,6 @@ const platformFeatures = [
   { icon: Star, title: 'Рейтинг и отзывы', description: 'Набирайте звёзды — получайте больше заказов' },
   { icon: BarChart3, title: 'Статистика заработка', description: 'Отслеживайте доходы и аналитику' },
   { icon: Bell, title: 'Push и SMS уведомления', description: 'Мгновенно узнавайте о новых заявках' },
-  { icon: Shield, title: 'Предоплата от клиентов', description: 'Клиент вносит комиссию заранее' },
 ];
 
 const faqItems = [
