@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { SEOHead } from '@/components/seo/SEOHead';
+import { HorizontalScroll } from '@/components/ui/horizontal-scroll';
 import {
   Accordion,
   AccordionContent,
@@ -298,11 +299,11 @@ export default function PerformerLanding() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <HorizontalScroll>
               {benefits.map((benefit, i) => (
                 <div
                   key={i}
-                  className="bg-gradient-to-b from-card to-card/50 rounded-xl p-6 border border-border hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group relative overflow-hidden"
+                  className="flex-shrink-0 w-72 md:w-auto md:flex-1 md:min-w-[240px] md:max-w-[280px] snap-start bg-gradient-to-b from-card to-card/50 rounded-xl p-6 border border-border hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
@@ -316,7 +317,7 @@ export default function PerformerLanding() {
                   </p>
                 </div>
               ))}
-            </div>
+            </HorizontalScroll>
           </div>
         </section>
 
@@ -430,23 +431,25 @@ export default function PerformerLanding() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-4xl mx-auto">
-              {platformFeatures.map((feature, i) => (
-                <div
-                  key={i}
-                  className="bg-card rounded-xl p-4 border border-border text-center hover:border-primary/30 hover:shadow-md transition-all"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                    <feature.icon className="w-5 h-5 text-primary" />
+            <div className="max-w-4xl mx-auto">
+              <HorizontalScroll>
+                {platformFeatures.map((feature, i) => (
+                  <div
+                    key={i}
+                    className="flex-shrink-0 w-40 md:w-auto md:flex-1 md:min-w-[140px] md:max-w-[180px] snap-start bg-card rounded-xl p-4 border border-border text-center hover:border-primary/30 hover:shadow-md transition-all"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                      <feature.icon className="w-5 h-5 text-primary" />
+                    </div>
+                    <h4 className="font-heading font-medium text-sm text-foreground mb-1">
+                      {feature.title}
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      {feature.description}
+                    </p>
                   </div>
-                  <h4 className="font-heading font-medium text-sm text-foreground mb-1">
-                    {feature.title}
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    {feature.description}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </HorizontalScroll>
             </div>
           </div>
         </section>
