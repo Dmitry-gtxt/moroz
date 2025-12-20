@@ -60,34 +60,36 @@ export function Header() {
       {/* Decorative top border */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(42,95%,55%,0.5)] to-transparent" />
       
-      <div className="container flex h-18 items-center justify-between py-3">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="relative">
-            <div className="absolute -inset-2 bg-magic-gold/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
-            <div className="relative p-1 rounded-full bg-gradient-to-br from-magic-gold/20 to-transparent">
-              <img 
-                src={santaHatLogo} 
-                alt="Дед-Морозы.РФ" 
-                className="h-10 w-10 transition-transform group-hover:scale-110 duration-300" 
-              />
+      <div className="container flex h-18 items-center py-3">
+        {/* Logo - fixed width for balance */}
+        <div className="flex-1 flex justify-start">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="relative">
+              <div className="absolute -inset-2 bg-magic-gold/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
+              <div className="relative p-1 rounded-full bg-gradient-to-br from-magic-gold/20 to-transparent">
+                <img 
+                  src={santaHatLogo} 
+                  alt="Дед-Морозы.РФ" 
+                  className="h-10 w-10 transition-transform group-hover:scale-110 duration-300" 
+                />
+              </div>
+              <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-magic-gold animate-sparkle" />
             </div>
-            <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-magic-gold animate-sparkle" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-display text-xl font-bold text-snow-100 leading-tight">
-              Дед-Морозы<span className="text-gradient-gold">.РФ</span>
-            </span>
-            <span className="text-[10px] text-snow-400/60 tracking-wider">ВОЛШЕБСТВО НА ДОМ</span>
-          </div>
-        </Link>
+            <div className="flex flex-col">
+              <span className="font-display text-xl font-bold text-snow-100 leading-tight">
+                Дед-Морозы<span className="text-gradient-gold">.РФ</span>
+              </span>
+              <span className="text-[10px] text-snow-400/60 tracking-wider">ВОЛШЕБСТВО НА ДОМ</span>
+            </div>
+          </Link>
+        </div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1">
+        {/* Desktop Navigation - centered */}
+        <nav className="hidden md:flex items-center gap-1 justify-center">
           {[
             { to: '/catalog', label: 'Каталог' },
             { to: '/how-it-works', label: 'Как это работает' },
-            { to: '/become-performer', label: 'Исполнителям' },
+            { to: '/for-performers', label: 'Исполнителям' },
           ].map((link) => (
             <Link 
               key={link.to}
@@ -101,8 +103,8 @@ export function Header() {
           ))}
         </nav>
 
-        {/* Desktop Actions */}
-        <div className="hidden md:flex items-center gap-3">
+        {/* Desktop Actions - fixed width for balance */}
+        <div className="flex-1 hidden md:flex items-center gap-3 justify-end">
           {!loading && (
             <>
               {user ? (
