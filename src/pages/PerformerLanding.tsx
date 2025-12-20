@@ -133,6 +133,68 @@ const stats = [
   { value: '8-10', label: 'Заказов в день (пик)' },
 ];
 
+interface TestimonialCardProps {
+  text: string;
+  name: string;
+  role: string;
+  variant: 'primary' | 'gold';
+}
+
+function TestimonialCard({ text, name, role, variant }: TestimonialCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const gradientClass = variant === 'primary' 
+    ? 'from-card via-card to-primary/5 hover:border-primary/30' 
+    : 'from-card via-card to-magic-gold/5 hover:border-magic-gold/30';
+  
+  const glowClass = variant === 'primary' 
+    ? 'bg-magic-gold/10' 
+    : 'bg-primary/10';
+
+  return (
+    <div className={`bg-gradient-to-br ${gradientClass} rounded-xl p-6 border border-border transition-colors shadow-lg relative overflow-hidden flex flex-col`}>
+      <div className={`absolute -top-10 -right-10 w-32 h-32 ${glowClass} rounded-full blur-2xl`} />
+      <div className="relative flex flex-col flex-1">
+        <div className="flex items-center gap-1 mb-4">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star key={star} className="w-5 h-5 fill-magic-gold text-magic-gold drop-shadow-sm" />
+          ))}
+        </div>
+        <div className="mb-4 flex-1">
+          <p className={`text-foreground italic ${!isExpanded ? 'line-clamp-3' : ''}`}>
+            "{text}"
+          </p>
+          {!isExpanded && text.length > 120 && (
+            <button 
+              onClick={() => setIsExpanded(true)}
+              className="text-primary hover:text-primary/80 text-sm font-medium mt-1 hover:underline"
+            >
+              Подробнее
+            </button>
+          )}
+          {isExpanded && (
+            <button 
+              onClick={() => setIsExpanded(false)}
+              className="text-primary hover:text-primary/80 text-sm font-medium mt-1 hover:underline"
+            >
+              Свернуть
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-3 mt-auto">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center shadow-md">
+            <Award className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <div className="font-semibold text-foreground">{name}</div>
+            <div className="text-sm text-muted-foreground">{role}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PerformerLanding() {
   const [commissionRate, setCommissionRate] = useState<number>(20);
 
@@ -405,53 +467,19 @@ export default function PerformerLanding() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-br from-card via-card to-primary/5 rounded-xl p-6 border border-border hover:border-primary/30 transition-colors shadow-lg relative overflow-hidden">
-                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-magic-gold/10 rounded-full blur-2xl" />
-                  <div className="relative">
-                    <div className="flex items-center gap-1 mb-4">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star key={star} className="w-5 h-5 fill-magic-gold text-magic-gold drop-shadow-sm" />
-                      ))}
-                    </div>
-                    <p className="text-foreground mb-4 italic">
-                      "Работаю второй сезон. Заказов много, поддержка всегда на связи. 
-                      В декабре заработал 180 000 ₽ — это лучший результат за все годы."
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center shadow-md">
-                        <Award className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-foreground">Алексей</div>
-                        <div className="text-sm text-muted-foreground">Дед Мороз, 5 лет опыта</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <TestimonialCard
+                  text="Работаю второй сезон. Заказов много, поддержка всегда на связи. В декабре заработал 180 000 ₽ — это лучший результат за все годы."
+                  name="Алексей"
+                  role="Дед Мороз, 5 лет опыта"
+                  variant="primary"
+                />
 
-                <div className="bg-gradient-to-br from-card via-card to-magic-gold/5 rounded-xl p-6 border border-border hover:border-magic-gold/30 transition-colors shadow-lg relative overflow-hidden">
-                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-2xl" />
-                  <div className="relative">
-                    <div className="flex items-center gap-1 mb-4">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star key={star} className="w-5 h-5 fill-magic-gold text-magic-gold drop-shadow-sm" />
-                      ))}
-                    </div>
-                    <p className="text-foreground mb-4 italic">
-                      "Удобное приложение, понятный интерфейс. Вижу все заказы, могу выбирать удобные районы. 
-                      Главное — стабильный поток клиентов без моих усилий."
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center shadow-md">
-                        <Award className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-foreground">Михаил</div>
-                        <div className="text-sm text-muted-foreground">Дед Мороз, 3 года опыта</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <TestimonialCard
+                  text="Удобное приложение, понятный интерфейс. Вижу все заказы, могу выбирать удобные районы. Главное — стабильный поток клиентов без моих усилий."
+                  name="Михаил"
+                  role="Дед Мороз, 3 года опыта"
+                  variant="gold"
+                />
               </div>
 
               {/* Trust indicators */}
