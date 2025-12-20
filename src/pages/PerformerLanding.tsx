@@ -146,7 +146,7 @@ export default function PerformerLanding() {
     if (item.id === 'commission') {
       return {
         ...item,
-        answer: `Комиссия составляет ${commissionRate}% от стоимости заказа. Вы видите эту комиссию и можете установить цену, которая устроит именно вас «на руки». Это значительно ниже, чем у большинства агентств, и включает привлечение клиентов и поддержку.`,
+        answer: `Комиссия составляет ${commissionRate}% и её оплачивает заказчик. Вы видите цену с комиссией и устанавливаете сумму, которая устроит именно вас «на руки».`,
       };
     }
     return item;
@@ -218,9 +218,17 @@ export default function PerformerLanding() {
         </section>
 
         {/* Benefits Section */}
-        <section className="py-16 md:py-24 bg-background">
-          <div className="container">
+        <section className="py-16 md:py-24 bg-background relative overflow-hidden">
+          {/* Background decorations */}
+          <div className="absolute top-20 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-10 right-0 w-96 h-96 bg-magic-gold/5 rounded-full blur-3xl" />
+          
+          <div className="container relative">
             <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
+                <Shield className="w-4 h-4 text-primary" />
+                <span className="text-sm text-primary font-medium">Надёжный сервис</span>
+              </div>
               <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
                 Почему исполнители выбирают нас
               </h2>
@@ -233,10 +241,11 @@ export default function PerformerLanding() {
               {benefits.map((benefit, i) => (
                 <div
                   key={i}
-                  className="bg-card rounded-xl p-6 border border-border hover:border-primary/30 hover:shadow-lg transition-all duration-300 group"
+                  className="bg-gradient-to-b from-card to-card/50 rounded-xl p-6 border border-border hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group relative overflow-hidden"
                 >
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <benefit.icon className="w-6 h-6 text-primary" />
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
+                    <benefit.icon className="w-7 h-7 text-primary" />
                   </div>
                   <h3 className="font-heading font-semibold text-lg text-foreground mb-2">
                     {benefit.title}
@@ -264,30 +273,40 @@ export default function PerformerLanding() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-card rounded-xl p-6 border border-border text-center">
-                  <div className="text-4xl font-bold text-foreground mb-2">3 000 – 7 000 ₽</div>
-                  <div className="text-muted-foreground">за один выезд</div>
+                <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 rounded-xl p-6 border border-emerald-500/20 text-center relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-full blur-2xl" />
+                  <div className="relative">
+                    <div className="text-sm text-emerald-600 dark:text-emerald-400 font-medium mb-2">от</div>
+                    <div className="text-4xl font-bold text-foreground mb-1">3 000 ₽</div>
+                    <div className="text-muted-foreground">за один выезд</div>
+                  </div>
                 </div>
-                <div className="bg-card rounded-xl p-6 border border-border text-center">
-                  <div className="text-4xl font-bold text-foreground mb-2">8-10 заказов</div>
-                  <div className="text-muted-foreground">в день (пик сезона)</div>
+                <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-xl p-6 border border-blue-500/20 text-center relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl" />
+                  <div className="relative">
+                    <div className="text-4xl font-bold text-foreground mb-2">8-10 заказов</div>
+                    <div className="text-muted-foreground">в день (пик сезона)</div>
+                  </div>
                 </div>
-                <div className="bg-primary rounded-xl p-6 text-center">
-                  <div className="text-4xl font-bold text-primary-foreground mb-2">до 200 000 ₽</div>
-                  <div className="text-primary-foreground/80">за декабрь</div>
+                <div className="bg-gradient-to-br from-primary to-primary/80 rounded-xl p-6 text-center relative overflow-hidden shadow-lg">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+                  <div className="relative">
+                    <div className="text-4xl font-bold text-primary-foreground mb-2">до 200 000 ₽</div>
+                    <div className="text-primary-foreground/80">за декабрь</div>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-card rounded-xl p-6 border border-border">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-magic-gold/20 flex items-center justify-center flex-shrink-0">
-                    <TrendingUp className="w-5 h-5 text-magic-gold" />
+              <div className="bg-gradient-to-r from-magic-gold/10 via-magic-gold/5 to-transparent rounded-xl p-6 border border-magic-gold/20 relative overflow-hidden">
+                <div className="absolute -right-10 -top-10 w-32 h-32 bg-magic-gold/10 rounded-full blur-3xl" />
+                <div className="flex items-start gap-4 relative">
+                  <div className="w-12 h-12 rounded-full bg-magic-gold/20 flex items-center justify-center flex-shrink-0 shadow-lg">
+                    <TrendingUp className="w-6 h-6 text-magic-gold" />
                   </div>
                   <div>
-                    <h4 className="font-heading font-semibold text-foreground mb-1">Прозрачная комиссия — {commissionRate}%</h4>
-                    <p className="text-muted-foreground text-sm">
-                      Вы видите комиссию платформы и можете установить цену, которая устроит именно вас «на руки».
-                      Сравните с агентствами, которые забирают 30-50%.
+                    <h4 className="font-heading font-semibold text-lg text-foreground mb-2">Комиссию сервиса оплачивает заказчик</h4>
+                    <p className="text-muted-foreground">
+                      Вы видите цену с комиссией платформы и устанавливаете цену, которая устроит именно вас «на руки».
                     </p>
                   </div>
                 </div>
@@ -370,56 +389,87 @@ export default function PerformerLanding() {
         </section>
 
         {/* Social Proof */}
-        <section className="py-16 md:py-24 bg-background">
-          <div className="container">
+        <section className="py-16 md:py-24 bg-background relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYtMi42ODYgNi02cy0yLjY4Ni02LTYtNi02IDIuNjg2LTYgNiAyLjY4NiA2IDYgNnoiIHN0cm9rZT0icmdiYSgxMDAsMTAwLDEwMCwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9nPjwvc3ZnPg==')] opacity-50" />
+          <div className="container relative">
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-12">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-magic-gold/10 border border-magic-gold/20 mb-4">
+                  <Star className="w-4 h-4 text-magic-gold fill-magic-gold" />
+                  <span className="text-sm text-magic-gold font-medium">Проверенный сервис</span>
+                </div>
                 <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
                   Нам доверяют
                 </h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-card rounded-xl p-6 border border-border">
-                  <div className="flex items-center gap-1 mb-4">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} className="w-5 h-5 fill-magic-gold text-magic-gold" />
-                    ))}
-                  </div>
-                  <p className="text-foreground mb-4">
-                    "Работаю второй сезон. Заказов много, поддержка всегда на связи. 
-                    В декабре заработал 180 000 ₽ — это лучший результат за все годы."
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                      <Award className="w-5 h-5 text-primary" />
+                <div className="bg-gradient-to-br from-card via-card to-primary/5 rounded-xl p-6 border border-border hover:border-primary/30 transition-colors shadow-lg relative overflow-hidden">
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-magic-gold/10 rounded-full blur-2xl" />
+                  <div className="relative">
+                    <div className="flex items-center gap-1 mb-4">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star key={star} className="w-5 h-5 fill-magic-gold text-magic-gold drop-shadow-sm" />
+                      ))}
                     </div>
-                    <div>
-                      <div className="font-medium text-foreground">Алексей</div>
-                      <div className="text-sm text-muted-foreground">Дед Мороз, 5 лет опыта</div>
+                    <p className="text-foreground mb-4 italic">
+                      "Работаю второй сезон. Заказов много, поддержка всегда на связи. 
+                      В декабре заработал 180 000 ₽ — это лучший результат за все годы."
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center shadow-md">
+                        <Award className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-foreground">Алексей</div>
+                        <div className="text-sm text-muted-foreground">Дед Мороз, 5 лет опыта</div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-card rounded-xl p-6 border border-border">
-                  <div className="flex items-center gap-1 mb-4">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} className="w-5 h-5 fill-magic-gold text-magic-gold" />
-                    ))}
-                  </div>
-                  <p className="text-foreground mb-4">
-                    "Удобное приложение, понятный интерфейс. Вижу все заказы, могу выбирать удобные районы. 
-                    Главное — стабильный поток клиентов без моих усилий."
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                      <Award className="w-5 h-5 text-primary" />
+                <div className="bg-gradient-to-br from-card via-card to-magic-gold/5 rounded-xl p-6 border border-border hover:border-magic-gold/30 transition-colors shadow-lg relative overflow-hidden">
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-2xl" />
+                  <div className="relative">
+                    <div className="flex items-center gap-1 mb-4">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star key={star} className="w-5 h-5 fill-magic-gold text-magic-gold drop-shadow-sm" />
+                      ))}
                     </div>
-                    <div>
-                      <div className="font-medium text-foreground">Михаил</div>
-                      <div className="text-sm text-muted-foreground">Дед Мороз, 3 года опыта</div>
+                    <p className="text-foreground mb-4 italic">
+                      "Удобное приложение, понятный интерфейс. Вижу все заказы, могу выбирать удобные районы. 
+                      Главное — стабильный поток клиентов без моих усилий."
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center shadow-md">
+                        <Award className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-foreground">Михаил</div>
+                        <div className="text-sm text-muted-foreground">Дед Мороз, 3 года опыта</div>
+                      </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Trust indicators */}
+              <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-card/50 rounded-lg p-4 text-center border border-border">
+                  <div className="text-2xl font-bold text-primary mb-1">500+</div>
+                  <div className="text-xs text-muted-foreground">Исполнителей в сети</div>
+                </div>
+                <div className="bg-card/50 rounded-lg p-4 text-center border border-border">
+                  <div className="text-2xl font-bold text-primary mb-1">24/7</div>
+                  <div className="text-xs text-muted-foreground">Поддержка</div>
+                </div>
+                <div className="bg-card/50 rounded-lg p-4 text-center border border-border">
+                  <div className="text-2xl font-bold text-primary mb-1">10 000+</div>
+                  <div className="text-xs text-muted-foreground">Выполненных заказов</div>
+                </div>
+                <div className="bg-card/50 rounded-lg p-4 text-center border border-border">
+                  <div className="text-2xl font-bold text-magic-gold mb-1">4.9★</div>
+                  <div className="text-xs text-muted-foreground">Средний рейтинг</div>
                 </div>
               </div>
             </div>
