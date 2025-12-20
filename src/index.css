@@ -360,4 +360,13 @@
   .magical-page {
     background: linear-gradient(180deg, hsl(220 80% 8%) 0%, hsl(220 70% 12%) 50%, hsl(215 60% 10%) 100%);
   }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
