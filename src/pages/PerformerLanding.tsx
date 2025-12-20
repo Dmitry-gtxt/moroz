@@ -445,7 +445,7 @@ export default function PerformerLanding() {
               <Button asChild size="lg" className="gap-2 text-lg px-10 py-6 shadow-glow">
                 <Link to="/become-performer">
                   <Gift className="w-5 h-5" />
-                  Подать заявку
+                  Подать заявку на Дедушку Мороза
                 </Link>
               </Button>
               <p className="text-primary-foreground/60 text-sm mt-6">
