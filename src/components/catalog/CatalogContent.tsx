@@ -288,7 +288,7 @@ export function CatalogContent({ showHeader = true }: CatalogContentProps) {
           <select
             value={filters.sortBy}
             onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as Filters['sortBy'] })}
-            className="flex-1 h-10 px-4 rounded-lg border border-input bg-background text-sm"
+            className="flex-1 h-10 px-4 rounded-lg border border-input bg-background text-foreground text-sm"
           >
             <option value="rating">По рейтингу</option>
             <option value="price_asc">Сначала дешевле</option>
