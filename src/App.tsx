@@ -35,6 +35,7 @@ const AdminSmsLogs = lazy(() => import("./pages/admin/AdminSmsLogs"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const PartnerDashboard = lazy(() => import("./pages/PartnerDashboard"));
 const PartnerRegistration = lazy(() => import("./pages/PartnerRegistration"));
+const PerformerLanding = lazy(() => import("./pages/PerformerLanding"));
 const PerformerRegistration = lazy(() => import("./pages/PerformerRegistration"));
 const PerformerDashboard = lazy(() => import("./pages/performer/PerformerDashboard"));
 const PerformerProfilePage = lazy(() => import("./pages/performer/PerformerProfile"));
@@ -105,6 +106,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/login" element={<Auth />} />
               <Route path="/register" element={<Auth />} />
+              <Route path="/for-performers" element={<PerformerLanding />} />
               <Route path="/become-performer" element={<PerformerRegistration />} />
               {/* Partner dashboard */}
               <Route path="/partner/:token" element={<PartnerDashboard />} />
