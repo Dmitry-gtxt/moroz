@@ -304,7 +304,7 @@ export default function PartnerRegistration() {
                         )}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-winter-800 border-snow-700/30 z-50" align="start">
+                    <PopoverContent className="w-auto p-0 !bg-winter-800 border-snow-700/30 z-50" align="start">
                       <Calendar
                         mode="single"
                         selected={birthDate}
@@ -312,7 +312,28 @@ export default function PartnerRegistration() {
                         disabled={(date) => date > new Date() || date < new Date("1940-01-01")}
                         initialFocus
                         locale={ru}
-                        className="pointer-events-auto bg-winter-800 text-snow-100 [&_.rdp-caption_label]:text-snow-100 [&_.rdp-head_cell]:text-snow-400 [&_.rdp-day]:text-snow-100 [&_.rdp-day:hover]:bg-winter-700 [&_.rdp-nav_button]:text-snow-100 [&_.rdp-nav_button:hover]:bg-winter-700 [&_.rdp-day_selected]:!bg-magic-gold [&_.rdp-day_selected]:!text-winter-950 [&_.rdp-day_today]:bg-winter-700"
+                        className="pointer-events-auto !bg-winter-800 text-snow-100"
+                        classNames={{
+                          months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 bg-winter-800",
+                          month: "space-y-4 bg-winter-800",
+                          caption: "flex justify-center pt-1 relative items-center text-snow-100",
+                          caption_label: "text-sm font-medium text-snow-100",
+                          nav: "space-x-1 flex items-center",
+                          nav_button: "h-7 w-7 bg-winter-700 border border-snow-700/30 p-0 opacity-70 hover:opacity-100 hover:bg-winter-600 text-snow-100 rounded-md inline-flex items-center justify-center",
+                          nav_button_previous: "absolute left-1",
+                          nav_button_next: "absolute right-1",
+                          table: "w-full border-collapse space-y-1",
+                          head_row: "flex",
+                          head_cell: "text-snow-400 rounded-md w-9 font-normal text-[0.8rem]",
+                          row: "flex w-full mt-2",
+                          cell: "h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
+                          day: "h-9 w-9 p-0 font-normal text-snow-100 hover:bg-winter-700 rounded-md inline-flex items-center justify-center",
+                          day_selected: "!bg-magic-gold !text-winter-950 hover:!bg-magic-gold/90",
+                          day_today: "bg-winter-700 text-snow-100",
+                          day_outside: "text-snow-500 opacity-50",
+                          day_disabled: "text-snow-600 opacity-50",
+                          day_hidden: "invisible",
+                        }}
                         defaultMonth={birthDate || new Date(1990, 0)}
                       />
                     </PopoverContent>
