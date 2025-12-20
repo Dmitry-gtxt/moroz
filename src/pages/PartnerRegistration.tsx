@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -9,11 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { Copy, CheckCircle2, CalendarIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Copy, CheckCircle2 } from 'lucide-react';
 function generateReferralCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
@@ -22,10 +17,39 @@ function generateReferralCode() {
   }
   return code;
 }
+
+function maskBirthDate(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
+}
+
+function birthDateMaskedToIso(masked: string) {
+  const m = masked.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if (!m) return null;
+  const [, dd, mm, yyyy] = m;
+
+  const year = Number(yyyy);
+  const month = Number(mm);
+  const day = Number(dd);
+
+  if (year < 1940) return null;
+  if (month < 1 || month > 12) return null;
+  if (day < 1 || day > 31) return null;
+
+  const iso = `${yyyy}-${mm}-${dd}`;
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  if (d.getUTCFullYear() !== year || d.getUTCMonth() + 1 !== month || d.getUTCDate() !== day) return null;
+  if (d.getTime() > Date.now()) return null;
+
+  return iso;
+}
+
 export default function PartnerRegistration() {
   const [loading, setLoading] = useState(false);
   const [partnerLink, setPartnerLink] = useState<string | null>(null);
-  const [birthDate, setBirthDate] = useState<Date | undefined>();
   const [formData, setFormData] = useState({
     organization_name: '',
     organization_address: '',
@@ -35,6 +59,7 @@ export default function PartnerRegistration() {
     teacher_first_name: '',
     teacher_middle_name: '',
     teacher_position: '',
+    teacher_birth_date: '',
     teacher_phone: '',
     teacher_email: '',
     confirm_max_teachers: false,
@@ -51,27 +76,38 @@ export default function PartnerRegistration() {
       toast.error('Необходимо согласие на обработку персональных данных');
       return;
     }
+
+    const birthDateIso = formData.teacher_birth_date
+      ? birthDateMaskedToIso(formData.teacher_birth_date)
+      : null;
+
+    if (formData.teacher_birth_date && !birthDateIso) {
+      toast.error('Дата рождения: введите в формате ДД.ММ.ГГГГ');
+      return;
+    }
+
     setLoading(true);
     const referralCode = generateReferralCode();
-    const {
-      data,
-      error
-    } = await supabase.from('partners').insert({
-      name: formData.organization_name,
-      organization_address: formData.organization_address || null,
-      contact_person_name: formData.contact_person_name || null,
-      contact_phone: formData.contact_phone || null,
-      contact_email: formData.teacher_email || null,
-      teacher_last_name: formData.teacher_last_name || null,
-      teacher_first_name: formData.teacher_first_name || null,
-      teacher_middle_name: formData.teacher_middle_name || null,
-      teacher_position: formData.teacher_position || null,
-      teacher_phone: formData.teacher_phone || null,
-      teacher_email: formData.teacher_email || null,
-      teacher_birth_date: birthDate ? format(birthDate, 'yyyy-MM-dd') : null,
-      referral_code: referralCode,
-      registered_self: true
-    }).select('access_token').single();
+    const { data, error } = await supabase
+      .from('partners')
+      .insert({
+        name: formData.organization_name,
+        organization_address: formData.organization_address || null,
+        contact_person_name: formData.contact_person_name || null,
+        contact_phone: formData.contact_phone || null,
+        contact_email: formData.teacher_email || null,
+        teacher_last_name: formData.teacher_last_name || null,
+        teacher_first_name: formData.teacher_first_name || null,
+        teacher_middle_name: formData.teacher_middle_name || null,
+        teacher_position: formData.teacher_position || null,
+        teacher_phone: formData.teacher_phone || null,
+        teacher_email: formData.teacher_email || null,
+        teacher_birth_date: birthDateIso,
+        referral_code: referralCode,
+        registered_self: true,
+      })
+      .select('access_token')
+      .single();
     setLoading(false);
     if (error) {
       console.error('Error creating partner:', error);
@@ -284,39 +320,25 @@ export default function PartnerRegistration() {
                 </div>
 
                 <div>
-                  <Label className="text-snow-300">
+                  <Label htmlFor="teacher_birth_date" className="text-snow-300">
                     Дата рождения
                   </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal !bg-winter-800 border-snow-700/30 hover:!bg-winter-700 h-10",
-                          !birthDate && "text-snow-500"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4 text-snow-400" />
-                        {birthDate ? (
-                          <span className="text-snow-100">{format(birthDate, "dd.MM.yyyy")}</span>
-                        ) : (
-                          <span>Выберите дату</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 z-50" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={birthDate}
-                        onSelect={setBirthDate}
-                        disabled={(date) => date > new Date() || date < new Date("1940-01-01")}
-                        initialFocus
-                        locale={ru}
-                        className="pointer-events-auto"
-                        defaultMonth={birthDate || new Date(1990, 0)}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <Input
+                    id="teacher_birth_date"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="bday"
+                    placeholder="ДД.ММ.ГГГГ"
+                    value={formData.teacher_birth_date}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        teacher_birth_date: maskBirthDate(e.target.value),
+                      }))
+                    }
+                    maxLength={10}
+                    className="!bg-winter-800 border-snow-700/30 !text-snow-100 placeholder:text-snow-500"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
