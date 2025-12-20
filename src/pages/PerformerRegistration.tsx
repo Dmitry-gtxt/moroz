@@ -16,6 +16,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { getReferralCode, clearReferralCode } from '@/lib/referral';
 import { cleanVerificationPhone } from '@/lib/utils';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { trackPerformerRegistration } from '@/lib/analytics';
 
 type PerformerType = Database['public']['Enums']['performer_type'];
 type EventFormat = Database['public']['Enums']['event_format'];
@@ -609,6 +610,12 @@ export default function PerformerRegistration() {
           console.log('Referral tracking skipped:', err);
         }
       }
+
+      // 7. Track performer registration in DataLayer
+      trackPerformerRegistration({
+        performer_id: profile.id,
+        user_id: user.id,
+      });
 
       toast.success('Анкета отправлена! Наш менеджер свяжется с вами для верификации в течение 24 часов.');
       navigate('/performer');

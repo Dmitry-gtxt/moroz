@@ -51,3 +51,11 @@ export function trackConfirmation(confirmationData?: {
 }) {
   pushEvent('confirmation', confirmationData);
 }
+
+// Performer registration event - after successful form submission
+export function trackPerformerRegistration(performerData?: {
+  performer_id?: string;
+  user_id?: string;
+}) {
+  pushEvent('registration_artist', performerData);
+}
