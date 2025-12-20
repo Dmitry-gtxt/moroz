@@ -128,8 +128,8 @@ const faqItems = [
 ];
 
 const stats = [
-  { value: '500+', label: 'Исполнителей' },
-  { value: '10 000+', label: 'Выполненных заказов' },
+  { value: '50+', label: 'Исполнителей' },
+  { value: '500+', label: 'Выполненных заказов' },
   { value: '4.9', label: 'Средний рейтинг' },
   { value: '8-10', label: 'Заказов в день (пик)' },
 ];
@@ -488,7 +488,7 @@ export default function PerformerLanding() {
               {/* Trust indicators */}
               <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-card/50 rounded-lg p-4 text-center border border-border">
-                  <div className="text-2xl font-bold text-primary mb-1">500+</div>
+                  <div className="text-2xl font-bold text-primary mb-1">50+</div>
                   <div className="text-xs text-muted-foreground">Исполнителей в сети</div>
                 </div>
                 <div className="bg-card/50 rounded-lg p-4 text-center border border-border">
@@ -496,7 +496,7 @@ export default function PerformerLanding() {
                   <div className="text-xs text-muted-foreground">Поддержка</div>
                 </div>
                 <div className="bg-card/50 rounded-lg p-4 text-center border border-border">
-                  <div className="text-2xl font-bold text-primary mb-1">10 000+</div>
+                  <div className="text-2xl font-bold text-primary mb-1">500+</div>
                   <div className="text-xs text-muted-foreground">Выполненных заказов</div>
                 </div>
                 <div className="bg-card/50 rounded-lg p-4 text-center border border-border">
