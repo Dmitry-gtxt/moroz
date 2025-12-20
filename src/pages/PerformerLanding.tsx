@@ -275,8 +275,10 @@ export default function PerformerLanding() {
                 <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 rounded-xl p-6 border border-emerald-500/20 text-center relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-full blur-2xl" />
                   <div className="relative">
-                    <div className="text-sm text-emerald-600 dark:text-emerald-400 font-medium mb-2">от</div>
-                    <div className="text-4xl font-bold text-foreground mb-1">3 000 ₽</div>
+                    <div className="flex items-baseline justify-center gap-1 mb-1">
+                      <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">от</span>
+                      <span className="text-4xl font-bold text-foreground">3 000 ₽</span>
+                    </div>
                     <div className="text-muted-foreground">за один выезд</div>
                   </div>
                 </div>
