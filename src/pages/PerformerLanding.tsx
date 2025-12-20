@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -24,7 +25,9 @@ import {
   Gift,
   TrendingUp,
   Award,
+  Smartphone,
 } from 'lucide-react';
+import { getCommissionRate } from '@/lib/pricing';
 
 const benefits = [
   {
@@ -39,8 +42,8 @@ const benefits = [
   },
   {
     icon: Wallet,
-    title: 'Быстрые выплаты',
-    description: 'Деньги поступают на карту в течение 3 дней после выполнения заказа. Без задержек и скрытых комиссий.',
+    title: 'Гибкие цены по времени',
+    description: 'Днём — дешевле, вечером — дороже, а 31 декабря в ночь — за премиум. Вы сами устанавливаете цены на каждый слот.',
   },
   {
     icon: HeadphonesIcon,
@@ -78,7 +81,7 @@ const howItWorks = [
   {
     step: 6,
     title: 'Оплата',
-    description: 'После завершения заказа деньги автоматически поступают на вашу карту.',
+    description: 'Клиент оплачивает вам напрямую — наличными или переводом на карту до или после выступления.',
   },
 ];
 
@@ -87,34 +90,40 @@ const platformFeatures = [
   { icon: MessageSquare, title: 'Чат с клиентами', description: 'Уточняйте детали прямо в приложении' },
   { icon: Star, title: 'Рейтинг и отзывы', description: 'Набирайте звёзды — получайте больше заказов' },
   { icon: BarChart3, title: 'Статистика заработка', description: 'Отслеживайте доходы и аналитику' },
-  { icon: Bell, title: 'Push-уведомления', description: 'Мгновенно узнавайте о новых заявках' },
-  { icon: Shield, title: 'Безопасные сделки', description: 'Предоплата от клиентов гарантирует оплату' },
+  { icon: Bell, title: 'Push и SMS уведомления', description: 'Мгновенно узнавайте о новых заявках' },
+  { icon: Shield, title: 'Предоплата от клиентов', description: 'Клиент вносит комиссию заранее' },
 ];
 
 const faqItems = [
   {
+    id: 'commission',
     question: 'Какая комиссия платформы?',
-    answer: 'Комиссия составляет 15% от стоимости заказа. Это значительно ниже, чем у большинства агентств, и включает привлечение клиентов, обработку платежей и поддержку.',
+    answer: '', // Will be filled dynamically
   },
   {
+    id: 'costume',
     question: 'Нужен ли свой костюм?',
     answer: 'Да, для работы необходим качественный костюм. Если у вас его нет — мы подскажем проверенных поставщиков с хорошими ценами.',
   },
   {
+    id: 'orders',
     question: 'Как быстро начнут приходить заказы?',
     answer: 'Первые заявки обычно поступают в течение 1-3 дней после верификации, особенно в сезон (декабрь). Чем лучше заполнен профиль и выше рейтинг — тем больше заказов.',
   },
   {
+    id: 'districts',
     question: 'Можно ли работать в нескольких районах?',
     answer: 'Да, вы сами выбираете районы выезда. Можно указать хоть все районы города — система покажет вас клиентам в каждом из них.',
   },
   {
+    id: 'cancellation',
     question: 'Что если клиент отменит заказ?',
-    answer: 'При отмене менее чем за 24 часа — вы получаете 50% от стоимости заказа как компенсацию. Мы защищаем интересы исполнителей.',
+    answer: 'Мы заботимся о том, чтобы заказы состоялись: обзваниваем клиентов накануне и в день визита для подтверждения. Это снижает процент отмен до минимума.',
   },
   {
+    id: 'payment',
     question: 'Как происходит оплата?',
-    answer: 'Клиент вносит предоплату при бронировании. После выполнения заказа деньги поступают на вашу карту в течение 3 рабочих дней.',
+    answer: 'Клиент платит вам напрямую — наличными или переводом на карту до или после выступления. Вы получаете деньги сразу, без задержек.',
   },
 ];
 
@@ -122,10 +131,27 @@ const stats = [
   { value: '500+', label: 'Исполнителей' },
   { value: '10 000+', label: 'Выполненных заказов' },
   { value: '4.9', label: 'Средний рейтинг' },
-  { value: '3 дня', label: 'Срок выплаты' },
+  { value: '8-10', label: 'Заказов в день (пик)' },
 ];
 
 export default function PerformerLanding() {
+  const [commissionRate, setCommissionRate] = useState<number>(20);
+
+  useEffect(() => {
+    getCommissionRate().then(setCommissionRate);
+  }, []);
+
+  // Dynamic FAQ with commission rate
+  const dynamicFaqItems = faqItems.map(item => {
+    if (item.id === 'commission') {
+      return {
+        ...item,
+        answer: `Комиссия составляет ${commissionRate}% от стоимости заказа. Вы видите эту комиссию и можете установить цену, которая устроит именно вас «на руки». Это значительно ниже, чем у большинства агентств, и включает привлечение клиентов и поддержку.`,
+      };
+    }
+    return item;
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <SEOHead
@@ -150,7 +176,7 @@ export default function PerformerLanding() {
             <div className="max-w-3xl mx-auto text-center">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-magic-gold/10 border border-magic-gold/30 mb-6 animate-fade-in">
                 <Sparkles className="w-4 h-4 text-magic-gold" />
-                <span className="text-sm text-magic-gold font-medium">Набор исполнителей на сезон 2024/2025</span>
+                <span className="text-sm text-magic-gold font-medium">Набор исполнителей на сезон 2025/2026</span>
               </div>
 
               <h1 className="font-display text-4xl md:text-6xl font-bold text-primary-foreground mb-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
@@ -243,7 +269,7 @@ export default function PerformerLanding() {
                   <div className="text-muted-foreground">за один выезд</div>
                 </div>
                 <div className="bg-card rounded-xl p-6 border border-border text-center">
-                  <div className="text-4xl font-bold text-foreground mb-2">3-5 заказов</div>
+                  <div className="text-4xl font-bold text-foreground mb-2">8-10 заказов</div>
                   <div className="text-muted-foreground">в день (пик сезона)</div>
                 </div>
                 <div className="bg-primary rounded-xl p-6 text-center">
@@ -258,9 +284,9 @@ export default function PerformerLanding() {
                     <TrendingUp className="w-5 h-5 text-magic-gold" />
                   </div>
                   <div>
-                    <h4 className="font-heading font-semibold text-foreground mb-1">Прозрачная комиссия — всего 15%</h4>
+                    <h4 className="font-heading font-semibold text-foreground mb-1">Прозрачная комиссия — {commissionRate}%</h4>
                     <p className="text-muted-foreground text-sm">
-                      Никаких скрытых сборов. Вы видите полную стоимость заказа и свой заработок до принятия заявки.
+                      Вы видите комиссию платформы и можете установить цену, которая устроит именно вас «на руки».
                       Сравните с агентствами, которые забирают 30-50%.
                     </p>
                   </div>
@@ -361,7 +387,7 @@ export default function PerformerLanding() {
                     ))}
                   </div>
                   <p className="text-foreground mb-4">
-                    "Работаю второй сезон. Заказов много, платят вовремя, поддержка всегда на связи. 
+                    "Работаю второй сезон. Заказов много, поддержка всегда на связи. 
                     В декабре заработал 180 000 ₽ — это лучший результат за все годы."
                   </p>
                   <div className="flex items-center gap-3">
@@ -411,7 +437,7 @@ export default function PerformerLanding() {
               </div>
 
               <Accordion type="single" collapsible className="space-y-4">
-                {faqItems.map((item, i) => (
+                {dynamicFaqItems.map((item, i) => (
                   <AccordionItem
                     key={i}
                     value={`item-${i}`}
