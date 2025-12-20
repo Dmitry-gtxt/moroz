@@ -198,7 +198,7 @@ export default function PartnerRegistration() {
                   <Input id="organization_name" value={formData.organization_name} onChange={e => setFormData(prev => ({
                   ...prev,
                   organization_name: e.target.value
-                }))} placeholder="МБОУ СОШ №1 г. Москвы" required className="bg-winter-800 border-snow-700/30 text-snow-100" />
+                }))} placeholder="МБОУ СОШ №1 г. Москвы" required className="!bg-winter-800 border-snow-700/30 !text-snow-100 placeholder:text-snow-500" />
                 </div>
 
                 <div>
@@ -208,7 +208,7 @@ export default function PartnerRegistration() {
                   <Input id="organization_address" value={formData.organization_address} onChange={e => setFormData(prev => ({
                   ...prev,
                   organization_address: e.target.value
-                }))} placeholder="г. Москва, ул. Примерная, д. 1" className="bg-winter-800 border-snow-700/30 text-snow-100" />
+                }))} placeholder="г. Москва, ул. Примерная, д. 1" className="!bg-winter-800 border-snow-700/30 !text-snow-100 placeholder:text-snow-500" />
                 </div>
 
                 <div>
@@ -218,7 +218,7 @@ export default function PartnerRegistration() {
                   <Input id="contact_person_name" value={formData.contact_person_name} onChange={e => setFormData(prev => ({
                   ...prev,
                   contact_person_name: e.target.value
-                }))} placeholder="Иванов Иван Иванович" className="bg-winter-800 border-snow-700/30 text-snow-100" />
+                }))} placeholder="Иванов Иван Иванович" className="!bg-winter-800 border-snow-700/30 !text-snow-100 placeholder:text-snow-500" />
                 </div>
 
                 <div>
@@ -228,7 +228,7 @@ export default function PartnerRegistration() {
                   <Input id="contact_phone" type="tel" value={formData.contact_phone} onChange={e => setFormData(prev => ({
                   ...prev,
                   contact_phone: e.target.value
-                }))} placeholder="+7 999 123-45-67" className="bg-winter-800 border-snow-700/30 text-snow-100" />
+                }))} placeholder="+7 999 123-45-67" className="!bg-winter-800 border-snow-700/30 !text-snow-100 placeholder:text-snow-500" />
                 </div>
               </div>
 
@@ -246,7 +246,7 @@ export default function PartnerRegistration() {
                     <Input id="teacher_last_name" value={formData.teacher_last_name} onChange={e => setFormData(prev => ({
                     ...prev,
                     teacher_last_name: e.target.value
-                  }))} placeholder="Иванов" className="bg-winter-800 border-snow-700/30 text-snow-100" />
+                  }))} placeholder="Иванов" className="!bg-winter-800 border-snow-700/30 !text-snow-100 placeholder:text-snow-500" />
                   </div>
                   <div>
                     <Label htmlFor="teacher_first_name" className="text-snow-300">
@@ -255,7 +255,7 @@ export default function PartnerRegistration() {
                     <Input id="teacher_first_name" value={formData.teacher_first_name} onChange={e => setFormData(prev => ({
                     ...prev,
                     teacher_first_name: e.target.value
-                  }))} placeholder="Иван" className="bg-winter-800 border-snow-700/30 text-snow-100" />
+                  }))} placeholder="Иван" className="!bg-winter-800 border-snow-700/30 !text-snow-100 placeholder:text-snow-500" />
                   </div>
                   <div>
                     <Label htmlFor="teacher_middle_name" className="text-snow-300">
@@ -264,7 +264,7 @@ export default function PartnerRegistration() {
                     <Input id="teacher_middle_name" value={formData.teacher_middle_name} onChange={e => setFormData(prev => ({
                     ...prev,
                     teacher_middle_name: e.target.value
-                  }))} placeholder="Иванович" className="bg-winter-800 border-snow-700/30 text-snow-100" />
+                  }))} placeholder="Иванович" className="!bg-winter-800 border-snow-700/30 !text-snow-100 placeholder:text-snow-500" />
                   </div>
                 </div>
 
@@ -275,7 +275,7 @@ export default function PartnerRegistration() {
                   <Input id="teacher_position" value={formData.teacher_position} onChange={e => setFormData(prev => ({
                   ...prev,
                   teacher_position: e.target.value
-                }))} placeholder="Заместитель директора" className="bg-winter-800 border-snow-700/30 text-snow-100" />
+                }))} placeholder="Заместитель директора" className="!bg-winter-800 border-snow-700/30 !text-snow-100 placeholder:text-snow-500" />
                 </div>
 
                 <div>
@@ -285,7 +285,7 @@ export default function PartnerRegistration() {
                   <Input id="teacher_birth_date" type="date" value={formData.teacher_birth_date} onChange={e => setFormData(prev => ({
                   ...prev,
                   teacher_birth_date: e.target.value
-                }))} className="bg-winter-800 border-snow-700/30 text-snow-100" />
+                }))} className="!bg-winter-800 border-snow-700/30 !text-snow-100 placeholder:text-snow-500 [color-scheme:dark]" />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -296,7 +296,7 @@ export default function PartnerRegistration() {
                     <Input id="teacher_phone" type="tel" value={formData.teacher_phone} onChange={e => setFormData(prev => ({
                     ...prev,
                     teacher_phone: e.target.value
-                  }))} placeholder="+7 999 123-45-67" className="bg-winter-800 border-snow-700/30 text-snow-100" />
+                  }))} placeholder="+7 999 123-45-67" className="!bg-winter-800 border-snow-700/30 !text-snow-100 placeholder:text-snow-500" />
                   </div>
                   <div>
                     <Label htmlFor="teacher_email" className="text-snow-300">
@@ -305,7 +305,7 @@ export default function PartnerRegistration() {
                     <Input id="teacher_email" type="email" value={formData.teacher_email} onChange={e => setFormData(prev => ({
                     ...prev,
                     teacher_email: e.target.value
-                  }))} placeholder="email@example.com" className="bg-winter-800 border-snow-700/30 text-snow-100" />
+                  }))} placeholder="email@example.com" className="!bg-winter-800 border-snow-700/30 !text-snow-100 placeholder:text-snow-500" />
                   </div>
                 </div>
               </div>
