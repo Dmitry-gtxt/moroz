@@ -67,6 +67,7 @@ export function HorizontalScroll({ children, className, itemClassName }: Horizon
           "flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth",
           "snap-x snap-mandatory",
           "-mx-4 px-4 md:mx-0 md:px-0",
+          "md:justify-center",
           itemClassName
         )}
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
