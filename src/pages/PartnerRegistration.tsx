@@ -292,7 +292,7 @@ export default function PartnerRegistration() {
                       <Button
                         variant="outline"
                         className={cn(
-                          "w-full justify-start text-left font-normal !bg-winter-800 border-snow-700/30 hover:!bg-winter-700",
+                          "w-full justify-start text-left font-normal !bg-winter-800 border-snow-700/30 hover:!bg-winter-700 h-10",
                           !birthDate && "text-snow-500"
                         )}
                       >
@@ -304,7 +304,7 @@ export default function PartnerRegistration() {
                         )}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-winter-800 border-snow-700/30" align="start">
+                    <PopoverContent className="w-auto p-0 bg-winter-800 border-snow-700/30 z-50" align="start">
                       <Calendar
                         mode="single"
                         selected={birthDate}
@@ -312,10 +312,8 @@ export default function PartnerRegistration() {
                         disabled={(date) => date > new Date() || date < new Date("1940-01-01")}
                         initialFocus
                         locale={ru}
-                        className="pointer-events-auto"
-                        captionLayout="dropdown-buttons"
-                        fromYear={1940}
-                        toYear={new Date().getFullYear()}
+                        className="pointer-events-auto bg-winter-800 text-snow-100 [&_.rdp-caption_label]:text-snow-100 [&_.rdp-head_cell]:text-snow-400 [&_.rdp-day]:text-snow-100 [&_.rdp-day:hover]:bg-winter-700 [&_.rdp-nav_button]:text-snow-100 [&_.rdp-nav_button:hover]:bg-winter-700 [&_.rdp-day_selected]:!bg-magic-gold [&_.rdp-day_selected]:!text-winter-950 [&_.rdp-day_today]:bg-winter-700"
+                        defaultMonth={birthDate || new Date(1990, 0)}
                       />
                     </PopoverContent>
                   </Popover>
