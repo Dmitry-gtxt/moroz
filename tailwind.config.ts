@@ -76,6 +76,7 @@ export default {
           DEFAULT: "hsl(var(--winter-blue))",
           light: "hsl(var(--winter-blue-light))",
           dark: "hsl(var(--winter-blue-dark))",
+          800: "hsl(220 70% 16%)",
           900: "hsl(220 70% 12%)",
           950: "hsl(220 80% 8%)",
         },
