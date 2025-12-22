@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CancelBookingDialog } from '@/components/bookings/CancelBookingDialog';
 import { ProposeAlternativeDialog } from '@/components/bookings/ProposeAlternativeDialog';
 import { PerformerProposalsList } from '@/components/bookings/PerformerProposalsList';
-import { notifyBookingConfirmed, notifyBookingRejected, notifyBookingCancelled, scheduleBookingReminders, notifyAdminBookingCancelled } from '@/lib/pushNotifications';
+import { notifyBookingConfirmed, notifyBookingRejected, notifyBookingCancelled, notifyPaymentRequired, scheduleBookingReminders, notifyAdminBookingCancelled } from '@/lib/pushNotifications';
 import { smsBookingConfirmedToCustomer, smsBookingRejectedToCustomer, smsBookingCancelledToCustomer } from '@/lib/smsNotifications';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -161,12 +161,20 @@ export default function PerformerBookings() {
           },
         });
 
-        // Send push notification to customer
+        // Send push notification to customer about confirmation
         notifyBookingConfirmed(
           booking.customer_id,
           performerName,
           format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
           booking.booking_time
+        );
+
+        // Send push notification to remind customer to pay
+        notifyPaymentRequired(
+          booking.customer_id,
+          performerName,
+          format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
+          booking.prepayment_amount || 0
         );
 
         // Send SMS notification to customer (priority channel) - Template 83
@@ -377,12 +385,20 @@ export default function PerformerBookings() {
       });
     }
 
-    // Send push notification
+    // Send push notification about confirmation
     notifyBookingConfirmed(
       booking.customer_id!,
       performerName,
       format(new Date(booking.booking_date!), 'd MMMM', { locale: ru }),
       booking.booking_time!
+    );
+
+    // Send push notification to remind customer to pay
+    notifyPaymentRequired(
+      booking.customer_id!,
+      performerName,
+      format(new Date(booking.booking_date!), 'd MMMM', { locale: ru }),
+      booking.prepayment_amount || 0
     );
 
     // Send SMS notification to customer (priority channel) - Template 83
