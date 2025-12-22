@@ -266,6 +266,37 @@ export async function notifyPaymentRequired(
   });
 }
 
+// Schedule payment reminder 1 hour before deadline
+export async function schedulePaymentReminder(
+  bookingId: string,
+  customerId: string,
+  paymentDeadline: string,
+  performerName: string,
+  prepaymentAmount: number
+): Promise<void> {
+  try {
+    const deadline = new Date(paymentDeadline);
+    const reminderTime = new Date(deadline.getTime() - 60 * 60 * 1000); // 1 hour before
+
+    // Skip if reminder time is in the past
+    if (reminderTime <= new Date()) {
+      console.log('Payment reminder time is in the past, skipping');
+      return;
+    }
+
+    await supabase.from('notification_queue').insert({
+      user_id: customerId,
+      booking_id: bookingId,
+      notification_type: 'payment_reminder_1_hour',
+      scheduled_for: reminderTime.toISOString()
+    });
+
+    console.log('Scheduled payment reminder for booking:', bookingId, 'at', reminderTime.toISOString());
+  } catch (error) {
+    console.error('Failed to schedule payment reminder:', error);
+  }
+}
+
 // Send notification when booking is rejected
 export async function notifyBookingRejected(
   customerUserId: string,
