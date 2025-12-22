@@ -35,3 +35,9 @@ verify_jwt = false
 
 [functions.migrate-user-emails]
 verify_jwt = true
+
+[functions.vtb-create-payment]
+verify_jwt = true
+
+[functions.vtb-webhook]
+verify_jwt = false
