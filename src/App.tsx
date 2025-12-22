@@ -45,6 +45,7 @@ const CustomerDashboard = lazy(() => import("./pages/customer/CustomerDashboard"
 const CustomerBookings = lazy(() => import("./pages/customer/CustomerBookings"));
 const CustomerProfile = lazy(() => import("./pages/customer/CustomerProfile"));
 const CustomerCatalog = lazy(() => import("./pages/customer/CustomerCatalog"));
+const CustomerPayment = lazy(() => import("./pages/customer/CustomerPayment"));
 const Messages = lazy(() => import("./pages/Messages"));
 const HowItWorks = lazy(() => import("./pages/HowItWorks"));
 const Privacy = lazy(() => import("./pages/Privacy"));
@@ -133,6 +134,7 @@ const App = () => (
               <Route path="/cabinet" element={<CustomerDashboard />} />
               <Route path="/cabinet/catalog" element={<CustomerCatalog />} />
               <Route path="/cabinet/bookings" element={<CustomerBookings />} />
+              <Route path="/cabinet/payment" element={<CustomerPayment />} />
               <Route path="/cabinet/profile" element={<CustomerProfile />} />
               <Route path="/my-bookings" element={<CustomerBookings />} />
               {/* Performer dashboard routes */}
