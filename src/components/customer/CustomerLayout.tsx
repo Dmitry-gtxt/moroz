@@ -136,12 +136,12 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
         {hasPerformerProfile === false ? (
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 bg-gradient-to-r from-accent/20 to-primary/20 hover:from-accent/30 hover:to-primary/30 text-foreground border border-accent/30"
+            className="w-full justify-start gap-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border border-red-400/50 shadow-lg shadow-red-900/20"
             asChild
           >
             <Link to="/become-performer">
-              <Star className="h-5 w-5 text-accent" />
-              Подать заявку
+              <Star className="h-5 w-5 text-white" />
+              Подать заявку на Деда Мороза
             </Link>
           </Button>
         ) : hasPerformerProfile === true ? (
