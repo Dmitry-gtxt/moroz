@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CancelBookingDialog } from '@/components/bookings/CancelBookingDialog';
 import { ProposeAlternativeDialog } from '@/components/bookings/ProposeAlternativeDialog';
 import { PerformerProposalsList } from '@/components/bookings/PerformerProposalsList';
-import { notifyBookingConfirmed, notifyBookingRejected, notifyBookingCancelled, notifyPaymentRequired, scheduleBookingReminders, notifyAdminBookingCancelled } from '@/lib/pushNotifications';
+import { notifyBookingConfirmed, notifyBookingRejected, notifyBookingCancelled, notifyPaymentRequired, schedulePaymentReminder, scheduleBookingReminders, notifyAdminBookingCancelled } from '@/lib/pushNotifications';
 import { smsBookingConfirmedToCustomer, smsBookingRejectedToCustomer, smsBookingCancelledToCustomer } from '@/lib/smsNotifications';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -110,9 +110,15 @@ export default function PerformerBookings() {
   const updateBookingStatus = async (bookingId: string, newStatus: BookingStatus) => {
     const booking = bookings.find(b => b.id === bookingId);
     
+    // Set payment deadline to 2 hours from now when confirming
+    const paymentDeadline = newStatus === 'confirmed' ? new Date(Date.now() + 2 * 60 * 60 * 1000) : null;
+
     const { error } = await supabase
       .from('bookings')
-      .update({ status: newStatus })
+      .update({ 
+        status: newStatus,
+        ...(paymentDeadline && { payment_deadline: paymentDeadline.toISOString() })
+      })
       .eq('id', bookingId);
 
     if (error) {
@@ -176,6 +182,17 @@ export default function PerformerBookings() {
           format(new Date(booking.booking_date), 'd MMMM', { locale: ru }),
           booking.prepayment_amount || 0
         );
+
+        // Schedule payment reminder 1 hour before deadline
+        if (paymentDeadline) {
+          schedulePaymentReminder(
+            booking.id!,
+            booking.customer_id!,
+            paymentDeadline.toISOString(),
+            performerName,
+            booking.prepayment_amount || 0
+          );
+        }
 
         // Send SMS notification to customer (priority channel) - Template 83
         smsBookingConfirmedToCustomer({
@@ -398,6 +415,15 @@ export default function PerformerBookings() {
       booking.customer_id!,
       performerName,
       format(new Date(booking.booking_date!), 'd MMMM', { locale: ru }),
+      booking.prepayment_amount || 0
+    );
+
+    // Schedule payment reminder 1 hour before deadline
+    schedulePaymentReminder(
+      booking.id!,
+      booking.customer_id!,
+      paymentDeadline.toISOString(),
+      performerName,
       booking.prepayment_amount || 0
     );
 

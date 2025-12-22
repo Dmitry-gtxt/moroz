@@ -9,6 +9,72 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function sendPaymentReminder(supabase: any, booking: any, adminPhone: string) {
+  const baseUrl = "https://ded-morozy-rf.ru";
+  
+  // Get performer name
+  const { data: performer } = await supabase
+    .from("performer_profiles")
+    .select("display_name")
+    .eq("id", booking.performer_id)
+    .single();
+
+  const formattedDate = new Date(booking.booking_date).toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long"
+  });
+
+  const deadlineTime = new Date(booking.payment_deadline).toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  const prepaymentAmount = booking.prepayment_amount || 0;
+  const performerName = performer?.display_name || "исполнителя";
+
+  // Send push notification
+  try {
+    await supabase.functions.invoke("send-push-notification", {
+      body: {
+        userId: booking.customer_id,
+        title: "⏰ Осталось оплатить бронирование!",
+        body: `Через 1 час истекает срок оплаты ${prepaymentAmount.toLocaleString("ru-RU")} ₽ за визит ${performerName}. Оплатите до ${deadlineTime}!`,
+        url: `${baseUrl}/cabinet/payment`,
+        tag: `payment-reminder-${booking.id}`
+      }
+    });
+    console.log("Sent payment reminder push for booking:", booking.id);
+  } catch (err) {
+    console.error("Failed to send payment reminder push:", err);
+  }
+
+  // Send email reminder
+  if (booking.customer_email) {
+    try {
+      await supabase.functions.invoke("send-notification-email", {
+        body: {
+          type: "payment_reminder",
+          email: booking.customer_email,
+          subject: "⏰ Через 1 час истекает срок оплаты бронирования!",
+          html: `
+            <p>Напоминаем, что <strong>через 1 час</strong> истечёт срок оплаты бронирования!</p>
+            <p><strong>Сумма предоплаты:</strong> ${prepaymentAmount.toLocaleString("ru-RU")} ₽</p>
+            <p><strong>Исполнитель:</strong> ${performerName}</p>
+            <p><strong>Дата визита:</strong> ${formattedDate} в ${booking.booking_time}</p>
+            <p><a href="${baseUrl}/cabinet/payment" style="background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">Оплатить сейчас</a></p>
+            <p style="color: #666;">Если вы не оплатите до ${deadlineTime}, бронирование может быть отменено.</p>
+            <p>По вопросам: <a href="tel:${adminPhone}">${adminPhone}</a></p>
+          `,
+          adminPhone
+        }
+      });
+      console.log("Sent payment reminder email for booking:", booking.id);
+    } catch (err) {
+      console.error("Failed to send payment reminder email:", err);
+    }
+  }
+}
+
 async function sendNotifications(supabase: any, booking: any, notificationType: string, adminPhone: string) {
   const baseUrl = "https://ded-morozy-rf.ru";
   
@@ -50,7 +116,7 @@ async function sendNotifications(supabase: any, booking: any, notificationType: 
       break;
     case "reminder_1_day":
       title = "🎅 Завтра праздник!";
-      body = `Завтра (${formattedDate}) к вам придёт ${performer?.display_name || "исполнитель"}. Подготовьте подарки!`;
+      body = `Завтра (${formattedDate}) к вам придёт ${performer?.display_name || "исполнителя"}. Подготовьте подарки!`;
       emailSubject = "🎅 Завтра к вам придёт Дед Мороз!";
       emailBody = `
         <p>Напоминаем, что <strong>завтра, ${formattedDate}</strong> в <strong>${booking.booking_time}</strong>, к вам придёт ${performer?.display_name || "исполнитель"}!</p>
@@ -61,7 +127,7 @@ async function sendNotifications(supabase: any, booking: any, notificationType: 
       break;
     case "reminder_5_hours":
       title = "⏰ Скоро приедет Дед Мороз!";
-      body = `Через 5 часов к вам придёт ${performer?.display_name || "исполнитель"}. Готовы к празднику?`;
+      body = `Через 5 часов к вам придёт ${performer?.display_name || "исполнителя"}. Готовы к празднику?`;
       emailSubject = "⏰ Через 5 часов начнётся праздник!";
       emailBody = `
         <p>Через несколько часов, в <strong>${booking.booking_time}</strong>, к вам придёт ${performer?.display_name || "исполнитель"}!</p>
@@ -203,7 +269,33 @@ const handler = async (req: Request): Promise<Response> => {
     for (const notification of pendingNotifications) {
       const booking = notification.booking;
       
-      // Skip if booking is cancelled or not confirmed+paid
+      // Handle payment reminder - different logic
+      if (notification.notification_type === "payment_reminder_1_hour") {
+        // Skip if booking is cancelled or already paid
+        if (!booking || 
+            booking.status === "cancelled" || 
+            ["prepayment_paid", "fully_paid"].includes(booking.payment_status)) {
+          // Mark as sent to skip in future
+          await supabase
+            .from("notification_queue")
+            .update({ sent_at: now })
+            .eq("id", notification.id);
+          continue;
+        }
+
+        await sendPaymentReminder(supabase, booking, adminPhone);
+
+        // Mark as sent
+        await supabase
+          .from("notification_queue")
+          .update({ sent_at: now })
+          .eq("id", notification.id);
+
+        processed++;
+        continue;
+      }
+      
+      // Skip if booking is cancelled or not confirmed+paid (for booking reminders)
       if (!booking || 
           booking.status !== "confirmed" || 
           !["prepayment_paid", "fully_paid"].includes(booking.payment_status)) {
