@@ -245,8 +245,24 @@ export async function notifyBookingConfirmed(
     userId: customerUserId,
     title: '✅ Заявка подтверждена!',
     body: `${performerName} подтвердил визит на ${bookingDate} в ${bookingTime}`,
-    url: '/customer/bookings',
+    url: '/cabinet/bookings',
     tag: 'booking-confirmed'
+  });
+}
+
+// Send notification to remind customer to pay
+export async function notifyPaymentRequired(
+  customerUserId: string,
+  performerName: string,
+  bookingDate: string,
+  prepaymentAmount: number
+): Promise<void> {
+  await sendPushNotification({
+    userId: customerUserId,
+    title: '💳 Оплатите бронирование',
+    body: `Внесите предоплату ${prepaymentAmount.toLocaleString()} ₽ за визит ${performerName} на ${bookingDate}`,
+    url: '/cabinet/payment',
+    tag: 'payment-required'
   });
 }
 
