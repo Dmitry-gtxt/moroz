@@ -528,20 +528,25 @@ export default function PerformerCalendar() {
                       <div
                         key={slot.id}
                         className={cn(
-                          "flex items-center justify-between p-3 border rounded-lg transition-colors",
-                          isBooked ? "bg-accent/10 border-accent/30" : "bg-card hover:bg-muted/50"
+                          "flex items-center justify-between p-3 border-2 rounded-lg transition-colors",
+                          isBooked 
+                            ? "bg-amber-50 dark:bg-amber-950/40 border-amber-400 dark:border-amber-600" 
+                            : "bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-950/40"
                         )}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="text-lg font-mono font-medium">
+                          <div className={cn(
+                            "text-lg font-mono font-medium",
+                            isBooked ? "text-amber-700 dark:text-amber-300" : "text-green-700 dark:text-green-300"
+                          )}>
                             {slot.start_time.slice(0, 5)} — {slot.end_time.slice(0, 5)}
                           </div>
                           {isBooked ? (
-                            <Badge className="bg-accent/20 text-accent border-accent/30">
+                            <Badge className="bg-amber-500 text-white border-amber-600">
                               Забронировано
                             </Badge>
                           ) : (
-                            <Badge variant="secondary" className="bg-green-100 text-green-700">
+                            <Badge className="bg-green-500 text-white border-green-600">
                               Свободно
                             </Badge>
                           )}
