@@ -111,28 +111,9 @@ serve(async (req) => {
         },
       });
 
-    // If payment successful, send notifications
+    // Log successful payment
     if (status === 'paid') {
-      // Get booking details for notifications
-      const { data: booking } = await supabase
-        .from('bookings')
-        .select('*, performer_profiles(user_id, display_name)')
-        .eq('id', order_id)
-        .single();
-
-      if (booking) {
-        // Send SMS notification about successful payment
-        try {
-          await supabase.functions.invoke('send-sms-notification', {
-            body: {
-              type: 'payment_confirmed',
-              bookingId: order_id,
-            },
-          });
-        } catch (smsError) {
-          console.error('Failed to send SMS notification:', smsError);
-        }
-      }
+      console.log(`Payment confirmed for booking ${order_id}`);
     }
 
     return new Response(
