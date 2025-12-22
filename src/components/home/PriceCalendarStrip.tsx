@@ -104,9 +104,22 @@ export function PriceCalendarStrip() {
         const dateStr = format(currentDate, 'yyyy-MM-dd');
         const daySlots = availableSlots?.filter(s => s.date === dateStr) || [];
         
-        const prices = daySlots.map(s => s.price ?? performerPrices.get(s.performer_id) ?? 3000);
-        const avgPrice = prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : null;
-        const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+        // Group slots by performer and get min price for each performer
+        const performerMinPrices = new Map<string, number>();
+        daySlots.forEach(slot => {
+          const slotPrice = slot.price ?? performerPrices.get(slot.performer_id) ?? 3000;
+          const currentMin = performerMinPrices.get(slot.performer_id);
+          if (currentMin === undefined || slotPrice < currentMin) {
+            performerMinPrices.set(slot.performer_id, slotPrice);
+          }
+        });
+        
+        const performerPricesList = Array.from(performerMinPrices.values());
+        // Average price across unique performers (not slots)
+        const avgPrice = performerPricesList.length > 0 
+          ? Math.round(performerPricesList.reduce((a, b) => a + b, 0) / performerPricesList.length) 
+          : null;
+        const minPrice = performerPricesList.length > 0 ? Math.min(...performerPricesList) : null;
         
         const isHoliday = holidayDates.some(h => isSameDay(h, currentDate));
         
@@ -138,10 +151,10 @@ export function PriceCalendarStrip() {
     }
   };
 
-  // Find min and max prices for gradient coloring
-  const pricesWithValue = dayPrices.filter(d => d.minPrice !== null);
-  const minPriceOverall = pricesWithValue.length > 0 ? Math.min(...pricesWithValue.map(d => d.minPrice!)) : 0;
-  const maxPriceOverall = pricesWithValue.length > 0 ? Math.max(...pricesWithValue.map(d => d.minPrice!)) : 0;
+  // Find min and max average prices for gradient coloring
+  const pricesWithValue = dayPrices.filter(d => d.avgPrice !== null);
+  const minPriceOverall = pricesWithValue.length > 0 ? Math.min(...pricesWithValue.map(d => d.avgPrice!)) : 0;
+  const maxPriceOverall = pricesWithValue.length > 0 ? Math.max(...pricesWithValue.map(d => d.avgPrice!)) : 0;
 
   const getPriceColor = (price: number | null) => {
     if (price === null) return 'bg-muted';
@@ -214,7 +227,7 @@ export function PriceCalendarStrip() {
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {dayPrices.map((day, index) => {
-            const customerPrice = day.minPrice && commissionRate !== null ? getCustomerPrice(day.minPrice, commissionRate) : null;
+            const customerPrice = day.avgPrice && commissionRate !== null ? getCustomerPrice(day.avgPrice, commissionRate) : null;
             const isToday = isSameDay(day.date, new Date());
             const isNewYear = isSameDay(day.date, new Date(2026, 0, 1));
             const isNYE = isSameDay(day.date, new Date(2025, 11, 31));
@@ -248,8 +261,8 @@ export function PriceCalendarStrip() {
                 {/* Price bar */}
                 <div className={cn(
                   "h-1.5 rounded-full mb-1.5",
-                  getPriceColor(day.minPrice),
-                  getPriceIntensity(day.minPrice)
+                  getPriceColor(day.avgPrice),
+                  getPriceIntensity(day.avgPrice)
                 )} />
 
                 {/* Price */}
