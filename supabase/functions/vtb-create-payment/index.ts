@@ -82,7 +82,10 @@ serve(async (req) => {
     console.log('Got VTB access token');
 
     // Create invoice in VTB
-    const merchantSiteId = Deno.env.get('VTB_MERCHANT_SITE_ID') || '9e628968-ff52-458a-b7b0-94b7d1f7fb10'; // test by default
+    const merchantSiteId = Deno.env.get('VTB_MERCHANT_SITE_ID');
+    if (!merchantSiteId) {
+      throw new Error('VTB_MERCHANT_SITE_ID not configured');
+    }
     
     const invoicePayload = {
       merchant_site_id: merchantSiteId,
