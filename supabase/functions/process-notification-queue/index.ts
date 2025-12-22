@@ -9,7 +9,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function sendPaymentReminder(supabase: any, booking: any, adminPhone: string) {
+async function sendPaymentReminder(supabase: any, booking: any, adminPhone: string, isLastWarning: boolean = false) {
   const baseUrl = "https://ded-morozy-rf.ru";
   
   // Get performer name
@@ -32,18 +32,26 @@ async function sendPaymentReminder(supabase: any, booking: any, adminPhone: stri
   const prepaymentAmount = booking.prepayment_amount || 0;
   const performerName = performer?.display_name || "исполнителя";
 
+  const title = isLastWarning 
+    ? "⚠️ Осталось 10 минут на оплату!"
+    : "⏰ Осталось оплатить бронирование!";
+  
+  const body = isLastWarning
+    ? `Срочно! Через 10 минут истечёт срок оплаты ${prepaymentAmount.toLocaleString("ru-RU")} ₽. Бронирование будет отменено!`
+    : `Через 1 час истекает срок оплаты ${prepaymentAmount.toLocaleString("ru-RU")} ₽ за визит ${performerName}. Оплатите до ${deadlineTime}!`;
+
   // Send push notification
   try {
     await supabase.functions.invoke("send-push-notification", {
       body: {
         userId: booking.customer_id,
-        title: "⏰ Осталось оплатить бронирование!",
-        body: `Через 1 час истекает срок оплаты ${prepaymentAmount.toLocaleString("ru-RU")} ₽ за визит ${performerName}. Оплатите до ${deadlineTime}!`,
+        title,
+        body,
         url: `${baseUrl}/cabinet/payment`,
         tag: `payment-reminder-${booking.id}`
       }
     });
-    console.log("Sent payment reminder push for booking:", booking.id);
+    console.log("Sent payment reminder push for booking:", booking.id, isLastWarning ? "(10 min)" : "(1 hour)");
   } catch (err) {
     console.error("Failed to send payment reminder push:", err);
   }
@@ -55,22 +63,121 @@ async function sendPaymentReminder(supabase: any, booking: any, adminPhone: stri
         body: {
           type: "payment_reminder",
           email: booking.customer_email,
-          subject: "⏰ Через 1 час истекает срок оплаты бронирования!",
+          subject: isLastWarning 
+            ? "⚠️ СРОЧНО: Осталось 10 минут на оплату!"
+            : "⏰ Через 1 час истекает срок оплаты бронирования!",
           html: `
-            <p>Напоминаем, что <strong>через 1 час</strong> истечёт срок оплаты бронирования!</p>
+            <p>${isLastWarning ? "<strong style='color: red;'>СРОЧНО!</strong> Через 10 минут" : "Через 1 час"} истечёт срок оплаты бронирования!</p>
             <p><strong>Сумма предоплаты:</strong> ${prepaymentAmount.toLocaleString("ru-RU")} ₽</p>
             <p><strong>Исполнитель:</strong> ${performerName}</p>
             <p><strong>Дата визита:</strong> ${formattedDate} в ${booking.booking_time}</p>
             <p><a href="${baseUrl}/cabinet/payment" style="background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">Оплатить сейчас</a></p>
-            <p style="color: #666;">Если вы не оплатите до ${deadlineTime}, бронирование может быть отменено.</p>
+            <p style="color: #666;">${isLastWarning ? "Если вы не оплатите в ближайшие 10 минут, бронирование будет автоматически отменено!" : `Если вы не оплатите до ${deadlineTime}, бронирование может быть отменено.`}</p>
             <p>По вопросам: <a href="tel:${adminPhone}">${adminPhone}</a></p>
           `,
           adminPhone
         }
       });
-      console.log("Sent payment reminder email for booking:", booking.id);
     } catch (err) {
       console.error("Failed to send payment reminder email:", err);
+    }
+  }
+}
+
+async function autoCancelBooking(supabase: any, booking: any, adminPhone: string) {
+  const baseUrl = "https://ded-morozy-rf.ru";
+  
+  console.log("Auto-cancelling booking due to payment deadline:", booking.id);
+
+  // Cancel the booking
+  const { error: cancelError } = await supabase
+    .from("bookings")
+    .update({
+      status: "cancelled",
+      cancellation_reason: "Автоматическая отмена: не оплачено в срок",
+      cancelled_by: "system"
+    })
+    .eq("id", booking.id);
+
+  if (cancelError) {
+    console.error("Failed to cancel booking:", cancelError);
+    return;
+  }
+
+  // Free up the slot if exists
+  if (booking.slot_id) {
+    await supabase
+      .from("availability_slots")
+      .update({ status: "free" })
+      .eq("id", booking.slot_id);
+    console.log("Freed up slot:", booking.slot_id);
+  }
+
+  // Get performer info
+  const { data: performer } = await supabase
+    .from("performer_profiles")
+    .select("user_id, display_name")
+    .eq("id", booking.performer_id)
+    .single();
+
+  const formattedDate = new Date(booking.booking_date).toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long"
+  });
+
+  // Send push to customer about cancellation
+  try {
+    await supabase.functions.invoke("send-push-notification", {
+      body: {
+        userId: booking.customer_id,
+        title: "❌ Бронирование отменено",
+        body: `Заказ на ${formattedDate} отменён из-за истечения срока оплаты`,
+        url: `${baseUrl}/cabinet/bookings`,
+        tag: `booking-cancelled-${booking.id}`
+      }
+    });
+  } catch (err) {
+    console.error("Failed to send cancellation push to customer:", err);
+  }
+
+  // Send push to performer about freed slot
+  if (performer?.user_id) {
+    try {
+      await supabase.functions.invoke("send-push-notification", {
+        body: {
+          userId: performer.user_id,
+          title: "📅 Слот освободился",
+          body: `Заказ на ${formattedDate} в ${booking.booking_time} отменён (клиент не оплатил). Слот снова свободен!`,
+          url: `${baseUrl}/performer/calendar`,
+          tag: `slot-freed-${booking.id}`
+        }
+      });
+      console.log("Sent slot freed notification to performer:", performer.user_id);
+    } catch (err) {
+      console.error("Failed to send slot freed push to performer:", err);
+    }
+  }
+
+  // Send email to customer
+  if (booking.customer_email) {
+    try {
+      await supabase.functions.invoke("send-notification-email", {
+        body: {
+          type: "booking_cancelled",
+          email: booking.customer_email,
+          subject: "❌ Бронирование отменено из-за неоплаты",
+          html: `
+            <p>К сожалению, ваше бронирование на <strong>${formattedDate}</strong> в <strong>${booking.booking_time}</strong> было отменено.</p>
+            <p><strong>Причина:</strong> Предоплата не была внесена в установленный срок.</p>
+            <p>Если вы всё ещё хотите заказать Деда Мороза, вы можете оформить новое бронирование:</p>
+            <p><a href="${baseUrl}/catalog" style="background: #c41e3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">Перейти в каталог</a></p>
+            <p>По вопросам: <a href="tel:${adminPhone}">${adminPhone}</a></p>
+          `,
+          adminPhone
+        }
+      });
+    } catch (err) {
+      console.error("Failed to send cancellation email:", err);
     }
   }
 }
@@ -269,13 +376,12 @@ const handler = async (req: Request): Promise<Response> => {
     for (const notification of pendingNotifications) {
       const booking = notification.booking;
       
-      // Handle payment reminder - different logic
+      // Handle payment reminder 1 hour
       if (notification.notification_type === "payment_reminder_1_hour") {
         // Skip if booking is cancelled or already paid
         if (!booking || 
             booking.status === "cancelled" || 
             ["prepayment_paid", "fully_paid"].includes(booking.payment_status)) {
-          // Mark as sent to skip in future
           await supabase
             .from("notification_queue")
             .update({ sent_at: now })
@@ -283,9 +389,56 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
 
-        await sendPaymentReminder(supabase, booking, adminPhone);
+        await sendPaymentReminder(supabase, booking, adminPhone, false);
 
-        // Mark as sent
+        await supabase
+          .from("notification_queue")
+          .update({ sent_at: now })
+          .eq("id", notification.id);
+
+        processed++;
+        continue;
+      }
+
+      // Handle payment reminder 10 minutes
+      if (notification.notification_type === "payment_reminder_10_min") {
+        if (!booking || 
+            booking.status === "cancelled" || 
+            ["prepayment_paid", "fully_paid"].includes(booking.payment_status)) {
+          await supabase
+            .from("notification_queue")
+            .update({ sent_at: now })
+            .eq("id", notification.id);
+          continue;
+        }
+
+        await sendPaymentReminder(supabase, booking, adminPhone, true);
+
+        await supabase
+          .from("notification_queue")
+          .update({ sent_at: now })
+          .eq("id", notification.id);
+
+        processed++;
+        continue;
+      }
+
+      // Handle payment deadline expired - auto cancel
+      if (notification.notification_type === "payment_deadline_expired") {
+        // Skip if booking is cancelled or already paid
+        if (!booking || 
+            booking.status === "cancelled" || 
+            ["prepayment_paid", "fully_paid"].includes(booking.payment_status)) {
+          await supabase
+            .from("notification_queue")
+            .update({ sent_at: now })
+            .eq("id", notification.id);
+          continue;
+        }
+
+        // Auto-cancel the booking
+        await autoCancelBooking(supabase, booking, adminPhone);
+
         await supabase
           .from("notification_queue")
           .update({ sent_at: now })
@@ -299,7 +452,6 @@ const handler = async (req: Request): Promise<Response> => {
       if (!booking || 
           booking.status !== "confirmed" || 
           !["prepayment_paid", "fully_paid"].includes(booking.payment_status)) {
-        // Mark as sent to skip in future
         await supabase
           .from("notification_queue")
           .update({ sent_at: now })
@@ -309,7 +461,6 @@ const handler = async (req: Request): Promise<Response> => {
 
       await sendNotifications(supabase, booking, notification.notification_type, adminPhone);
 
-      // Mark as sent
       await supabase
         .from("notification_queue")
         .update({ sent_at: now })

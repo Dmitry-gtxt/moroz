@@ -276,24 +276,44 @@ export async function schedulePaymentReminder(
 ): Promise<void> {
   try {
     const deadline = new Date(paymentDeadline);
-    const reminderTime = new Date(deadline.getTime() - 60 * 60 * 1000); // 1 hour before
+    const reminder1Hour = new Date(deadline.getTime() - 60 * 60 * 1000); // 1 hour before
+    const reminder10Min = new Date(deadline.getTime() - 10 * 60 * 1000); // 10 minutes before
 
-    // Skip if reminder time is in the past
-    if (reminderTime <= new Date()) {
-      console.log('Payment reminder time is in the past, skipping');
-      return;
+    const now = new Date();
+
+    // Schedule 1 hour reminder if not in the past
+    if (reminder1Hour > now) {
+      await supabase.from('notification_queue').insert({
+        user_id: customerId,
+        booking_id: bookingId,
+        notification_type: 'payment_reminder_1_hour',
+        scheduled_for: reminder1Hour.toISOString()
+      });
+      console.log('Scheduled 1-hour payment reminder for booking:', bookingId);
     }
 
+    // Schedule 10 minute reminder if not in the past
+    if (reminder10Min > now) {
+      await supabase.from('notification_queue').insert({
+        user_id: customerId,
+        booking_id: bookingId,
+        notification_type: 'payment_reminder_10_min',
+        scheduled_for: reminder10Min.toISOString()
+      });
+      console.log('Scheduled 10-min payment reminder for booking:', bookingId);
+    }
+
+    // Schedule auto-cancellation check at deadline
     await supabase.from('notification_queue').insert({
       user_id: customerId,
       booking_id: bookingId,
-      notification_type: 'payment_reminder_1_hour',
-      scheduled_for: reminderTime.toISOString()
+      notification_type: 'payment_deadline_expired',
+      scheduled_for: deadline.toISOString()
     });
+    console.log('Scheduled payment deadline check for booking:', bookingId);
 
-    console.log('Scheduled payment reminder for booking:', bookingId, 'at', reminderTime.toISOString());
   } catch (error) {
-    console.error('Failed to schedule payment reminder:', error);
+    console.error('Failed to schedule payment reminders:', error);
   }
 }
 
