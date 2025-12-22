@@ -523,8 +523,6 @@ const Auth = () => {
                 {mode === 'forgot-password' && forgotStep === 'password-shown' && 'Ваш новый пароль'}
               </h1>
               <p className="text-snow-400 mt-2">
-                {mode === 'login' && 'Войдите, чтобы забронировать Деда Мороза'}
-                {mode === 'register' && registerStep === 'form' && 'Создайте аккаунт для бронирования'}
                 {mode === 'register' && registerStep === 'sms-verification' && 'Введите 6-значный код из SMS'}
                 {mode === 'register' && registerStep === 'password-shown' && 'Мы добавили к вашему паролю букву S'}
                 {mode === 'forgot-password' && forgotStep === 'phone' && 'Введите телефон, указанный при регистрации'}
