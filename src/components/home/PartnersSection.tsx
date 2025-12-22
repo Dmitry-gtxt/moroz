@@ -86,20 +86,17 @@ export function PartnersSection() {
             }}
           >
             {partners.map((partner, index) => (
-              <a
+              <div
                 key={index}
-                href={partner.href}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="flex-shrink-0"
               >
                 <img
                   src={partner.src}
                   alt={partner.alt}
-                  className={`${logoHeight} w-auto object-contain opacity-80 hover:opacity-100 transition-opacity`}
+                  className={`${logoHeight} w-auto object-contain opacity-80`}
                   onLoad={checkScroll}
                 />
-              </a>
+              </div>
             ))}
           </div>
 
