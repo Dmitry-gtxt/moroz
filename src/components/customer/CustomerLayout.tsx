@@ -20,7 +20,8 @@ import {
   Star,
   Menu,
   MessageCircle,
-  Headphones
+  Headphones,
+  CreditCard
 } from 'lucide-react';
 
 const navItems = [
@@ -41,6 +42,7 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
   const unreadCount = useUnreadMessages();
   const unreadSupportCount = useUnreadSupportMessages();
   const [hasPerformerProfile, setHasPerformerProfile] = useState<boolean | null>(null);
+  const [hasPendingPayment, setHasPendingPayment] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -56,8 +58,24 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
       setHasPerformerProfile(!!data);
     }
 
+    async function checkPendingPayment() {
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('customer_id', user.id)
+        .eq('status', 'confirmed')
+        .eq('payment_status', 'not_paid')
+        .limit(1)
+        .maybeSingle();
+
+      setHasPendingPayment(!!data);
+    }
+
     if (user) {
       checkPerformerProfile();
+      checkPendingPayment();
     }
   }, [user]);
 
@@ -91,6 +109,22 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
+        {/* Payment button - shown only when there's pending payment */}
+        {hasPendingPayment && (
+          <Link
+            to="/cabinet/payment"
+            className={cn(
+              'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
+              location.pathname === '/cabinet/payment'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/50 hover:from-amber-500/30 hover:to-yellow-500/30'
+            )}
+          >
+            <CreditCard className="h-5 w-5" />
+            <span className="font-medium flex-1">Оплатить бронирование</span>
+          </Link>
+        )}
+
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
           const showBadge = item.showBadge && unreadCount > 0;
