@@ -189,18 +189,18 @@ export function PriceCalendarStrip() {
     <div className="bg-gradient-to-b from-card to-background border-y border-border py-4 overflow-hidden">
       <div className="container">
         {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <h3 className="font-display font-semibold text-foreground">Цены на праздники</h3>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-3 sm:gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full bg-green-500" /> Низкие
+                <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500" /> Низкие
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full bg-amber-500" /> Средние
+                <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-500" /> Средние
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full bg-red-500" /> Высокие
+                <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500" /> Высокие
               </span>
             </div>
           </div>
