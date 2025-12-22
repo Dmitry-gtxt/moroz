@@ -868,14 +868,6 @@ const Auth = () => {
               </div>
             )}
 
-            <div className="mt-6 pt-6 border-t border-snow-700/20 text-center">
-              <p className="text-xs text-snow-500">
-                Хотите стать Дедом Морозом?{' '}
-                <Link to="/performer-registration" className="text-magic-gold hover:underline">
-                  Подать заявку
-                </Link>
-              </p>
-            </div>
           </div>
         </div>
       </main>
