@@ -181,7 +181,9 @@ const PerformerProfile = () => {
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   const getSlotsForDate = (dateStr: string) => {
-    return slots.filter((s) => s.date === dateStr);
+    return slots
+      .filter((s) => s.date === dateStr)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
   };
 
   const hasAvailableSlots = (dateStr: string) => {
