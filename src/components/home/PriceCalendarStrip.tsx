@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, TouchEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { getCustomerPrice, getCommissionRate } from '@/lib/pricing';
@@ -20,6 +20,8 @@ export function PriceCalendarStrip() {
   const [commissionRate, setCommissionRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
 
   // Generate dates from Dec 20 to Jan 10
   const startDate = new Date(2025, 11, 20); // Dec 20, 2025
@@ -151,6 +153,28 @@ export function PriceCalendarStrip() {
     }
   };
 
+  // Touch swipe handlers for mobile
+  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const swipeThreshold = 50;
+    const diff = touchStartX.current - touchEndX.current;
+    
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0) {
+        scroll('right');
+      } else {
+        scroll('left');
+      }
+    }
+  };
+
   // Find min and max average prices for gradient coloring
   const pricesWithValue = dayPrices.filter(d => d.avgPrice !== null);
   const minPriceOverall = pricesWithValue.length > 0 ? Math.min(...pricesWithValue.map(d => d.avgPrice!)) : 0;
@@ -223,8 +247,11 @@ export function PriceCalendarStrip() {
         {/* Scrollable days */}
         <div 
           ref={scrollContainerRef}
-          className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4"
+          className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 touch-pan-x"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           {dayPrices.map((day, index) => {
             const customerPrice = day.avgPrice && commissionRate !== null ? getCustomerPrice(day.avgPrice, commissionRate) : null;
