@@ -605,7 +605,7 @@ const PerformerProfile = () => {
                         </p>
                       )}
                       {availableSlotsForSelectedDate.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-2">
+                        <div className={`grid grid-cols-1 gap-2 ${availableSlotsForSelectedDate.length > 10 ? 'max-h-[400px] overflow-y-auto pr-1' : ''}`}>
                           {availableSlotsForSelectedDate.map((slot) => {
                             const hasPendingBooking = pendingSlotIds.has(slot.id);
                             const slotPrice = getSlotCustomerPrice(slot);
