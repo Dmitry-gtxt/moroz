@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { CustomerLayout } from '@/components/customer/CustomerLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -217,6 +217,7 @@ function PaymentBlock({ prepaymentAmount, bookingId, customerEmail, customerPhon
 
 export default function CustomerBookings() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const [bookings, setBookings] = useState<BookingWithPerformer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -230,6 +231,25 @@ export default function CustomerBookings() {
     booking: BookingWithPerformer | null;
   }>({ open: false, booking: null });
   const [userProfile, setUserProfile] = useState<{ full_name: string } | null>(null);
+
+  // Handle payment return from VTB
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    const bookingId = searchParams.get('booking');
+    
+    if (paymentStatus) {
+      if (paymentStatus === 'success') {
+        toast.success('Оплата прошла успешно! Статус обновится в течение минуты.');
+      } else if (paymentStatus === 'failed') {
+        toast.error('Оплата не прошла. Попробуйте ещё раз или обратитесь в поддержку.');
+      }
+      
+      // Clear URL parameters
+      searchParams.delete('payment');
+      searchParams.delete('booking');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const fetchBookings = async () => {
     if (!user) return;
