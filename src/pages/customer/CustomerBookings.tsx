@@ -51,9 +51,16 @@ const eventTypeLabels: Record<string, string> = {
 };
 
 // Helper component for payment deadline countdown
-function PaymentDeadlineBlock({ deadline, prepaymentAmount }: { deadline: string; prepaymentAmount: number }) {
+function PaymentDeadlineBlock({ deadline, prepaymentAmount, bookingId, customerEmail, customerPhone }: { 
+  deadline: string; 
+  prepaymentAmount: number;
+  bookingId: string;
+  customerEmail?: string | null;
+  customerPhone?: string;
+}) {
   const [timeLeft, setTimeLeft] = useState('');
   const [isExpired, setIsExpired] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -75,6 +82,34 @@ function PaymentDeadlineBlock({ deadline, prepaymentAmount }: { deadline: string
     const interval = setInterval(updateTimer, 60000); // Update every minute
     return () => clearInterval(interval);
   }, [deadline]);
+
+  const handlePayment = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('vtb-create-payment', {
+        body: {
+          bookingId,
+          amount: prepaymentAmount * 100, // Convert to kopecks
+          description: `Предоплата за бронирование #${bookingId.slice(0, 8)}`,
+          customerEmail,
+          customerPhone,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        throw new Error('Не получена ссылка на оплату');
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error(error.message || 'Ошибка при создании платежа');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isExpired) {
     return (
@@ -106,11 +141,74 @@ function PaymentDeadlineBlock({ deadline, prepaymentAmount }: { deadline: string
             Предоплата {prepaymentAmount.toLocaleString()} ₽ — иначе бронирование будет отменено
           </p>
         </div>
-        <Button variant="gold" size="sm" asChild>
-          <a href="https://t.me/gtxt_biz" target="_blank" rel="noopener noreferrer">
+        <Button variant="gold" size="sm" onClick={handlePayment} disabled={isLoading}>
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
             <CreditCard className="h-4 w-4 mr-2" />
-            Оплатить
-          </a>
+          )}
+          Оплатить
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// Helper component for regular payment block (no deadline)
+function PaymentBlock({ prepaymentAmount, bookingId, customerEmail, customerPhone }: { 
+  prepaymentAmount: number;
+  bookingId: string;
+  customerEmail?: string | null;
+  customerPhone?: string;
+}) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handlePayment = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('vtb-create-payment', {
+        body: {
+          bookingId,
+          amount: prepaymentAmount * 100, // Convert to kopecks
+          description: `Предоплата за бронирование #${bookingId.slice(0, 8)}`,
+          customerEmail,
+          customerPhone,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        throw new Error('Не получена ссылка на оплату');
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error(error.message || 'Ошибка при создании платежа');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="font-medium text-amber-800 dark:text-amber-200">
+            Ожидает оплаты предоплаты
+          </p>
+          <p className="text-sm text-amber-600 dark:text-amber-400">
+            Оплатите {prepaymentAmount.toLocaleString()} ₽ для подтверждения
+          </p>
+        </div>
+        <Button variant="gold" size="sm" onClick={handlePayment} disabled={isLoading}>
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <CreditCard className="h-4 w-4 mr-2" />
+          )}
+          Оплатить
         </Button>
       </div>
     </div>
@@ -440,29 +538,20 @@ export default function CustomerBookings() {
                       <PaymentDeadlineBlock 
                         deadline={booking.payment_deadline} 
                         prepaymentAmount={booking.prepayment_amount}
+                        bookingId={booking.id}
+                        customerEmail={booking.customer_email}
+                        customerPhone={booking.customer_phone}
                       />
                     )}
 
                     {/* Regular payment reminder for confirmed without deadline */}
                     {booking.status === 'confirmed' && booking.payment_status === 'not_paid' && !booking.payment_deadline && (
-                      <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-                        <div className="flex items-center justify-between gap-4">
-                          <div>
-                            <p className="font-medium text-amber-800 dark:text-amber-200">
-                              Ожидает оплаты предоплаты
-                            </p>
-                            <p className="text-sm text-amber-600 dark:text-amber-400">
-                              Оплатите {booking.prepayment_amount.toLocaleString()} ₽ для подтверждения
-                            </p>
-                          </div>
-                          <Button variant="gold" size="sm" asChild>
-                            <a href="https://t.me/gtxt_biz" target="_blank" rel="noopener noreferrer">
-                              <CreditCard className="h-4 w-4 mr-2" />
-                              Оплатить
-                            </a>
-                          </Button>
-                        </div>
-                      </div>
+                      <PaymentBlock 
+                        prepaymentAmount={booking.prepayment_amount}
+                        bookingId={booking.id}
+                        customerEmail={booking.customer_email}
+                        customerPhone={booking.customer_phone}
+                      />
                     )}
 
                     {(booking.payment_status === 'prepayment_paid' || booking.payment_status === 'fully_paid') && (
