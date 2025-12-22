@@ -1,0 +1,5 @@
+# VTB Bank webhook proxy
+/api/vtb-webhook  https://tkjiovnlqwmpikejtanu.supabase.co/functions/v1/vtb-webhook  200
+
+# SPA fallback - must be last
+/*  /index.html  200
