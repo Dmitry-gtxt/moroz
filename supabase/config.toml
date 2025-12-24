@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.vtb-webhook]
 verify_jwt = false
+
+[functions.vtb-diagnostics]
+verify_jwt = true
