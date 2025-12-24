@@ -6,8 +6,6 @@ const corsHeaders = {
 };
 
 const SANDBOX_URL = 'https://vtb.rbsuat.com/payment/rest';
-const SANDBOX_USER = 'test_user';
-const SANDBOX_PASSWORD = 'test_user_password';
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -16,9 +14,16 @@ serve(async (req) => {
   }
 
   try {
-    const { action, amount, orderNumber, orderId, returnUrl, failUrl } = await req.json();
+    const { action, amount, orderNumber, orderId, returnUrl, failUrl, userName, password } = await req.json();
 
     console.log(`[vtb-sandbox-test] Action: ${action}`);
+
+    if (!userName || !password) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'userName и password обязательны' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     let endpoint: string;
     let params: URLSearchParams;
@@ -26,8 +31,8 @@ serve(async (req) => {
     if (action === 'register') {
       endpoint = '/register.do';
       params = new URLSearchParams({
-        userName: SANDBOX_USER,
-        password: SANDBOX_PASSWORD,
+        userName: userName,
+        password: password,
         amount: amount?.toString() || '10000',
         currency: '643',
         orderNumber: orderNumber || `TEST_${Date.now()}`,
@@ -45,8 +50,8 @@ serve(async (req) => {
       }
       endpoint = '/getOrderStatusExtended.do';
       params = new URLSearchParams({
-        userName: SANDBOX_USER,
-        password: SANDBOX_PASSWORD,
+        userName: userName,
+        password: password,
         orderId: orderId,
       });
     } else {
@@ -56,7 +61,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[vtb-sandbox-test] Calling ${SANDBOX_URL}${endpoint}`);
+    console.log(`[vtb-sandbox-test] Calling ${SANDBOX_URL}${endpoint} with user: ${userName}`);
 
     const response = await fetch(`${SANDBOX_URL}${endpoint}`, {
       method: 'POST',

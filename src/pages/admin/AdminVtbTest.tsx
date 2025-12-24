@@ -22,11 +22,13 @@ export default function AdminVtbTest() {
   // Test form data
   const [amount, setAmount] = useState('10000');
   const [orderNumber, setOrderNumber] = useState(`TEST_${Date.now()}`);
+  
+  // Credentials - user can enter their own
+  const [userName, setUserName] = useState('');
+  const [password, setPassword] = useState('');
 
-  // Sandbox credentials (from VTB documentation)
+  // Sandbox URL
   const SANDBOX_URL = 'https://vtb.rbsuat.com/payment/rest';
-  const SANDBOX_USER = 'test_user';
-  const SANDBOX_PASSWORD = 'test_user_password';
 
   const testCases = [
     {
@@ -69,6 +71,8 @@ export default function AdminVtbTest() {
           orderNumber: orderNumber,
           returnUrl: `${window.location.origin}/cabinet/payment?success=true`,
           failUrl: `${window.location.origin}/cabinet/payment?success=false`,
+          userName: userName,
+          password: password,
         };
       } else if (testId === 'status') {
         const registerResult = results['register'];
@@ -78,6 +82,8 @@ export default function AdminVtbTest() {
         requestBody = {
           action: 'status',
           orderId: registerResult.response.orderId,
+          userName: userName,
+          password: password,
         };
       } else {
         throw new Error('Неизвестный тест');
@@ -164,7 +170,17 @@ export default function AdminVtbTest() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Параметры подключения</CardTitle>
-            <CardDescription>Тестовые учётные данные из документации VTB</CardDescription>
+            <CardDescription>
+              Введите credentials из личного кабинета{' '}
+              <a 
+                href="https://sandbox.vtb.ru/sandbox/cabinet/index.html" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                sandbox.vtb.ru
+              </a>
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -179,29 +195,31 @@ export default function AdminVtbTest() {
                   </Button>
                 </div>
               </div>
-              <div>
-                <Label className="text-muted-foreground">userName</Label>
-                <div className="flex items-center gap-2">
-                  <code className="text-sm bg-muted px-2 py-1 rounded flex-1">
-                    {SANDBOX_USER}
-                  </code>
-                  <Button variant="ghost" size="icon" onClick={() => copyToClipboard(SANDBOX_USER)}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="userName">userName</Label>
+                <Input 
+                  id="userName"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="your-merchant-api"
+                />
               </div>
-              <div>
-                <Label className="text-muted-foreground">password</Label>
-                <div className="flex items-center gap-2">
-                  <code className="text-sm bg-muted px-2 py-1 rounded flex-1">
-                    {SANDBOX_PASSWORD}
-                  </code>
-                  <Button variant="ghost" size="icon" onClick={() => copyToClipboard(SANDBOX_PASSWORD)}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">password</Label>
+                <Input 
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
               </div>
             </div>
+            {(!userName || !password) && (
+              <p className="text-sm text-amber-600">
+                ⚠️ Введите userName и password для тестирования
+              </p>
+            )}
           </CardContent>
         </Card>
 
