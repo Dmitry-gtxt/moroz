@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Link, useLocation, Navigate } from 'react-router-dom';
+import { Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { Users, FileCheck, ShoppingCart, LayoutDashboard, LogOut, Star, History, CreditCard, Shield, MessageCircle, ClipboardCheck, Handshake, Menu, MessageSquareText, UserRound } from 'lucide-react';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,11 +17,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { isAdmin, loading } = useAdmin();
   const { signOut, user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   
   const [verificationCount, setVerificationCount] = useState(0);
   const [moderationCount, setModerationCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   // Auto-subscribe admin to push notifications
   useEffect(() => {
@@ -147,7 +153,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-          onClick={signOut}
+          onClick={handleSignOut}
         >
           <LogOut className="h-5 w-5" />
           Выйти

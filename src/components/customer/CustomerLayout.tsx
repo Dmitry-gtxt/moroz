@@ -1,4 +1,4 @@
-import { Link, useLocation, Navigate } from 'react-router-dom';
+import { Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
@@ -39,11 +39,17 @@ interface CustomerLayoutProps {
 export function CustomerLayout({ children }: CustomerLayoutProps) {
   const { user, signOut, loading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const unreadCount = useUnreadMessages();
   const unreadSupportCount = useUnreadSupportMessages();
   const [hasPerformerProfile, setHasPerformerProfile] = useState<boolean | null>(null);
   const [hasPendingPayment, setHasPendingPayment] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   useEffect(() => {
     async function checkPerformerProfile() {
@@ -204,7 +210,7 @@ export function CustomerLayout({ children }: CustomerLayoutProps) {
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-          onClick={signOut}
+          onClick={handleSignOut}
         >
           <LogOut className="h-5 w-5" />
           Выйти
