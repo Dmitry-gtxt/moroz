@@ -229,6 +229,8 @@ serve(async (req) => {
   }
 
   const requestBody: any = await req.json().catch(() => ({}));
+  console.log('vtb-diagnostics request body:', JSON.stringify(requestBody));
+  
   const mode: 'sandbox' | 'prod' = requestBody?.mode === 'prod' ? 'prod' : 'sandbox';
 
   const authUrlOverride =
@@ -241,6 +243,8 @@ serve(async (req) => {
     : mode === 'prod'
       ? [VTB_AUTH_URL_PROD]
       : [VTB_AUTH_URL_SANDBOX];
+  
+  console.log('vtb-diagnostics mode:', mode, 'authUrls:', authUrls);
 
   const result: DiagnosticResult = {
     proxyConfigured: false,
