@@ -94,7 +94,16 @@ export default function CustomerPayment() {
       }
     } catch (error: any) {
       console.error('Payment error:', error);
-      toast.error(error.message || 'Ошибка при создании платежа');
+
+      // Surface the real backend response body (super helpful for 401/403/500)
+      if (error?.name === 'FunctionsHttpError' && error?.context) {
+        const res = error.context as Response;
+        const status = res?.status;
+        const raw = await res.text().catch(() => '');
+        toast.error(`Ошибка оплаты (${status}): ${raw || error.message}`);
+      } else {
+        toast.error(error.message || 'Ошибка при создании платежа');
+      }
     } finally {
       setPaymentLoading(false);
     }
