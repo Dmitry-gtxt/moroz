@@ -6,19 +6,47 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// VTB API endpoints
-const VTB_AUTH_URL = "https://payment-gateway-api.vtb.ru/oauth/token";
-const VTB_INVOICE_URL = "https://payment-gateway-api.vtb.ru/api/v1/invoices";
+// VTB API endpoints (Production)
+const VTB_AUTH_URL = "https://epa.api.vtb.ru/openapi/passport/oauth2/token";
+const VTB_ORDERS_URL = "https://epa.api.vtb.ru/openapi/merchants/v1/orders";
+
+// For sandbox/testing, use these instead:
+// const VTB_AUTH_URL = "https://epa-ift-sbp.vtb.ru:443/passport/oauth2/token";
+// const VTB_ORDERS_URL = "https://epa-ift-sbp.vtb.ru:443/api/v1/orders";
 
 interface CreatePaymentRequest {
   bookingId: string;
-  amount: number; // в копейках
+  amount: number; // в рублях
   description: string;
   customerEmail?: string;
   customerPhone?: string;
 }
 
-async function getVtbAccessToken(): Promise<string> {
+// Create HTTP client with proxy support
+function createProxyClient() {
+  const proxyUrl = Deno.env.get('PROXY_URL');
+  const proxyUser = Deno.env.get('PROXY_USER');
+  const proxyPass = Deno.env.get('PROXY_PASS');
+
+  if (!proxyUrl) {
+    console.log('No proxy configured, using direct connection');
+    return undefined;
+  }
+
+  console.log('Using proxy:', proxyUrl);
+
+  return Deno.createHttpClient({
+    proxy: {
+      url: proxyUrl,
+      basicAuth: proxyUser && proxyPass ? {
+        username: proxyUser,
+        password: proxyPass,
+      } : undefined,
+    },
+  });
+}
+
+async function getVtbAccessToken(client?: Deno.HttpClient): Promise<string> {
   const clientId = Deno.env.get('VTB_CLIENT_ID');
   const clientSecret = Deno.env.get('VTB_CLIENT_SECRET');
 
@@ -26,24 +54,36 @@ async function getVtbAccessToken(): Promise<string> {
     throw new Error('VTB credentials not configured');
   }
 
-  const credentials = btoa(`${clientId}:${clientSecret}`);
+  console.log('Getting VTB access token from:', VTB_AUTH_URL);
 
-  const response = await fetch(VTB_AUTH_URL, {
+  // VTB uses form-urlencoded for token request
+  const formData = new URLSearchParams();
+  formData.append('grant_type', 'client_credentials');
+  formData.append('client_id', clientId);
+  formData.append('client_secret', clientSecret);
+
+  const fetchOptions: RequestInit & { client?: Deno.HttpClient } = {
     method: 'POST',
     headers: {
-      'Authorization': `Basic ${credentials}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: 'grant_type=client_credentials',
-  });
+    body: formData.toString(),
+  };
+
+  if (client) {
+    fetchOptions.client = client;
+  }
+
+  const response = await fetch(VTB_AUTH_URL, fetchOptions);
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('VTB auth error:', errorText);
-    throw new Error(`Failed to get VTB access token: ${response.status}`);
+    console.error('VTB auth error:', response.status, errorText);
+    throw new Error(`Failed to get VTB access token: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json();
+  console.log('VTB token received, expires_in:', data.expires_in);
   return data.access_token;
 }
 
@@ -53,14 +93,19 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Create proxy client once for this request
+  let proxyClient: Deno.HttpClient | undefined;
+
   try {
+    proxyClient = createProxyClient();
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { bookingId, amount, description, customerEmail, customerPhone }: CreatePaymentRequest = await req.json();
 
-    console.log('Creating VTB payment for booking:', bookingId, 'amount:', amount);
+    console.log('Creating VTB payment for booking:', bookingId, 'amount:', amount, 'RUB');
 
     // Validate booking exists and get details
     const { data: booking, error: bookingError } = await supabase
@@ -78,67 +123,84 @@ serve(async (req) => {
     }
 
     // Get VTB access token
-    const accessToken = await getVtbAccessToken();
-    console.log('Got VTB access token');
+    const accessToken = await getVtbAccessToken(proxyClient);
+    console.log('Got VTB access token successfully');
 
-    // Create invoice in VTB
+    // Get merchant site ID for Merchant-Authorization header (optional, if multiple sites)
     const merchantSiteId = Deno.env.get('VTB_MERCHANT_SITE_ID');
-    if (!merchantSiteId) {
-      throw new Error('VTB_MERCHANT_SITE_ID not configured');
-    }
-    
-    const invoicePayload = {
-      merchant_site_id: merchantSiteId,
+
+    // Create order in VTB according to API docs
+    // Amount should be in rubles with optional decimal (e.g., 1055.20)
+    const orderPayload = {
+      orderId: bookingId, // Unique order ID in merchant system
+      orderName: description,
+      expire: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
       amount: {
-        value: amount, // в копейках
-        currency: "RUB"
-      },
-      order: {
-        order_id: bookingId,
-        description: description,
-      },
-      settings: {
-        success_url: `https://дед-морозы.рф/customer/bookings?payment=success&booking=${bookingId}`,
-        fail_url: `https://дед-морозы.рф/customer/bookings?payment=failed&booking=${bookingId}`,
-        notification_url: `https://дед-морозы.рф/api/vtb-webhook`,
+        value: amount, // В рублях (e.g., 1500.00)
+        code: "RUB"
       },
       customer: {
         email: customerEmail || booking.customer_email,
         phone: customerPhone || booking.customer_phone?.replace(/\D/g, ''),
       },
-      ttl: 1440, // 24 hours in minutes
+      returnUrl: `https://дед-морозы.рф/customer/bookings?payment=callback&booking=${bookingId}`,
     };
 
-    console.log('Sending invoice to VTB:', JSON.stringify(invoicePayload));
+    console.log('Sending order to VTB:', JSON.stringify(orderPayload));
 
-    const invoiceResponse = await fetch(VTB_INVOICE_URL, {
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    };
+
+    // Add Merchant-Authorization if we have multiple sites
+    if (merchantSiteId) {
+      headers['Merchant-Authorization'] = merchantSiteId;
+    }
+
+    const fetchOptions: RequestInit & { client?: Deno.HttpClient } = {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(invoicePayload),
-    });
+      headers,
+      body: JSON.stringify(orderPayload),
+    };
 
-    const invoiceData = await invoiceResponse.json();
-    console.log('VTB invoice response:', JSON.stringify(invoiceData));
+    if (proxyClient) {
+      fetchOptions.client = proxyClient;
+    }
 
-    if (!invoiceResponse.ok) {
-      console.error('VTB invoice creation failed:', invoiceData);
+    const orderResponse = await fetch(VTB_ORDERS_URL, fetchOptions);
+    const orderData = await orderResponse.json();
+
+    console.log('VTB order response status:', orderResponse.status);
+    console.log('VTB order response:', JSON.stringify(orderData));
+
+    if (!orderResponse.ok) {
+      console.error('VTB order creation failed:', orderData);
       return new Response(
-        JSON.stringify({ error: 'Failed to create payment', details: invoiceData }),
+        JSON.stringify({ error: 'Failed to create payment', details: orderData }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Save payment info to booking or create a payments table entry if needed
-    // For now, we'll just return the payment URL
+    // VTB returns payUrl in the response object
+    const payUrl = orderData.object?.payUrl || orderData.payUrl;
+    const orderCode = orderData.object?.orderCode || orderData.orderCode;
+
+    if (!payUrl) {
+      console.error('No payUrl in VTB response:', orderData);
+      return new Response(
+        JSON.stringify({ error: 'No payment URL received from VTB', details: orderData }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Payment URL:', payUrl);
 
     return new Response(
       JSON.stringify({
         success: true,
-        paymentUrl: invoiceData.payment_url,
-        invoiceId: invoiceData.invoice_id,
+        paymentUrl: payUrl,
+        invoiceId: orderCode,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -150,5 +212,10 @@ serve(async (req) => {
       JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+  } finally {
+    // Clean up proxy client
+    if (proxyClient) {
+      proxyClient.close();
+    }
   }
 });
