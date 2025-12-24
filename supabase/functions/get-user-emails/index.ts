@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,31 +23,46 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     // Verify the caller is an admin
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers.get('authorization') ?? req.headers.get('Authorization');
     console.log("Auth header present:", !!authHeader);
-    
+
     if (!authHeader) {
       throw new Error("No authorization header");
     }
 
-    // Extract the token from "Bearer <token>"
-    const token = authHeader.replace('Bearer ', '');
+    const match = authHeader.match(/Bearer\s+(.+)/i);
+    const token = match?.[1]?.trim();
+
+    if (!token) {
+      throw new Error("No bearer token");
+    }
+
     console.log("Token extracted, length:", token.length);
 
+    const supabaseUser = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-    
-    // Verify user using the token directly
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-    
+
+    // Verify user using the access token
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser(token);
+
     if (userError) {
       console.error("User verification error:", userError.message);
       throw new Error("Unauthorized");
     }
-    
+
     if (!user) {
       console.error("No user found from token");
       throw new Error("Unauthorized");
     }
+
+    console.log("User verified:", user.id);
+
 
     console.log("User verified:", user.id);
 
