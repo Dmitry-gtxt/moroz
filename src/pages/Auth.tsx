@@ -131,7 +131,7 @@ const Auth = () => {
   };
 
   // Send 2FA code
-  const send2FaCode = async (phone: string, templateId: number) => {
+  const send2FaCode = async (phone: string, templateId: number, checkUnique: boolean = false) => {
     const formattedPhone = formatPhoneForApi(phone);
     
     if (formattedPhone.length < 10) {
@@ -146,7 +146,7 @@ const Auth = () => {
           phone: formattedPhone,
           template_id: templateId,
           code_digits: 6,
-          check_unique: true, // Проверка уникальности номера при регистрации
+          check_unique: checkUnique, // Проверка уникальности номера только при регистрации
         },
       });
 
@@ -418,7 +418,7 @@ const Auth = () => {
           }
           
           // Send SMS
-          const sent = await send2FaCode(formData.phone, 78); // Registration template
+          const sent = await send2FaCode(formData.phone, 78, true); // Registration template, check uniqueness
           if (sent) {
             setRegisterStep('sms-verification');
             toast.success('SMS с паролем отправлено на ваш телефон');
@@ -439,7 +439,7 @@ const Auth = () => {
           }
           
           // Send SMS with recovery template
-          const sent = await send2FaCode(recoveryPhone, 79); // Password recovery template
+          const sent = await send2FaCode(recoveryPhone, 79, false); // Password recovery template, don't check uniqueness
           if (sent) {
             setForgotStep('sms-verification');
             toast.success('SMS с кодом отправлено на ваш телефон');
