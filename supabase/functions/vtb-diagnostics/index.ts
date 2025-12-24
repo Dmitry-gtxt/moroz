@@ -7,12 +7,13 @@ const corsHeaders = {
 
 // VTB Auth URLs according to official documentation
 // Sandbox: https://epa-ift-sbp.vtb.ru:443/passport/oauth2/token
-// Production: https://epa.api.vtb.ru:443/passport/oauth2/token
+// Production: https://open.api.vtb.ru:443/passport/oauth2/token (из документации ВТБ Open API)
 const VTB_AUTH_URL_SANDBOX = "https://epa-ift-sbp.vtb.ru:443/passport/oauth2/token";
-const VTB_AUTH_URL_PROD = "https://epa.api.vtb.ru:443/passport/oauth2/token";
+const VTB_AUTH_URL_PROD = "https://open.api.vtb.ru:443/passport/oauth2/token";
 
 // API endpoints
 const VTB_API_SANDBOX = "https://test3.api.vtb.ru:8443/openapi/smb/efcp/e-commerce/v1/orders";
+const VTB_API_PROD = "https://open.api.vtb.ru:443/openapi/smb/efcp/e-commerce/v1/orders";
 const VTB_API_SANDBOX_HOST = "test3.api.vtb.ru";
 
 // Russian Trusted Root CA certificates (НУЦ Минцифры) - required for VTB production SSL
