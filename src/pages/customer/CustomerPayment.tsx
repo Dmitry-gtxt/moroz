@@ -49,7 +49,6 @@ export default function CustomerPayment() {
   const { user } = useAuth();
   const [booking, setBooking] = useState<BookingWithPerformer | null>(null);
   const [loading, setLoading] = useState(true);
-  const [paymentLoading, setPaymentLoading] = useState(false);
   const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
   const [diagnosticsResult, setDiagnosticsResult] = useState<DiagnosticResult | null>(null);
 
@@ -92,42 +91,14 @@ export default function CustomerPayment() {
     fetchPendingPayment();
   }, [user]);
 
-  const handlePayment = async () => {
+  const handlePayment = () => {
     if (!booking) return;
 
-    setPaymentLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('vtb-create-payment', {
-        body: {
-          bookingId: booking.id,
-          amount: booking.prepayment_amount * 100, // Convert to kopecks
-          description: `Предоплата за бронирование #${booking.id.slice(0, 8)}`,
-          customerEmail: booking.customer_email,
-          customerPhone: booking.customer_phone,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.paymentUrl) {
-        window.location.href = data.paymentUrl;
-      } else {
-        throw new Error('Не получена ссылка на оплату');
-      }
-    } catch (error: any) {
-      console.error('Payment error:', error);
-
-      // Surface the real backend response body (super helpful for 401/403/500)
-      if (error?.name === 'FunctionsHttpError' && error?.context) {
-        const res = error.context as Response;
-        const status = res?.status;
-        const raw = await res.text().catch(() => '');
-        toast.error(`Ошибка оплаты (${status}): ${raw || error.message}`);
-      } else {
-        toast.error(error.message || 'Ошибка при создании платежа');
-      }
-    } finally {
-      setPaymentLoading(false);
+    // Use pre-generated payment URL from database
+    if (booking.payment_url) {
+      window.location.href = booking.payment_url;
+    } else {
+      toast.error('Ссылка на оплату ещё не готова. Попробуйте обновить страницу через минуту.');
     }
   };
 
@@ -250,20 +221,32 @@ export default function CustomerPayment() {
         </Card>
 
         {/* Payment Button */}
-        <Button 
-          variant="gold" 
-          size="lg" 
-          className="w-full text-lg py-6"
-          onClick={handlePayment}
-          disabled={paymentLoading}
-        >
-          {paymentLoading ? (
-            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-          ) : (
+        {booking.payment_url ? (
+          <Button 
+            variant="gold" 
+            size="lg" 
+            className="w-full text-lg py-6"
+            onClick={handlePayment}
+          >
             <CreditCard className="h-5 w-5 mr-2" />
-          )}
-          Оплатить {booking.prepayment_amount.toLocaleString()} ₽
-        </Button>
+            Оплатить {booking.prepayment_amount.toLocaleString()} ₽
+          </Button>
+        ) : (
+          <div className="text-center space-y-3">
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="w-full text-lg py-6"
+              disabled
+            >
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              Ссылка на оплату генерируется...
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              Ссылка появится автоматически. Обновите страницу через минуту.
+            </p>
+          </div>
+        )}
 
         {/* VTB Diagnostics */}
         <Card>

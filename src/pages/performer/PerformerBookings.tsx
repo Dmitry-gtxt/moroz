@@ -149,6 +149,33 @@ export default function PerformerBookings() {
           booking_id: bookingId,
           performer_id: performerId!,
         });
+
+        // Generate VTB payment URL in background (don't await - it may take time)
+        supabase.functions.invoke('vtb-create-payment', {
+          body: {
+            bookingId: bookingId,
+            amount: (booking?.prepayment_amount || 0) * 100, // Convert to kopecks
+            description: `Предоплата за бронирование #${bookingId.slice(0, 8)}`,
+            customerEmail: booking?.customer_email,
+            customerPhone: booking?.customer_phone,
+          },
+        }).then(({ data, error }) => {
+          if (error) {
+            console.error('Failed to generate payment URL:', error);
+          } else if (data?.paymentUrl) {
+            // Update booking with payment URL
+            supabase.from('bookings')
+              .update({ payment_url: data.paymentUrl })
+              .eq('id', bookingId)
+              .then(({ error: updateError }) => {
+                if (updateError) {
+                  console.error('Failed to save payment URL:', updateError);
+                } else {
+                  console.log('Payment URL saved successfully');
+                }
+              });
+          }
+        });
       }
 
       // Send customer notification when booking is confirmed
