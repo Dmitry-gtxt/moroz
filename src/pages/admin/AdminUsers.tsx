@@ -50,11 +50,28 @@ export default function AdminUsers() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authHeaders = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : undefined;
+
       // Fetch users from edge function
-      const { data: usersData, error: usersError } = await supabase.functions.invoke('list-users');
-      
-      if (usersError) throw usersError;
-      if (!usersData.success) throw new Error(usersData.error);
+      const { data: usersData, error: usersError } = await supabase.functions.invoke('list-users', {
+        headers: authHeaders,
+      });
+
+      if (usersError) {
+        // Surface the real backend response body (super helpful for 401/403/500)
+        if ((usersError as any)?.name === 'FunctionsHttpError' && (usersError as any)?.context) {
+          const res = (usersError as any).context as Response;
+          const status = res?.status;
+          const raw = await res.text().catch(() => '');
+          throw new Error(`list-users ${status}: ${raw || usersError.message}`);
+        }
+        throw usersError;
+      }
+
+      if (!usersData?.success) throw new Error(usersData?.error || 'Неизвестная ошибка');
 
       // Fetch test performers count
       const { data: performersData, error: performersError } = await supabase
@@ -63,7 +80,7 @@ export default function AdminUsers() {
         .like('display_name', '[TEST]%');
 
       if (performersError) throw performersError;
-      
+
       setUsers(usersData.users || []);
       setTestPerformersCount(performersData?.length || 0);
       setTestPerformersActive(performersData?.some(p => p.is_active) || false);
