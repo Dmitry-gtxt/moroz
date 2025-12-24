@@ -291,22 +291,27 @@ serve(async (req) => {
     const clientId = Deno.env.get('VTB_CLIENT_ID');
     const clientSecret = Deno.env.get('VTB_CLIENT_SECRET');
     result.vtbCredentialsConfigured = !!(clientId && clientSecret);
+    console.log('VTB credentials configured:', result.vtbCredentialsConfigured, 'clientId exists:', !!clientId, 'secret exists:', !!clientSecret);
 
     // Create direct client with Russian CA (only for sandbox)
     if (caCerts && caCerts.length > 0) {
       directClient = createDirectClientWithCA(caCerts) || undefined;
+      console.log('Direct client with Russian CA created:', !!directClient);
     }
 
     // DNS check for first URL
     const firstUrl = new URL(authUrls[0]);
     const vtbHost = firstUrl.hostname;
+    console.log('Starting DNS check for:', vtbHost);
     try {
       const addrs = await Deno.resolveDns(vtbHost, 'A');
       result.dnsAddresses = addrs;
       result.dnsResolved = addrs.length > 0;
+      console.log('DNS resolved:', vtbHost, '->', addrs);
     } catch (err) {
       result.dnsResolved = false;
       result.dnsError = err instanceof Error ? err.message : String(err);
+      console.error('DNS failed for', vtbHost, ':', result.dnsError);
     }
 
     // Check proxy config
