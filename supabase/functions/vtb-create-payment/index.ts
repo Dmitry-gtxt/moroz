@@ -16,32 +16,50 @@ const VTB_ORDERS_URL = "https://epa.api.vtb.ru/openapi/merchants/v1/orders";
 
 interface CreatePaymentRequest {
   bookingId: string;
-  amount: number; // в рублях
+  amount: number; // в копейках
   description: string;
   customerEmail?: string;
   customerPhone?: string;
 }
 
 // Create HTTP client with proxy support
-function createProxyClient() {
-  const proxyUrl = Deno.env.get('PROXY_URL');
-  const proxyUser = Deno.env.get('PROXY_USER');
-  const proxyPass = Deno.env.get('PROXY_PASS');
+function createProxyClient(): Deno.HttpClient | undefined {
+  const rawProxyUrl = (Deno.env.get('PROXY_URL') || '').trim();
+  const proxyUserEnv = (Deno.env.get('PROXY_USER') || '').trim();
+  const proxyPassEnv = (Deno.env.get('PROXY_PASS') || '').trim();
 
-  if (!proxyUrl) {
-    console.log('No proxy configured, using direct connection');
-    return undefined;
+  if (!rawProxyUrl) return undefined;
+
+  // Accept both formats:
+  // 1) http://ip:port
+  // 2) user:pass@ip:port
+  let proxyUrlString = rawProxyUrl;
+  if (!/^https?:\/\//i.test(proxyUrlString)) {
+    proxyUrlString = `http://${proxyUrlString}`;
   }
 
-  console.log('Using proxy:', proxyUrl);
+  let proxyUrl: URL;
+  try {
+    proxyUrl = new URL(proxyUrlString);
+  } catch (e) {
+    console.error('Invalid PROXY_URL:', rawProxyUrl);
+    throw new Error('Некорректный PROXY_URL. Используйте формат http://ip:port или user:pass@ip:port');
+  }
+
+  const embeddedUser = proxyUrl.username;
+  const embeddedPass = proxyUrl.password;
+  proxyUrl.username = '';
+  proxyUrl.password = '';
+
+  const username = proxyUserEnv || embeddedUser;
+  const password = proxyPassEnv || embeddedPass;
+
+  console.log('Using proxy host:', proxyUrl.host);
 
   return Deno.createHttpClient({
     proxy: {
-      url: proxyUrl,
-      basicAuth: proxyUser && proxyPass ? {
-        username: proxyUser,
-        password: proxyPass,
-      } : undefined,
+      url: proxyUrl.toString(),
+      basicAuth: username && password ? { username, password } : undefined,
     },
   });
 }
@@ -105,7 +123,16 @@ serve(async (req) => {
 
     const { bookingId, amount, description, customerEmail, customerPhone }: CreatePaymentRequest = await req.json();
 
-    console.log('Creating VTB payment for booking:', bookingId, 'amount:', amount, 'RUB');
+    const amountRub = Number((Math.round(amount) / 100).toFixed(2));
+
+    console.log(
+      'Creating VTB payment for booking:',
+      bookingId,
+      'amount:',
+      amountRub,
+      'RUB',
+      `(raw=${amount} kopecks)`
+    );
 
     // Validate booking exists and get details
     const { data: booking, error: bookingError } = await supabase
@@ -136,7 +163,7 @@ serve(async (req) => {
       orderName: description,
       expire: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
       amount: {
-        value: amount, // В рублях (e.g., 1500.00)
+        value: amountRub,
         code: "RUB"
       },
       customer: {
