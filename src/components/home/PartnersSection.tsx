@@ -8,11 +8,11 @@ import partnerUchidron from '@/assets/partner-uchidron.png';
 import partnerFoodmonitoring from '@/assets/partner-foodmonitoring.png';
 
 const partners = [
-  { href: "https://kolibri.expert", src: partnerKolibri, alt: "Kolibri Expert" },
-  { href: "http://povuzam.ru", src: partnerPovuzam, alt: "Повузам" },
-  { href: "https://umius.ru", src: partnerUmius, alt: "УМИУС" },
-  { href: "https://xn--d1acgejj.xn--p1ai", src: partnerUchidron, alt: "УчиДрон" },
-  { href: "https://foodmonitoring.ru", src: partnerFoodmonitoring, alt: "Мониторинг школьного питания" },
+  { href: "https://kolibri.expert", src: partnerKolibri, alt: "Kolibri Expert", label: "IT-рекрутинг" },
+  { href: "http://povuzam.ru", src: partnerPovuzam, alt: "Повузам", label: "Экскурсии в вузы" },
+  { href: "https://umius.ru", src: partnerUmius, alt: "УМИУС", label: "Курсы для педагогов" },
+  { href: "https://xn--d1acgejj.xn--p1ai", src: partnerUchidron, alt: "УчиДрон", label: "Обучение дронам" },
+  { href: "https://foodmonitoring.ru", src: partnerFoodmonitoring, alt: "Мониторинг школьного питания", label: "Мониторинг питания" },
 ];
 
 export function PartnersSection() {
@@ -51,8 +51,8 @@ export function PartnersSection() {
     }
   };
 
-  const logoHeight = isMobile ? 'h-[45px]' : 'h-[65px]';
-  const gap = isMobile ? 'gap-6' : 'gap-10';
+  const logoSize = isMobile ? 'w-20 h-20' : 'w-28 h-28';
+  const gap = isMobile ? 'gap-4' : 'gap-8';
   const padding = isMobile ? 'px-4' : 'px-8';
 
   return (
@@ -88,14 +88,19 @@ export function PartnersSection() {
             {partners.map((partner, index) => (
               <div
                 key={index}
-                className="flex-shrink-0"
+                className="flex-shrink-0 flex flex-col items-center"
               >
-                <img
-                  src={partner.src}
-                  alt={partner.alt}
-                  className={`${logoHeight} w-auto object-contain opacity-80`}
-                  onLoad={checkScroll}
-                />
+                <div className={`${logoSize} flex items-center justify-center bg-white rounded-xl p-2 shadow-sm`}>
+                  <img
+                    src={partner.src}
+                    alt={partner.alt}
+                    className="max-w-full max-h-full object-contain"
+                    onLoad={checkScroll}
+                  />
+                </div>
+                <span className="mt-2 text-xs text-winter-600 text-center whitespace-nowrap">
+                  {partner.label}
+                </span>
               </div>
             ))}
           </div>
