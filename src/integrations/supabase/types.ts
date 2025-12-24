@@ -172,6 +172,7 @@ export type Database = {
           id: string
           payment_deadline: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
+          payment_url: string | null
           performer_id: string
           prepayment_amount: number
           price_total: number
@@ -198,6 +199,7 @@ export type Database = {
           id?: string
           payment_deadline?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_url?: string | null
           performer_id: string
           prepayment_amount: number
           price_total: number
@@ -224,6 +226,7 @@ export type Database = {
           id?: string
           payment_deadline?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_url?: string | null
           performer_id?: string
           prepayment_amount?: number
           price_total?: number
