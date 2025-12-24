@@ -19,7 +19,7 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     // Get the authorization header to verify admin
-    const authHeader = req.headers.get("Authorization");
+    const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization");
     if (!authHeader) {
       return new Response(
         JSON.stringify({ success: false, error: "Не авторизован" }),
@@ -27,34 +27,53 @@ serve(async (req) => {
       );
     }
 
-    // Create client with user's token to check if they're admin
-    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const match = authHeader.match(/Bearer\s+(.+)/i);
+    const token = match?.[1]?.trim();
 
-    const { data: { user: requestingUser } } = await supabaseUser.auth.getUser();
-    if (!requestingUser) {
+    if (!token) {
       return new Response(
         JSON.stringify({ success: false, error: "Не авторизован" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check if requesting user is admin
-    const { data: isAdmin } = await supabaseUser.rpc("has_role", {
-      _user_id: requestingUser.id,
-      _role: "admin",
+    // Verify requesting user by access token
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
     });
 
-    if (!isAdmin) {
+    const { data: { user: requestingUser }, error: userError } = await supabaseUser.auth.getUser(token);
+    if (userError || !requestingUser) {
       return new Response(
-        JSON.stringify({ success: false, error: "Доступ запрещён" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "Не авторизован" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // Create admin client with service role key
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Check if requesting user is admin (server-side)
+    const { data: adminRoles, error: adminRolesError } = await supabaseAdmin
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', requestingUser.id)
+      .eq('role', 'admin')
+      .limit(1);
+
+    if (adminRolesError) {
+      throw adminRolesError;
+    }
+
+    if (!adminRoles || adminRoles.length === 0) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Доступ запрещён" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Get all users from auth.users
     const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers({
