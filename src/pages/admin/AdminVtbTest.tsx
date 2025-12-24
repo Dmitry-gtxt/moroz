@@ -288,7 +288,7 @@ export default function AdminVtbTest() {
                 <CardDescription>
                   Используются ваши VTB_CLIENT_ID и VTB_CLIENT_SECRET из секретов проекта.
                   {useProdMode ? (
-                    <span className="text-green-600 font-medium"> PRODUCTION: epa.api.vtb.ru</span>
+                    <span className="text-green-600 font-medium"> PRODUCTION: open.api.vtb.ru</span>
                   ) : (
                     <span className="text-yellow-600 font-medium"> SANDBOX: epa-ift-sbp.vtb.ru</span>
                   )}
@@ -399,7 +399,7 @@ export default function AdminVtbTest() {
                         Получение access_token через VTB Passport
                       </p>
                       <code className="text-xs bg-muted px-2 py-0.5 rounded mt-1 inline-block">
-                        POST epa-ift-sbp.vtb.ru/passport/oauth2/token
+                        POST {useProdMode ? 'open.api.vtb.ru' : 'epa-ift-sbp.vtb.ru'}/passport/oauth2/token
                       </code>
                     </div>
                     <div className="flex items-center gap-2">
