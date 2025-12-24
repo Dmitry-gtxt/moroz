@@ -8,6 +8,10 @@ const corsHeaders = {
 const VTB_AUTH_URL = "https://payment-gateway-api.vtb.ru/oauth/token";
 const VTB_HOST = new URL(VTB_AUTH_URL).hostname;
 
+// Alternative VTB domain (register.do API)
+const VTB_ALT_URL = "https://platezh.vtb24.ru/payment/rest/register.do";
+const VTB_ALT_HOST = new URL(VTB_ALT_URL).hostname;
+
 interface DiagnosticResult {
   proxyConfigured: boolean;
   proxyHost: string | null;
@@ -17,6 +21,15 @@ interface DiagnosticResult {
   proxyReachableError: string | null;
   proxyConnectSuccess: boolean | null;
   proxyError: string | null;
+  // Alternative domain test
+  altDomainDnsResolved: boolean | null;
+  altDomainDnsAddresses: string[] | null;
+  altDomainDnsError: string | null;
+  altDomainProxySuccess: boolean | null;
+  altDomainProxyError: string | null;
+  altDomainDirectSuccess: boolean | null;
+  altDomainDirectError: string | null;
+  // Original tests
   directConnectSuccess: boolean | null;
   directError: string | null;
   dnsResolved: boolean | null;
@@ -86,6 +99,13 @@ serve(async (req) => {
     proxyReachableError: null,
     proxyConnectSuccess: null,
     proxyError: null,
+    altDomainDnsResolved: null,
+    altDomainDnsAddresses: null,
+    altDomainDnsError: null,
+    altDomainProxySuccess: null,
+    altDomainProxyError: null,
+    altDomainDirectSuccess: null,
+    altDomainDirectError: null,
     directConnectSuccess: null,
     directError: null,
     dnsResolved: null,
@@ -176,7 +196,50 @@ serve(async (req) => {
       console.error('Direct connection failed:', errorMsg);
     }
 
-    // If credentials configured and at least one connection works, try real auth
+    // ============ TEST ALTERNATIVE DOMAIN (platezh.vtb24.ru) ============
+    console.log('Testing alternative VTB domain:', VTB_ALT_HOST);
+
+    // DNS for alt domain
+    try {
+      const altAddrs = await Deno.resolveDns(VTB_ALT_HOST, 'A');
+      result.altDomainDnsAddresses = altAddrs;
+      result.altDomainDnsResolved = altAddrs.length > 0;
+      console.log('Alt domain DNS resolved:', altAddrs);
+    } catch (err) {
+      result.altDomainDnsResolved = false;
+      result.altDomainDnsError = err instanceof Error ? err.message : String(err);
+      console.error('Alt domain DNS failed:', result.altDomainDnsError);
+    }
+
+    // Proxy connection to alt domain
+    if (proxyClient) {
+      try {
+        console.log('Testing proxy CONNECT to alt domain...');
+        const resp = await fetch(VTB_ALT_URL, {
+          method: 'GET',
+          client: proxyClient,
+        } as any);
+        result.altDomainProxySuccess = true;
+        console.log('Alt domain proxy CONNECT success, HTTP status:', resp.status);
+      } catch (err) {
+        result.altDomainProxySuccess = false;
+        result.altDomainProxyError = err instanceof Error ? err.message : String(err);
+        console.error('Alt domain proxy CONNECT failed:', result.altDomainProxyError);
+      }
+    }
+
+    // Direct connection to alt domain
+    try {
+      console.log('Testing direct connection to alt domain...');
+      const resp = await fetch(VTB_ALT_URL, { method: 'GET' });
+      result.altDomainDirectSuccess = true;
+      console.log('Alt domain direct success, HTTP status:', resp.status);
+    } catch (err) {
+      result.altDomainDirectSuccess = false;
+      result.altDomainDirectError = err instanceof Error ? err.message : String(err);
+      console.error('Alt domain direct failed:', result.altDomainDirectError);
+    }
+
     if (result.vtbCredentialsConfigured && (result.proxyConnectSuccess || result.directConnectSuccess)) {
       const credentials = btoa(`${clientId}:${clientSecret}`);
       const useProxy = result.proxyConnectSuccess && proxyClient;
