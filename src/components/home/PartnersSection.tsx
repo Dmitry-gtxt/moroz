@@ -8,11 +8,11 @@ import partnerUchidron from '@/assets/partner-uchidron.png';
 import partnerFoodmonitoring from '@/assets/partner-foodmonitoring.png';
 
 const partners = [
-  { href: "https://kolibri.expert", src: partnerKolibri, alt: "Kolibri Expert" },
+  { href: "https://foodmonitoring.ru", src: partnerFoodmonitoring, alt: "Мониторинг школьного питания" },
   { href: "http://povuzam.ru", src: partnerPovuzam, alt: "Повузам" },
   { href: "https://umius.ru", src: partnerUmius, alt: "УМИУС" },
   { href: "https://xn--d1acgejj.xn--p1ai", src: partnerUchidron, alt: "УчиДрон" },
-  { href: "https://foodmonitoring.ru", src: partnerFoodmonitoring, alt: "Мониторинг школьного питания" },
+  { href: "https://kolibri.expert", src: partnerKolibri, alt: "Kolibri Expert" },
 ];
 
 export function PartnersSection() {
