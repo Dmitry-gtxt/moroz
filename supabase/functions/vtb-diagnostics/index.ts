@@ -15,6 +15,29 @@ const VTB_AUTH_URL_PROD = "https://epa.api.vtb.ru:443/passport/oauth2/token";
 const VTB_API_SANDBOX = "https://test3.api.vtb.ru:8443/openapi/smb/efcp/e-commerce/v1/orders";
 const VTB_API_SANDBOX_HOST = "test3.api.vtb.ru";
 
+// Russian Trusted Root CA (НУЦ Минцифры) - required for VTB sandbox SSL
+const RUSSIAN_CA_URL = "https://gu-st.ru/content/Other/doc/russiantrustedca.pem";
+let cachedRussianCA: string | null = null;
+
+async function getRussianCA(): Promise<string | null> {
+  if (cachedRussianCA) return cachedRussianCA;
+  
+  try {
+    console.log('Fetching Russian Trusted Root CA...');
+    const resp = await fetch(RUSSIAN_CA_URL);
+    if (resp.ok) {
+      cachedRussianCA = await resp.text();
+      console.log('Russian CA certificate fetched successfully, length:', cachedRussianCA.length);
+      return cachedRussianCA;
+    }
+    console.error('Failed to fetch Russian CA:', resp.status);
+    return null;
+  } catch (err) {
+    console.error('Error fetching Russian CA:', err);
+    return null;
+  }
+}
+
 interface DiagnosticResult {
   proxyConfigured: boolean;
   proxyHost: string | null;
@@ -43,7 +66,7 @@ interface DiagnosticResult {
   vtbAuthError: string | null;
 }
 
-function createProxyClient(): { client: Deno.HttpClient; host: string; port: number; hasAuth: boolean } | null {
+function createProxyClient(caCerts?: string[]): { client: Deno.HttpClient; host: string; port: number; hasAuth: boolean } | null {
   const rawProxyUrl = (Deno.env.get('PROXY_URL') || '').trim();
   const proxyUserEnv = (Deno.env.get('PROXY_USER') || '').trim();
   const proxyPassEnv = (Deno.env.get('PROXY_PASS') || '').trim();
@@ -78,14 +101,28 @@ function createProxyClient(): { client: Deno.HttpClient; host: string; port: num
 
   const port = proxyUrl.port ? parseInt(proxyUrl.port, 10) : (proxyUrl.protocol === 'https:' ? 443 : 80);
 
+  const clientOptions: any = {
+    proxy: { url: proxyUrlWithCreds.toString() },
+  };
+  if (caCerts && caCerts.length > 0) {
+    clientOptions.caCerts = caCerts;
+  }
+
   return {
-    client: Deno.createHttpClient({
-      proxy: { url: proxyUrlWithCreds.toString() },
-    }),
+    client: Deno.createHttpClient(clientOptions),
     host: proxyUrl.hostname,
     port,
     hasAuth: !!(username && password),
   };
+}
+
+// Create HTTP client with Russian CA for direct connections (no proxy)
+function createDirectClientWithCA(caCerts?: string[]): Deno.HttpClient | null {
+  if (!caCerts || caCerts.length === 0) return null;
+  
+  return Deno.createHttpClient({
+    caCerts: caCerts,
+  });
 }
 
 serve(async (req) => {
@@ -124,12 +161,24 @@ serve(async (req) => {
   };
 
   let proxyClient: Deno.HttpClient | undefined;
+  let directClient: Deno.HttpClient | undefined;
 
   try {
+    // Fetch Russian CA for VTB sandbox SSL
+    const russianCA = await getRussianCA();
+    const caCerts = russianCA ? [russianCA] : undefined;
+    (result as any).russianCaLoaded = !!russianCA;
+    console.log('Russian CA loaded:', !!russianCA);
+
     // Check VTB credentials
     const clientId = Deno.env.get('VTB_CLIENT_ID');
     const clientSecret = Deno.env.get('VTB_CLIENT_SECRET');
     result.vtbCredentialsConfigured = !!(clientId && clientSecret);
+
+    // Create direct client with Russian CA
+    if (caCerts) {
+      directClient = createDirectClientWithCA(caCerts) || undefined;
+    }
 
     // DNS check for first URL
     const firstUrl = new URL(authUrls[0]);
@@ -144,7 +193,7 @@ serve(async (req) => {
     }
 
     // Check proxy config
-    const proxyInfo = createProxyClient();
+    const proxyInfo = createProxyClient(caCerts);
     if (proxyInfo) {
       result.proxyConfigured = true;
       result.proxyHost = proxyInfo.host;
@@ -188,18 +237,21 @@ serve(async (req) => {
       }
     }
 
-    // Test direct connection (without proxy)
+    // Test direct connection with Russian CA
     for (const testUrl of authUrls) {
       try {
-        console.log('Testing direct connection to:', testUrl);
-        const resp = await fetch(testUrl, {
+        console.log('Testing direct connection (with Russian CA) to:', testUrl);
+        const fetchOpts: any = {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: 'grant_type=client_credentials',
-        });
+        };
+        if (directClient) fetchOpts.client = directClient;
+        
+        const resp = await fetch(testUrl, fetchOpts);
         result.directConnectSuccess = true;
         console.log('Direct connection success to', testUrl, 'HTTP status:', resp.status);
-        break; // Stop on first success
+        break;
       } catch (err) {
         result.directConnectSuccess = false;
         const errorMsg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
@@ -330,5 +382,6 @@ serve(async (req) => {
     );
   } finally {
     if (proxyClient) proxyClient.close();
+    if (directClient) directClient.close();
   }
 });
