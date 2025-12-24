@@ -5,11 +5,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Correct VTB Auth URL (from vtb-create-payment)
-const VTB_AUTH_URL = "https://epa.api.vtb.ru:443/passport/oauth2/token";
-const VTB_HOST = "epa.api.vtb.ru";
+// VTB Auth URLs to try
+const VTB_AUTH_URLS = [
+  "https://epa.api.vtb.ru/passport/oauth2/token",     // Primary (without explicit :443)
+  "https://open.api.vtb.ru/passport/oauth2/token",    // Alternative Open API
+  "https://api.vtb.ru/passport/oauth2/token",         // Simple domain
+];
 
-// Alternative VTB domain (sandbox register.do API)
+// Sandbox domain for connectivity test
 const VTB_ALT_URL = "https://vtb.rbsuat.com/payment/rest/register.do";
 const VTB_ALT_HOST = "vtb.rbsuat.com";
 
@@ -125,9 +128,11 @@ serve(async (req) => {
     const clientSecret = Deno.env.get('VTB_CLIENT_SECRET');
     result.vtbCredentialsConfigured = !!(clientId && clientSecret);
 
-    // DNS check (does this runtime resolve the VTB domain?)
+    // DNS check for first URL
+    const firstUrl = new URL(VTB_AUTH_URLS[0]);
+    const vtbHost = firstUrl.hostname;
     try {
-      const addrs = await Deno.resolveDns(VTB_HOST, 'A');
+      const addrs = await Deno.resolveDns(vtbHost, 'A');
       result.dnsAddresses = addrs;
       result.dnsResolved = addrs.length > 0;
     } catch (err) {
@@ -157,44 +162,47 @@ serve(async (req) => {
         result.proxyReachableError = err instanceof Error ? err.message : String(err);
       }
 
-      // Test proxy connection to VTB (CONNECT tunnel)
-      try {
-        console.log('Testing proxy CONNECT tunnel to VTB...');
-        const resp = await fetch(VTB_AUTH_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: 'grant_type=client_credentials',
-          client: proxyClient,
-        } as any);
-        // Even 401 means network works
-        result.proxyConnectSuccess = true;
-        console.log('Proxy CONNECT success, HTTP status:', resp.status);
-      } catch (err) {
-        result.proxyConnectSuccess = false;
-        const errorMsg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-        result.proxyError = errorMsg;
-        console.error('Proxy CONNECT failed:', errorMsg);
-        if (err instanceof Error && err.stack) {
-          console.error('Stack:', err.stack);
+      // Test proxy connection to VTB (CONNECT tunnel) - try multiple URLs
+      for (const testUrl of VTB_AUTH_URLS) {
+        try {
+          console.log('Testing proxy CONNECT tunnel to:', testUrl);
+          const resp = await fetch(testUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'grant_type=client_credentials',
+            client: proxyClient,
+          } as any);
+          // Even 401 means network works
+          result.proxyConnectSuccess = true;
+          console.log('Proxy CONNECT success to', testUrl, 'HTTP status:', resp.status);
+          break; // Stop on first success
+        } catch (err) {
+          result.proxyConnectSuccess = false;
+          const errorMsg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+          result.proxyError = `${testUrl}: ${errorMsg}`;
+          console.error('Proxy CONNECT failed to', testUrl, ':', errorMsg);
         }
       }
     }
 
-    // Test direct connection (without proxy)
-    try {
-      console.log('Testing direct connection to VTB (no proxy)...');
-      const resp = await fetch(VTB_AUTH_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'grant_type=client_credentials',
-      });
-      result.directConnectSuccess = true;
-      console.log('Direct connection success, HTTP status:', resp.status);
-    } catch (err) {
-      result.directConnectSuccess = false;
-      const errorMsg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-      result.directError = errorMsg;
-      console.error('Direct connection failed:', errorMsg);
+    // Test direct connection (without proxy) - try multiple URLs
+    for (const testUrl of VTB_AUTH_URLS) {
+      try {
+        console.log('Testing direct connection to:', testUrl);
+        const resp = await fetch(testUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'grant_type=client_credentials',
+        });
+        result.directConnectSuccess = true;
+        console.log('Direct connection success to', testUrl, 'HTTP status:', resp.status);
+        break; // Stop on first success
+      } catch (err) {
+        result.directConnectSuccess = false;
+        const errorMsg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+        result.directError = `${testUrl}: ${errorMsg}`;
+        console.error('Direct connection failed to', testUrl, ':', errorMsg);
+      }
     }
 
     // ============ TEST ALTERNATIVE DOMAIN (platezh.vtb24.ru) ============
@@ -241,9 +249,8 @@ serve(async (req) => {
       console.error('Alt domain direct failed:', result.altDomainDirectError);
     }
 
-    // Try VTB OAuth with real credentials
+    // Try VTB OAuth with real credentials - try multiple URLs
     if (result.vtbCredentialsConfigured) {
-      // Use format from vtb-create-payment: x-www-form-urlencoded with client_id/client_secret in body
       const body = new URLSearchParams({
         grant_type: 'client_credentials',
         client_id: clientId!,
@@ -254,36 +261,42 @@ serve(async (req) => {
       
       console.log('Testing VTB OAuth with real credentials via', useProxy ? 'proxy' : 'direct');
 
-      try {
-        const fetchOpts: any = {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: body.toString(),
-        };
-        if (useProxy) fetchOpts.client = proxyClient;
+      for (const testUrl of VTB_AUTH_URLS) {
+        try {
+          console.log('Trying OAuth at:', testUrl);
+          const fetchOpts: any = {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: body.toString(),
+          };
+          if (useProxy) fetchOpts.client = proxyClient;
 
-        const resp = await fetch(VTB_AUTH_URL, fetchOpts);
-        const respText = await resp.text();
-        console.log('VTB OAuth response status:', resp.status, 'body:', respText.slice(0, 300));
-        
-        if (resp.ok) {
-          result.vtbAuthSuccess = true;
-          try {
-            const data = JSON.parse(respText);
-            result.vtbAuthError = `Success! expires_in: ${data.expires_in}`;
-          } catch {
-            result.vtbAuthError = 'Success (non-JSON response)';
+          const resp = await fetch(testUrl, fetchOpts);
+          const respText = await resp.text();
+          console.log('VTB OAuth response from', testUrl, 'status:', resp.status, 'body:', respText.slice(0, 300));
+          
+          if (resp.ok) {
+            result.vtbAuthSuccess = true;
+            try {
+              const data = JSON.parse(respText);
+              result.vtbAuthError = `Success from ${testUrl}! expires_in: ${data.expires_in}`;
+            } catch {
+              result.vtbAuthError = `Success from ${testUrl} (non-JSON response)`;
+            }
+            break; // Stop on success
+          } else {
+            result.vtbAuthSuccess = false;
+            result.vtbAuthError = `${testUrl}: HTTP ${resp.status}: ${respText.slice(0, 200)}`;
+            // Continue trying other URLs
           }
-        } else {
+        } catch (err) {
           result.vtbAuthSuccess = false;
-          result.vtbAuthError = `HTTP ${resp.status}: ${respText.slice(0, 200)}`;
+          result.vtbAuthError = `${testUrl}: ${err instanceof Error ? err.message : String(err)}`;
+          console.error('VTB OAuth error at', testUrl, ':', result.vtbAuthError);
+          // Continue trying other URLs
         }
-      } catch (err) {
-        result.vtbAuthSuccess = false;
-        result.vtbAuthError = err instanceof Error ? err.message : String(err);
-        console.error('VTB OAuth error:', result.vtbAuthError);
       }
     }
 
