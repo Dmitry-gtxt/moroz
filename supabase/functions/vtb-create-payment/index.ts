@@ -65,7 +65,7 @@ function createProxyClient(): Deno.HttpClient | undefined {
     proxyUrlWithCreds.password = password;
   }
 
-  console.log('Using proxy host:', proxyUrl.host);
+  console.log('Using proxy host:', proxyUrl.host, 'auth:', username ? 'yes' : 'no');
 
   return Deno.createHttpClient({
     proxy: {
@@ -95,7 +95,21 @@ async function getVtbAccessToken(client?: Deno.HttpClient): Promise<string> {
 
   if (client) fetchOptions.client = client;
 
-  const response = await fetch(VTB_AUTH_URL, fetchOptions);
+  let response: Response;
+  try {
+    response = await fetch(VTB_AUTH_URL, fetchOptions);
+  } catch (err) {
+    if (client) {
+      console.warn(
+        'VTB auth via proxy failed, retrying without proxy:',
+        err instanceof Error ? err.message : err,
+      );
+      const { client: _client, ...optsNoClient } = fetchOptions as any;
+      response = await fetch(VTB_AUTH_URL, optsNoClient);
+    } else {
+      throw err;
+    }
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -196,8 +210,25 @@ serve(async (req) => {
 
     if (proxyClient) fetchOptions.client = proxyClient;
 
-    const invoiceResponse = await fetch(VTB_INVOICE_URL, fetchOptions);
-    const invoiceData = await invoiceResponse.json();
+    let invoiceResponse: Response;
+    let invoiceData: any;
+
+    try {
+      invoiceResponse = await fetch(VTB_INVOICE_URL, fetchOptions);
+    } catch (err) {
+      if (proxyClient) {
+        console.warn(
+          'VTB invoice via proxy failed, retrying without proxy:',
+          err instanceof Error ? err.message : err,
+        );
+        const { client: _client, ...optsNoClient } = fetchOptions as any;
+        invoiceResponse = await fetch(VTB_INVOICE_URL, optsNoClient);
+      } else {
+        throw err;
+      }
+    }
+
+    invoiceData = await invoiceResponse.json();
 
     console.log('VTB invoice response status:', invoiceResponse.status);
 
