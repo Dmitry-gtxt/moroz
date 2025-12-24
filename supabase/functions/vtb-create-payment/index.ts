@@ -104,40 +104,10 @@ fLan
 let cachedRussianCAs: string[] | null = null;
 
 async function getRussianCAs(): Promise<string[]> {
-  if (cachedRussianCAs) return cachedRussianCAs;
-
-  const certificates: string[] = [];
-  
-  // Try to fetch from official sources
-  for (const url of RUSSIAN_CA_URLS) {
-    try {
-      console.log('Fetching Russian CA from:', url);
-      const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
-      if (resp.ok) {
-        const cert = await resp.text();
-        if (cert.includes('-----BEGIN CERTIFICATE-----')) {
-          certificates.push(cert);
-          console.log('Fetched CA certificate from', url, 'length:', cert.length);
-        }
-      }
-    } catch (err) {
-      console.warn('Failed to fetch CA from', url, ':', err instanceof Error ? err.message : err);
-    }
-  }
-
-  // Always include embedded certificates as fallback
-  if (!certificates.some(c => c.includes('Russian Trusted Root CA'))) {
-    certificates.push(EMBEDDED_RUSSIAN_ROOT_CA);
-    console.log('Added embedded Russian Trusted Root CA');
-  }
-  if (!certificates.some(c => c.includes('Russian Trusted Sub CA'))) {
-    certificates.push(EMBEDDED_RUSSIAN_SUB_CA);
-    console.log('Added embedded Russian Trusted Sub CA');
-  }
-
-  cachedRussianCAs = certificates;
-  console.log('Total Russian CA certificates loaded:', certificates.length);
-  return certificates;
+  // Temporarily disable custom CA certificates due to parsing issues
+  // VTB production might work with standard SSL if they use globally trusted CAs
+  console.log('Custom CA certificates disabled for testing');
+  return [];
 }
 
 function createDirectClientWithCA(caCerts: string[]): Deno.HttpClient | undefined {
