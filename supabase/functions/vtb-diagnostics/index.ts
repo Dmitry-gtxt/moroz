@@ -11,7 +11,10 @@ const VTB_HOST = new URL(VTB_AUTH_URL).hostname;
 interface DiagnosticResult {
   proxyConfigured: boolean;
   proxyHost: string | null;
+  proxyPort: number | null;
   proxyAuthConfigured: boolean;
+  proxyReachable: boolean | null;
+  proxyReachableError: string | null;
   proxyConnectSuccess: boolean | null;
   proxyError: string | null;
   directConnectSuccess: boolean | null;
@@ -24,7 +27,7 @@ interface DiagnosticResult {
   vtbAuthError: string | null;
 }
 
-function createProxyClient(): { client: Deno.HttpClient; host: string; hasAuth: boolean } | null {
+function createProxyClient(): { client: Deno.HttpClient; host: string; port: number; hasAuth: boolean } | null {
   const rawProxyUrl = (Deno.env.get('PROXY_URL') || '').trim();
   const proxyUserEnv = (Deno.env.get('PROXY_USER') || '').trim();
   const proxyPassEnv = (Deno.env.get('PROXY_PASS') || '').trim();
@@ -57,11 +60,14 @@ function createProxyClient(): { client: Deno.HttpClient; host: string; hasAuth: 
     proxyUrlWithCreds.password = password;
   }
 
+  const port = proxyUrl.port ? parseInt(proxyUrl.port, 10) : (proxyUrl.protocol === 'https:' ? 443 : 80);
+
   return {
     client: Deno.createHttpClient({
       proxy: { url: proxyUrlWithCreds.toString() },
     }),
-    host: proxyUrl.host,
+    host: proxyUrl.hostname,
+    port,
     hasAuth: !!(username && password),
   };
 }
@@ -74,7 +80,10 @@ serve(async (req) => {
   const result: DiagnosticResult = {
     proxyConfigured: false,
     proxyHost: null,
+    proxyPort: null,
     proxyAuthConfigured: false,
+    proxyReachable: null,
+    proxyReachableError: null,
     proxyConnectSuccess: null,
     proxyError: null,
     directConnectSuccess: null,
@@ -110,10 +119,24 @@ serve(async (req) => {
     if (proxyInfo) {
       result.proxyConfigured = true;
       result.proxyHost = proxyInfo.host;
+      result.proxyPort = proxyInfo.port;
       result.proxyAuthConfigured = proxyInfo.hasAuth;
       proxyClient = proxyInfo.client;
 
-      // Test proxy connection to VTB
+      // Test if proxy itself is reachable (TCP connect)
+      try {
+        const conn = await Deno.connect({
+          hostname: proxyInfo.host,
+          port: proxyInfo.port,
+        });
+        conn.close();
+        result.proxyReachable = true;
+      } catch (err) {
+        result.proxyReachable = false;
+        result.proxyReachableError = err instanceof Error ? err.message : String(err);
+      }
+
+      // Test proxy connection to VTB (CONNECT tunnel)
       try {
         const resp = await fetch(VTB_AUTH_URL, {
           method: 'POST',
@@ -174,6 +197,7 @@ serve(async (req) => {
 
     console.log('vtb-diagnostics', {
       proxyConfigured: result.proxyConfigured,
+      proxyReachable: result.proxyReachable,
       proxyConnectSuccess: result.proxyConnectSuccess,
       directConnectSuccess: result.directConnectSuccess,
       dnsResolved: result.dnsResolved,
