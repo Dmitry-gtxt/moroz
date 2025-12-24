@@ -12,8 +12,9 @@ const VTB_AUTH_URL_SANDBOX = "https://epa-ift-sbp.vtb.ru:443/passport/oauth2/tok
 const VTB_AUTH_URL_PROD = "https://open.api.vtb.ru:443/passport/oauth2/token";
 
 // API endpoints
+// Production API: https://gw.api.vtb.ru/openapi/smb/efcp/e-commerce/v1/{endpoint}
 const VTB_API_SANDBOX = "https://test3.api.vtb.ru:8443/openapi/smb/efcp/e-commerce/v1/orders";
-const VTB_API_PROD = "https://open.api.vtb.ru:443/openapi/smb/efcp/e-commerce/v1/orders";
+const VTB_API_PROD = "https://gw.api.vtb.ru/openapi/smb/efcp/e-commerce/v1/orders";
 const VTB_API_SANDBOX_HOST = "test3.api.vtb.ru";
 
 // Russian Trusted Root CA certificates (НУЦ Минцифры) - required for VTB production SSL

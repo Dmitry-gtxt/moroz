@@ -13,7 +13,7 @@ const VTB_API_URL_SANDBOX = "https://test3.api.vtb.ru:8443/openapi/smb/efcp/e-co
 
 // Production (из документации ВТБ Open API):
 const VTB_AUTH_URL_PROD = "https://open.api.vtb.ru:443/passport/oauth2/token";
-const VTB_API_URL_PROD = "https://open.api.vtb.ru:443/openapi/smb/efcp/e-commerce/v1/orders";
+const VTB_API_URL_PROD = "https://gw.api.vtb.ru/openapi/smb/efcp/e-commerce/v1/orders";
 
 // Use sandbox by default, can be switched via env var or per-request override
 const DEFAULT_USE_SANDBOX = Deno.env.get('VTB_USE_SANDBOX') !== 'false';
