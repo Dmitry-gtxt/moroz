@@ -295,7 +295,13 @@ serve(async (req) => {
     // Direct connection to API sandbox
     try {
       console.log('Testing direct connection to API Sandbox...');
-      const resp = await fetch(VTB_API_SANDBOX, { method: 'GET' });
+      const resp = await fetch(
+        VTB_API_SANDBOX,
+        ({
+          method: 'GET',
+          ...(directClient ? { client: directClient } : {}),
+        } as any),
+      );
       result.altDomainDirectSuccess = true;
       console.log('API Sandbox direct success, HTTP status:', resp.status);
     } catch (err) {
@@ -328,7 +334,10 @@ serve(async (req) => {
             },
             body: body.toString(),
           };
+
+          // IMPORTANT: when not using proxy, still use directClient with Russian CA
           if (useProxy) fetchOpts.client = proxyClient;
+          else if (directClient) fetchOpts.client = directClient;
 
           const resp = await fetch(testUrl, fetchOpts);
           const respText = await resp.text();

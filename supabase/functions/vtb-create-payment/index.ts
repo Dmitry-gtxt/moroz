@@ -18,6 +18,34 @@ const VTB_API_URL_PROD = "https://api.vtb.ru:443/openapi/smb/efcp/e-commerce/v1/
 // Use sandbox by default, can be switched via env var or per-request override
 const DEFAULT_USE_SANDBOX = Deno.env.get('VTB_USE_SANDBOX') !== 'false';
 
+// Russian Trusted Root CA (НУЦ Минцифры) - required for VTB sandbox SSL
+const RUSSIAN_CA_URL = "https://gu-st.ru/content/Other/doc/russiantrustedca.pem";
+let cachedRussianCA: string | null = null;
+
+async function getRussianCA(): Promise<string | null> {
+  if (cachedRussianCA) return cachedRussianCA;
+
+  try {
+    console.log('Fetching Russian Trusted Root CA...');
+    const resp = await fetch(RUSSIAN_CA_URL);
+    if (resp.ok) {
+      cachedRussianCA = await resp.text();
+      console.log('Russian CA certificate fetched successfully, length:', cachedRussianCA.length);
+      return cachedRussianCA;
+    }
+    console.error('Failed to fetch Russian CA:', resp.status);
+    return null;
+  } catch (err) {
+    console.error('Error fetching Russian CA:', err);
+    return null;
+  }
+}
+
+function createDirectClientWithCA(caCerts?: string[]): Deno.HttpClient | undefined {
+  if (!caCerts || caCerts.length === 0) return undefined;
+  return Deno.createHttpClient({ caCerts });
+}
+
 interface CreatePaymentRequest {
   bookingId: string;
   amount: number; // в копейках
