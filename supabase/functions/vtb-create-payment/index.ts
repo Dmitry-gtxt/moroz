@@ -96,18 +96,26 @@ async function getVtbAccessToken(client?: Deno.HttpClient): Promise<string> {
   if (client) fetchOptions.client = client;
 
   let response: Response;
+  let proxyError: unknown;
+
   try {
     response = await fetch(VTB_AUTH_URL, fetchOptions);
   } catch (err) {
-    if (client) {
-      console.warn(
-        'VTB auth via proxy failed, retrying without proxy:',
-        err instanceof Error ? err.message : err,
-      );
+    if (!client) throw err;
+
+    proxyError = err;
+    console.warn(
+      'VTB auth via proxy failed, retrying without proxy:',
+      err instanceof Error ? err.message : err,
+    );
+
+    try {
       const { client: _client, ...optsNoClient } = fetchOptions as any;
       response = await fetch(VTB_AUTH_URL, optsNoClient);
-    } else {
-      throw err;
+    } catch (directErr) {
+      const pe = proxyError instanceof Error ? proxyError.message : String(proxyError);
+      const de = directErr instanceof Error ? directErr.message : String(directErr);
+      throw new Error(`VTB auth failed. Proxy error: ${pe}. Direct error: ${de}`);
     }
   }
 
@@ -212,19 +220,26 @@ serve(async (req) => {
 
     let invoiceResponse: Response;
     let invoiceData: any;
+    let proxyError: unknown;
 
     try {
       invoiceResponse = await fetch(VTB_INVOICE_URL, fetchOptions);
     } catch (err) {
-      if (proxyClient) {
-        console.warn(
-          'VTB invoice via proxy failed, retrying without proxy:',
-          err instanceof Error ? err.message : err,
-        );
+      if (!proxyClient) throw err;
+
+      proxyError = err;
+      console.warn(
+        'VTB invoice via proxy failed, retrying without proxy:',
+        err instanceof Error ? err.message : err,
+      );
+
+      try {
         const { client: _client, ...optsNoClient } = fetchOptions as any;
         invoiceResponse = await fetch(VTB_INVOICE_URL, optsNoClient);
-      } else {
-        throw err;
+      } catch (directErr) {
+        const pe = proxyError instanceof Error ? proxyError.message : String(proxyError);
+        const de = directErr instanceof Error ? directErr.message : String(directErr);
+        throw new Error(`VTB invoice failed. Proxy error: ${pe}. Direct error: ${de}`);
       }
     }
 
