@@ -58,7 +58,7 @@ export function PartnersSection() {
   return (
     <section className="py-10 md:py-14 bg-snow-100">
       <div className={isMobile ? 'px-0' : 'container'}>
-        <h2 className="text-center text-xl md:text-2xl font-display font-semibold text-winter-900 mb-4">
+        <h2 className="text-center text-xl md:text-2xl font-display font-semibold text-winter-900 mb-1.5">
           Наши партнёры
         </h2>
         
