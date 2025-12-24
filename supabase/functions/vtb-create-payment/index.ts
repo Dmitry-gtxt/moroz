@@ -104,10 +104,9 @@ fLan
 let cachedRussianCAs: string[] | null = null;
 
 async function getRussianCAs(): Promise<string[]> {
-  // Temporarily disable custom CA certificates due to parsing issues
-  // VTB production might work with standard SSL if they use globally trusted CAs
-  console.log('Custom CA certificates disabled for testing');
-  return [];
+  // Use only the embedded root CA - it's the official Russian Trusted Root CA
+  console.log('Using embedded Russian Trusted Root CA');
+  return [EMBEDDED_RUSSIAN_ROOT_CA];
 }
 
 function createDirectClientWithCA(caCerts: string[]): Deno.HttpClient | undefined {
