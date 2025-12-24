@@ -90,15 +90,13 @@ export function PartnersSection() {
                 key={index}
                 className="flex-shrink-0 flex flex-col items-center"
               >
-                <div className={`${logoSize} flex items-center justify-center bg-white rounded-xl p-2 shadow-sm`}>
-                  <img
-                    src={partner.src}
-                    alt={partner.alt}
-                    className="max-w-full max-h-full object-contain"
-                    onLoad={checkScroll}
-                  />
-                </div>
-                <span className="mt-2 text-xs text-winter-600 text-center whitespace-nowrap">
+                <img
+                  src={partner.src}
+                  alt={partner.alt}
+                  className={`${logoSize} object-contain`}
+                  onLoad={checkScroll}
+                />
+                <span className="mt-1 text-xs text-winter-600 text-center whitespace-nowrap">
                   {partner.label}
                 </span>
               </div>
