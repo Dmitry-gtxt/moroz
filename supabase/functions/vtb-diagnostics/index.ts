@@ -5,12 +5,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VTB_AUTH_URL = "https://payment-gateway-api.vtb.ru/oauth/token";
-const VTB_HOST = new URL(VTB_AUTH_URL).hostname;
+// Correct VTB Auth URL (from vtb-create-payment)
+const VTB_AUTH_URL = "https://epa.api.vtb.ru:443/passport/oauth2/token";
+const VTB_HOST = "epa.api.vtb.ru";
 
-// Alternative VTB domain (register.do API)
-const VTB_ALT_URL = "https://platezh.vtb24.ru/payment/rest/register.do";
-const VTB_ALT_HOST = new URL(VTB_ALT_URL).hostname;
+// Alternative VTB domain (sandbox register.do API)
+const VTB_ALT_URL = "https://vtb.rbsuat.com/payment/rest/register.do";
+const VTB_ALT_HOST = "vtb.rbsuat.com";
 
 interface DiagnosticResult {
   proxyConfigured: boolean;
@@ -240,32 +241,49 @@ serve(async (req) => {
       console.error('Alt domain direct failed:', result.altDomainDirectError);
     }
 
-    if (result.vtbCredentialsConfigured && (result.proxyConnectSuccess || result.directConnectSuccess)) {
-      const credentials = btoa(`${clientId}:${clientSecret}`);
+    // Try VTB OAuth with real credentials
+    if (result.vtbCredentialsConfigured) {
+      // Use format from vtb-create-payment: x-www-form-urlencoded with client_id/client_secret in body
+      const body = new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: clientId!,
+        client_secret: clientSecret!,
+      });
+
       const useProxy = result.proxyConnectSuccess && proxyClient;
+      
+      console.log('Testing VTB OAuth with real credentials via', useProxy ? 'proxy' : 'direct');
 
       try {
         const fetchOpts: any = {
           method: 'POST',
           headers: {
-            'Authorization': `Basic ${credentials}`,
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-          body: 'grant_type=client_credentials',
+          body: body.toString(),
         };
         if (useProxy) fetchOpts.client = proxyClient;
 
         const resp = await fetch(VTB_AUTH_URL, fetchOpts);
+        const respText = await resp.text();
+        console.log('VTB OAuth response status:', resp.status, 'body:', respText.slice(0, 300));
+        
         if (resp.ok) {
           result.vtbAuthSuccess = true;
+          try {
+            const data = JSON.parse(respText);
+            result.vtbAuthError = `Success! expires_in: ${data.expires_in}`;
+          } catch {
+            result.vtbAuthError = 'Success (non-JSON response)';
+          }
         } else {
           result.vtbAuthSuccess = false;
-          const text = await resp.text();
-          result.vtbAuthError = `HTTP ${resp.status}: ${text.slice(0, 200)}`;
+          result.vtbAuthError = `HTTP ${resp.status}: ${respText.slice(0, 200)}`;
         }
       } catch (err) {
         result.vtbAuthSuccess = false;
         result.vtbAuthError = err instanceof Error ? err.message : String(err);
+        console.error('VTB OAuth error:', result.vtbAuthError);
       }
     }
 
