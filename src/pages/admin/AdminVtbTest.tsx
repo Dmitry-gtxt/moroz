@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Play, CheckCircle2, XCircle, ExternalLink, Copy, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
-
+import { supabase } from '@/integrations/supabase/client';
 interface TestResult {
   success: boolean;
   response?: any;
@@ -60,74 +60,53 @@ export default function AdminVtbTest() {
     const startTime = Date.now();
 
     try {
-      let response;
+      let requestBody: Record<string, any>;
       
       if (testId === 'register') {
-        // Test register.do
-        const params = new URLSearchParams({
-          userName: SANDBOX_USER,
-          password: SANDBOX_PASSWORD,
+        requestBody = {
+          action: 'register',
           amount: amount,
-          currency: '643',
           orderNumber: orderNumber,
           returnUrl: `${window.location.origin}/cabinet/payment?success=true`,
           failUrl: `${window.location.origin}/cabinet/payment?success=false`,
-          description: 'Тестовый платёж из админки',
-          language: 'ru',
-        });
-
-        response = await fetch(`${SANDBOX_URL}/register.do`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: params.toString(),
-        });
-
+        };
       } else if (testId === 'status') {
-        // Get orderId from previous register test
         const registerResult = results['register'];
         if (!registerResult?.response?.orderId) {
           throw new Error('Сначала выполните тест регистрации заказа');
         }
-
-        const params = new URLSearchParams({
-          userName: SANDBOX_USER,
-          password: SANDBOX_PASSWORD,
+        requestBody = {
+          action: 'status',
           orderId: registerResult.response.orderId,
-        });
-
-        response = await fetch(`${SANDBOX_URL}/getOrderStatusExtended.do`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: params.toString(),
-        });
-      }
-
-      if (!response) {
+        };
+      } else {
         throw new Error('Неизвестный тест');
       }
 
-      const data = await response.json();
-      const duration = Date.now() - startTime;
+      const { data, error } = await supabase.functions.invoke('vtb-sandbox-test', {
+        body: requestBody,
+      });
 
-      const success = data.errorCode === 0 || data.errorCode === '0' || data.orderId;
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const duration = Date.now() - startTime;
 
       setResults(prev => ({
         ...prev,
         [testId]: {
-          success,
-          response: data,
+          success: data.success,
+          response: data.response,
           duration,
         },
       }));
 
-      if (success) {
+      if (data.success) {
         toast.success(`Тест "${testId}" пройден успешно`);
       } else {
-        toast.error(`Тест "${testId}" завершился с ошибкой: ${data.errorMessage || 'Неизвестная ошибка'}`);
+        const errorMsg = data.response?.errorMessage || data.error || 'Неизвестная ошибка';
+        toast.error(`Тест "${testId}" завершился с ошибкой: ${errorMsg}`);
       }
 
     } catch (error: any) {
