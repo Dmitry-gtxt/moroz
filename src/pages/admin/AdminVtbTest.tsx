@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, CheckCircle2, XCircle, ExternalLink, Copy, CreditCard } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Play, CheckCircle2, XCircle, ExternalLink, Copy, CreditCard, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+
 interface TestResult {
   success: boolean;
   response?: any;
@@ -18,14 +20,19 @@ interface TestResult {
 export default function AdminVtbTest() {
   const [loading, setLoading] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, TestResult>>({});
+  const [openApiResults, setOpenApiResults] = useState<Record<string, TestResult>>({});
   
   // Test form data
   const [amount, setAmount] = useState('10000');
   const [orderNumber, setOrderNumber] = useState(`TEST_${Date.now()}`);
   
-  // Credentials - user can enter their own
+  // Credentials - user can enter their own for REST API sandbox
   const [userName, setUserName] = useState('');
   const [password, setPassword] = useState('');
+  
+  // Open API test data
+  const [openApiAmount, setOpenApiAmount] = useState('10000');
+  const [openApiDescription, setOpenApiDescription] = useState('Тестовый платёж');
 
   // Sandbox URL
   const SANDBOX_URL = 'https://vtb.rbsuat.com/payment/rest';
@@ -142,6 +149,84 @@ export default function AdminVtbTest() {
     }
   };
 
+  // Open API test (uses VTB_CLIENT_ID/VTB_CLIENT_SECRET from secrets)
+  const runOpenApiTest = async (testId: string) => {
+    setLoading(`openapi_${testId}`);
+    const startTime = Date.now();
+
+    try {
+      if (testId === 'auth') {
+        // Test authentication only
+        const { data, error } = await supabase.functions.invoke('vtb-diagnostics', {
+          body: {},
+        });
+
+        if (error) throw new Error(error.message);
+
+        const duration = Date.now() - startTime;
+        setOpenApiResults(prev => ({
+          ...prev,
+          [testId]: {
+            success: data.vtb_auth?.success || false,
+            response: data,
+            duration,
+          },
+        }));
+
+        if (data.vtb_auth?.success) {
+          toast.success('VTB OAuth авторизация успешна');
+        } else {
+          toast.error(`Ошибка OAuth: ${data.vtb_auth?.error || 'Unknown'}`);
+        }
+      } else if (testId === 'create_payment') {
+        // Create a test booking first, then try to create payment
+        // For now, we'll test with a mock booking ID
+        const testBookingId = crypto.randomUUID();
+        
+        const { data, error } = await supabase.functions.invoke('vtb-create-payment', {
+          body: {
+            bookingId: testBookingId,
+            amount: parseInt(openApiAmount),
+            description: openApiDescription,
+            customerEmail: 'test@example.com',
+            customerPhone: '+79991234567',
+          },
+        });
+
+        if (error) throw new Error(error.message);
+
+        const duration = Date.now() - startTime;
+        setOpenApiResults(prev => ({
+          ...prev,
+          [testId]: {
+            success: data.success || false,
+            response: data,
+            duration,
+          },
+        }));
+
+        if (data.success && data.paymentUrl) {
+          toast.success('Платёж создан успешно');
+        } else {
+          toast.error(`Ошибка создания платежа: ${data.error || 'Unknown'}`);
+        }
+      }
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      setOpenApiResults(prev => ({
+        ...prev,
+        [testId]: {
+          success: false,
+          error: error.message,
+          duration,
+        },
+      }));
+      toast.error(`Ошибка: ${error.message}`);
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const getStatusBadge = (orderStatus: number) => {
     const statuses: Record<number, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
       0: { label: 'Зарегистрирован', variant: 'outline' },
@@ -162,9 +247,232 @@ export default function AdminVtbTest() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Тестирование VTB API</h1>
           <p className="text-muted-foreground mt-1">
-            Песочница платёжного шлюза VTB (vtb.rbsuat.com)
+            Тестирование интеграции с платёжным шлюзом VTB
           </p>
         </div>
+
+        <Tabs defaultValue="openapi" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="openapi" className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              Open API (Production)
+            </TabsTrigger>
+            <TabsTrigger value="sandbox" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              REST API Sandbox
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Open API Tab - Uses VTB_CLIENT_ID / VTB_CLIENT_SECRET */}
+          <TabsContent value="openapi" className="space-y-6 mt-6">
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-primary" />
+                  VTB Open API (eCommerce v1)
+                </CardTitle>
+                <CardDescription>
+                  Используются ваши VTB_CLIENT_ID и VTB_CLIENT_SECRET из секретов проекта.
+                  OAuth2 авторизация через epa.api.vtb.ru
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="openApiAmount">Сумма (в копейках)</Label>
+                    <Input 
+                      id="openApiAmount"
+                      value={openApiAmount}
+                      onChange={(e) => setOpenApiAmount(e.target.value)}
+                      placeholder="10000"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      10000 копеек = 100 рублей
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="openApiDescription">Описание</Label>
+                    <Input 
+                      id="openApiDescription"
+                      value={openApiDescription}
+                      onChange={(e) => setOpenApiDescription(e.target.value)}
+                      placeholder="Описание платежа"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Open API Tests */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Тесты Open API</CardTitle>
+                <CardDescription>
+                  Тестирование OAuth авторизации и создания платежа
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Auth Test */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-medium">Тест 1: OAuth Авторизация</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Получение access_token через VTB Passport
+                      </p>
+                      <code className="text-xs bg-muted px-2 py-0.5 rounded mt-1 inline-block">
+                        POST epa.api.vtb.ru/passport/oauth2/token
+                      </code>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {openApiResults['auth'] && (
+                        <div className="flex items-center gap-2">
+                          {openApiResults['auth'].success ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-500" />
+                          )}
+                          {openApiResults['auth'].duration && (
+                            <span className="text-xs text-muted-foreground">
+                              {openApiResults['auth'].duration}ms
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <Button 
+                        size="sm" 
+                        onClick={() => runOpenApiTest('auth')}
+                        disabled={loading === 'openapi_auth'}
+                      >
+                        {loading === 'openapi_auth' ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {openApiResults['auth'] && (
+                    <div className="mt-3 space-y-2">
+                      {openApiResults['auth'].error ? (
+                        <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded text-sm text-red-600 dark:text-red-400">
+                          {openApiResults['auth'].error}
+                        </div>
+                      ) : openApiResults['auth'].response && (
+                        <div className="space-y-2">
+                          {openApiResults['auth'].response.vtb_auth?.success && (
+                            <div className="flex items-center gap-2">
+                              <Badge variant="default">Авторизация успешна</Badge>
+                              <span className="text-xs text-muted-foreground">
+                                expires_in: {openApiResults['auth'].response.vtb_auth.expires_in}s
+                              </span>
+                            </div>
+                          )}
+                          <details className="mt-2">
+                            <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground">
+                              Полный ответ JSON
+                            </summary>
+                            <pre className="mt-2 p-3 bg-muted rounded text-xs overflow-auto max-h-60">
+                              {JSON.stringify(openApiResults['auth'].response, null, 2)}
+                            </pre>
+                          </details>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Create Payment Test */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-medium">Тест 2: Создание платежа</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Создание заказа через VTB eCommerce API
+                      </p>
+                      <code className="text-xs bg-muted px-2 py-0.5 rounded mt-1 inline-block">
+                        POST api.vtb.ru/openapi/smb/efcp/e-commerce/v1/orders
+                      </code>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {openApiResults['create_payment'] && (
+                        <div className="flex items-center gap-2">
+                          {openApiResults['create_payment'].success ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-500" />
+                          )}
+                          {openApiResults['create_payment'].duration && (
+                            <span className="text-xs text-muted-foreground">
+                              {openApiResults['create_payment'].duration}ms
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <Button 
+                        size="sm" 
+                        onClick={() => runOpenApiTest('create_payment')}
+                        disabled={loading === 'openapi_create_payment'}
+                      >
+                        {loading === 'openapi_create_payment' ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {openApiResults['create_payment'] && (
+                    <div className="mt-3 space-y-2">
+                      {openApiResults['create_payment'].error ? (
+                        <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded text-sm text-red-600 dark:text-red-400">
+                          {openApiResults['create_payment'].error}
+                        </div>
+                      ) : openApiResults['create_payment'].response && (
+                        <div className="space-y-2">
+                          {openApiResults['create_payment'].response.paymentUrl && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">Ссылка на оплату:</span>
+                              <a 
+                                href={openApiResults['create_payment'].response.paymentUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-sm text-primary hover:underline flex items-center gap-1"
+                              >
+                                Открыть форму оплаты
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </div>
+                          )}
+                          {openApiResults['create_payment'].response.orderId && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">orderId:</span>
+                              <code className="text-sm bg-muted px-2 py-0.5 rounded">
+                                {openApiResults['create_payment'].response.orderId}
+                              </code>
+                            </div>
+                          )}
+                          <details className="mt-2">
+                            <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground">
+                              Полный ответ JSON
+                            </summary>
+                            <pre className="mt-2 p-3 bg-muted rounded text-xs overflow-auto max-h-60">
+                              {JSON.stringify(openApiResults['create_payment'].response, null, 2)}
+                            </pre>
+                          </details>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* REST API Sandbox Tab */}
+          <TabsContent value="sandbox" className="space-y-6 mt-6">
 
         {/* Connection Info */}
         <Card>
@@ -474,6 +782,8 @@ export default function AdminVtbTest() {
             </div>
           </CardContent>
         </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </AdminLayout>
   );
