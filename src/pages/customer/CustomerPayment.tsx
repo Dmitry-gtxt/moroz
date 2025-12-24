@@ -24,6 +24,9 @@ interface DiagnosticResult {
   proxyError: string | null;
   directConnectSuccess: boolean | null;
   directError: string | null;
+  dnsResolved: boolean | null;
+  dnsAddresses: string[] | null;
+  dnsError: string | null;
   vtbCredentialsConfigured: boolean;
   vtbAuthSuccess: boolean | null;
   vtbAuthError: string | null;
@@ -143,7 +146,7 @@ export default function CustomerPayment() {
   const StatusIcon = ({ ok }: { ok: boolean | null }) => {
     if (ok === null) return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
     return ok ? (
-      <CheckCircle2 className="h-4 w-4 text-green-600" />
+      <CheckCircle2 className="h-4 w-4 text-primary" />
     ) : (
       <XCircle className="h-4 w-4 text-destructive" />
     );
@@ -322,6 +325,25 @@ export default function CustomerPayment() {
                   </div>
                 )}
 
+                {/* DNS */}
+                <div className="flex items-center gap-2">
+                  <StatusIcon ok={diagnosticsResult.dnsResolved} />
+                  <span>DNS домена ВТБ</span>
+                  {diagnosticsResult.dnsResolved ? (
+                    <span className="text-muted-foreground">
+                      — {diagnosticsResult.dnsAddresses?.slice(0, 3).join(', ') || 'OK'}
+                      {diagnosticsResult.dnsAddresses && diagnosticsResult.dnsAddresses.length > 3 ? '…' : ''}
+                    </span>
+                  ) : diagnosticsResult.dnsResolved === false && diagnosticsResult.dnsError ? (
+                    <span
+                      className="text-destructive text-xs truncate max-w-[200px]"
+                      title={diagnosticsResult.dnsError}
+                    >
+                      — {diagnosticsResult.dnsError.slice(0, 50)}…
+                    </span>
+                  ) : null}
+                </div>
+
                 {/* Direct connection */}
                 <div className="flex items-center gap-2">
                   <StatusIcon ok={diagnosticsResult.directConnectSuccess} />
@@ -345,16 +367,25 @@ export default function CustomerPayment() {
                         </span>
                       )}
                       {diagnosticsResult.vtbAuthSuccess && (
-                        <span className="text-green-600">— OK</span>
+                        <span className="text-primary">— OK</span>
                       )}
                     </div>
                   )}
               </div>
 
               {/* Summary */}
+              <details className="pt-2 border-t border-border">
+                <summary className="cursor-pointer select-none text-muted-foreground">
+                  Показать детали
+                </summary>
+                <pre className="mt-2 max-h-56 overflow-auto rounded-md bg-muted/50 p-3 whitespace-pre-wrap break-words">
+                  {JSON.stringify(diagnosticsResult, null, 2)}
+                </pre>
+              </details>
+
               <div className="pt-2 border-t border-border text-muted-foreground text-xs">
                 {diagnosticsResult.vtbAuthSuccess ? (
-                  <span className="text-green-600 font-medium">Всё готово к оплате!</span>
+                  <span className="text-primary font-medium">Всё готово к оплате!</span>
                 ) : !diagnosticsResult.proxyConnectSuccess && !diagnosticsResult.directConnectSuccess ? (
                   <span>
                     Сервер не может достучаться до ВТБ ни через прокси, ни напрямую.{' '}
