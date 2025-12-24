@@ -8,10 +8,8 @@ const corsHeaders = {
 // VTB Auth URLs according to official documentation
 // Sandbox: https://epa-ift-sbp.vtb.ru:443/passport/oauth2/token
 // Production: https://epa.api.vtb.ru:443/passport/oauth2/token
-const VTB_AUTH_URLS = [
-  "https://epa-ift-sbp.vtb.ru:443/passport/oauth2/token",  // SANDBOX - official docs
-  "https://epa.api.vtb.ru:443/passport/oauth2/token",      // PRODUCTION
-];
+const VTB_AUTH_URL_SANDBOX = "https://epa-ift-sbp.vtb.ru:443/passport/oauth2/token";
+const VTB_AUTH_URL_PROD = "https://epa.api.vtb.ru:443/passport/oauth2/token";
 
 // API endpoints
 const VTB_API_SANDBOX = "https://test3.api.vtb.ru:8443/openapi/smb/efcp/e-commerce/v1/orders";
@@ -95,6 +93,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestBody: any = await req.json().catch(() => ({}));
+  const mode: 'sandbox' | 'prod' = requestBody?.mode === 'prod' ? 'prod' : 'sandbox';
+  const authUrls = mode === 'prod' ? [VTB_AUTH_URL_PROD] : [VTB_AUTH_URL_SANDBOX];
+
   const result: DiagnosticResult = {
     proxyConfigured: false,
     proxyHost: null,
@@ -130,7 +132,7 @@ serve(async (req) => {
     result.vtbCredentialsConfigured = !!(clientId && clientSecret);
 
     // DNS check for first URL
-    const firstUrl = new URL(VTB_AUTH_URLS[0]);
+    const firstUrl = new URL(authUrls[0]);
     const vtbHost = firstUrl.hostname;
     try {
       const addrs = await Deno.resolveDns(vtbHost, 'A');
@@ -163,8 +165,8 @@ serve(async (req) => {
         result.proxyReachableError = err instanceof Error ? err.message : String(err);
       }
 
-      // Test proxy connection to VTB (CONNECT tunnel) - try multiple URLs
-      for (const testUrl of VTB_AUTH_URLS) {
+      // Test proxy connection to VTB (CONNECT tunnel)
+      for (const testUrl of authUrls) {
         try {
           console.log('Testing proxy CONNECT tunnel to:', testUrl);
           const resp = await fetch(testUrl, {
@@ -186,8 +188,8 @@ serve(async (req) => {
       }
     }
 
-    // Test direct connection (without proxy) - try multiple URLs
-    for (const testUrl of VTB_AUTH_URLS) {
+    // Test direct connection (without proxy)
+    for (const testUrl of authUrls) {
       try {
         console.log('Testing direct connection to:', testUrl);
         const resp = await fetch(testUrl, {
@@ -250,7 +252,7 @@ serve(async (req) => {
       console.error('API Sandbox direct failed:', result.altDomainDirectError);
     }
 
-    // Try VTB OAuth with real credentials - try multiple URLs
+    // Try VTB OAuth with real credentials
     if (result.vtbCredentialsConfigured) {
       const body = new URLSearchParams({
         grant_type: 'client_credentials',
@@ -259,10 +261,12 @@ serve(async (req) => {
       });
 
       const useProxy = result.proxyConnectSuccess && proxyClient;
-      
-      console.log('Testing VTB OAuth with real credentials via', useProxy ? 'proxy' : 'direct');
+      let lastTriedUrl: string | null = null;
 
-      for (const testUrl of VTB_AUTH_URLS) {
+      console.log('Testing VTB OAuth with real credentials via', useProxy ? 'proxy' : 'direct', 'mode:', mode);
+
+      for (const testUrl of authUrls) {
+        lastTriedUrl = testUrl;
         try {
           console.log('Trying OAuth at:', testUrl);
           const fetchOpts: any = {
@@ -277,7 +281,7 @@ serve(async (req) => {
           const resp = await fetch(testUrl, fetchOpts);
           const respText = await resp.text();
           console.log('VTB OAuth response from', testUrl, 'status:', resp.status, 'body:', respText.slice(0, 300));
-          
+
           if (resp.ok) {
             result.vtbAuthSuccess = true;
             try {
@@ -286,19 +290,25 @@ serve(async (req) => {
             } catch {
               result.vtbAuthError = `Success from ${testUrl} (non-JSON response)`;
             }
-            break; // Stop on success
+            break;
           } else {
             result.vtbAuthSuccess = false;
             result.vtbAuthError = `${testUrl}: HTTP ${resp.status}: ${respText.slice(0, 200)}`;
-            // Continue trying other URLs
           }
         } catch (err) {
           result.vtbAuthSuccess = false;
           result.vtbAuthError = `${testUrl}: ${err instanceof Error ? err.message : String(err)}`;
           console.error('VTB OAuth error at', testUrl, ':', result.vtbAuthError);
-          // Continue trying other URLs
         }
       }
+
+      // Backward/forward compatible shape for UI
+      (result as any).vtb_auth = {
+        success: !!result.vtbAuthSuccess,
+        error: result.vtbAuthSuccess ? null : result.vtbAuthError,
+        url: lastTriedUrl,
+        mode,
+      };
     }
 
     console.log('vtb-diagnostics', {
