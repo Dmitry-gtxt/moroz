@@ -164,19 +164,25 @@ serve(async (req) => {
   let directClient: Deno.HttpClient | undefined;
 
   try {
-    // Fetch Russian CA for VTB sandbox SSL
-    const russianCA = await getRussianCA();
-    const caCerts = russianCA ? [russianCA] : undefined;
-    (result as any).russianCaLoaded = !!russianCA;
-    console.log('Russian CA loaded:', !!russianCA);
+    // Fetch Russian CA for VTB sandbox SSL (only needed for sandbox)
+    let caCerts: string[] | undefined;
+    if (mode === 'sandbox') {
+      const russianCA = await getRussianCA();
+      caCerts = russianCA ? [russianCA] : undefined;
+      (result as any).russianCaLoaded = !!russianCA;
+      console.log('Russian CA loaded for sandbox:', !!russianCA);
+    } else {
+      (result as any).russianCaLoaded = 'not_needed_for_prod';
+      console.log('Production mode - using standard SSL certificates');
+    }
 
     // Check VTB credentials
     const clientId = Deno.env.get('VTB_CLIENT_ID');
     const clientSecret = Deno.env.get('VTB_CLIENT_SECRET');
     result.vtbCredentialsConfigured = !!(clientId && clientSecret);
 
-    // Create direct client with Russian CA
-    if (caCerts) {
+    // Create direct client with Russian CA (only for sandbox)
+    if (caCerts && caCerts.length > 0) {
       directClient = createDirectClientWithCA(caCerts) || undefined;
     }
 

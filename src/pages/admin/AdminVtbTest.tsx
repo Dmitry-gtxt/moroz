@@ -149,6 +149,9 @@ export default function AdminVtbTest() {
     }
   };
 
+  // Production/Sandbox mode toggle
+  const [useProdMode, setUseProdMode] = useState(true); // Default to production now
+
   // Open API test (uses VTB_CLIENT_ID/VTB_CLIENT_SECRET from secrets)
   const runOpenApiTest = async (testId: string) => {
     setLoading(`openapi_${testId}`);
@@ -158,7 +161,7 @@ export default function AdminVtbTest() {
         if (testId === 'auth') {
           // Test authentication only
           const { data, error } = await supabase.functions.invoke('vtb-diagnostics', {
-            body: { mode: 'sandbox' },
+            body: { mode: useProdMode ? 'prod' : 'sandbox' },
           });
 
         if (error) throw new Error(error.message);
@@ -185,7 +188,7 @@ export default function AdminVtbTest() {
         
         const { data, error } = await supabase.functions.invoke('vtb-create-payment', {
           body: {
-            mode: 'sandbox',
+            mode: useProdMode ? 'prod' : 'sandbox',
             bookingId: testBookingId,
             amount: parseInt(openApiAmount),
             description: openApiDescription,
@@ -274,9 +277,37 @@ export default function AdminVtbTest() {
                 </CardTitle>
                 <CardDescription>
                   Используются ваши VTB_CLIENT_ID и VTB_CLIENT_SECRET из секретов проекта.
-                  OAuth2 авторизация через epa-ift-sbp.vtb.ru (sandbox)
+                  {useProdMode ? (
+                    <span className="text-green-600 font-medium"> PRODUCTION: epa.api.vtb.ru</span>
+                  ) : (
+                    <span className="text-yellow-600 font-medium"> SANDBOX: epa-ift-sbp.vtb.ru</span>
+                  )}
                 </CardDescription>
               </CardHeader>
+              <CardContent className="pb-4">
+                <div className="flex items-center gap-4">
+                  <Label htmlFor="prodMode" className="text-sm font-medium">Режим:</Label>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant={!useProdMode ? "default" : "outline"} 
+                      size="sm"
+                      onClick={() => setUseProdMode(false)}
+                    >
+                      Sandbox
+                    </Button>
+                    <Button 
+                      variant={useProdMode ? "default" : "outline"} 
+                      size="sm"
+                      onClick={() => setUseProdMode(true)}
+                    >
+                      Production
+                    </Button>
+                  </div>
+                  {useProdMode && (
+                    <Badge variant="destructive">БОЕВОЙ РЕЖИМ</Badge>
+                  )}
+                </div>
+              </CardContent>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
