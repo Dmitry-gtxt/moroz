@@ -54,6 +54,9 @@ interface CreatePaymentRequest {
   customerPhone?: string;
   // optional: override environment for testing
   mode?: 'sandbox' | 'prod';
+  // optional: override endpoints (helps when bank provides different prod hosts)
+  authUrlOverride?: string;
+  apiUrlOverride?: string;
 }
 
 // Create HTTP client with proxy support
@@ -186,15 +189,28 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { bookingId, amount, description, customerEmail, customerPhone, mode }: CreatePaymentRequest = await req.json();
+    const {
+      bookingId,
+      amount,
+      description,
+      customerEmail,
+      customerPhone,
+      mode,
+      authUrlOverride,
+      apiUrlOverride,
+    }: CreatePaymentRequest = await req.json();
 
     // Сумма должна быть в рублях с копейками (value: 10.56)
     const amountKopecks = Math.round(amount);
     const amountRub = amountKopecks / 100;
 
     const useSandbox = mode ? mode !== 'prod' : DEFAULT_USE_SANDBOX;
-    const VTB_AUTH_URL = useSandbox ? VTB_AUTH_URL_SANDBOX : VTB_AUTH_URL_PROD;
-    const VTB_API_URL = useSandbox ? VTB_API_URL_SANDBOX : VTB_API_URL_PROD;
+    const VTB_AUTH_URL = (authUrlOverride && authUrlOverride.trim())
+      ? authUrlOverride.trim()
+      : (useSandbox ? VTB_AUTH_URL_SANDBOX : VTB_AUTH_URL_PROD);
+    const VTB_API_URL = (apiUrlOverride && apiUrlOverride.trim())
+      ? apiUrlOverride.trim()
+      : (useSandbox ? VTB_API_URL_SANDBOX : VTB_API_URL_PROD);
 
     console.log(
       'Creating VTB payment for booking:',

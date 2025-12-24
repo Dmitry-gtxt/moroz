@@ -132,7 +132,17 @@ serve(async (req) => {
 
   const requestBody: any = await req.json().catch(() => ({}));
   const mode: 'sandbox' | 'prod' = requestBody?.mode === 'prod' ? 'prod' : 'sandbox';
-  const authUrls = mode === 'prod' ? [VTB_AUTH_URL_PROD] : [VTB_AUTH_URL_SANDBOX];
+
+  const authUrlOverride =
+    typeof requestBody?.authUrlOverride === 'string' && requestBody.authUrlOverride.trim()
+      ? requestBody.authUrlOverride.trim()
+      : null;
+
+  const authUrls = authUrlOverride
+    ? [authUrlOverride]
+    : mode === 'prod'
+      ? [VTB_AUTH_URL_PROD]
+      : [VTB_AUTH_URL_SANDBOX];
 
   const result: DiagnosticResult = {
     proxyConfigured: false,
@@ -159,6 +169,11 @@ serve(async (req) => {
     vtbAuthSuccess: null,
     vtbAuthError: null,
   };
+
+  // Helpful meta for debugging TLS issues like "Expired"
+  (result as any).nowIso = new Date().toISOString();
+  (result as any).mode = mode;
+  (result as any).authUrlOverride = authUrlOverride;
 
   let proxyClient: Deno.HttpClient | undefined;
   let directClient: Deno.HttpClient | undefined;

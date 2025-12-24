@@ -33,6 +33,14 @@ export default function AdminVtbTest() {
   // Open API test data
   const [openApiAmount, setOpenApiAmount] = useState('10000');
   const [openApiDescription, setOpenApiDescription] = useState('Тестовый платёж');
+  const [openApiBookingId, setOpenApiBookingId] = useState('');
+
+  // Production/Sandbox mode toggle (Open API)
+  const [useProdMode, setUseProdMode] = useState(true);
+
+  // Allow overriding endpoints (useful when bank provides non-standard prod hosts)
+  const [prodOAuthUrl, setProdOAuthUrl] = useState('https://epa.api.vtb.ru:443/passport/oauth2/token');
+  const [prodApiUrl, setProdApiUrl] = useState('https://api.vtb.ru:443/openapi/smb/efcp/e-commerce/v1/orders');
 
   // Sandbox URL
   const SANDBOX_URL = 'https://vtb.rbsuat.com/payment/rest';
@@ -149,9 +157,6 @@ export default function AdminVtbTest() {
     }
   };
 
-  // Production/Sandbox mode toggle
-  const [useProdMode, setUseProdMode] = useState(true); // Default to production now
-
   // Open API test (uses VTB_CLIENT_ID/VTB_CLIENT_SECRET from secrets)
   const runOpenApiTest = async (testId: string) => {
     setLoading(`openapi_${testId}`);
@@ -161,7 +166,10 @@ export default function AdminVtbTest() {
         if (testId === 'auth') {
           // Test authentication only
           const { data, error } = await supabase.functions.invoke('vtb-diagnostics', {
-            body: { mode: useProdMode ? 'prod' : 'sandbox' },
+            body: {
+              mode: useProdMode ? 'prod' : 'sandbox',
+              ...(useProdMode && prodOAuthUrl.trim() ? { authUrlOverride: prodOAuthUrl.trim() } : {}),
+            },
           });
 
         if (error) throw new Error(error.message);
@@ -182,18 +190,20 @@ export default function AdminVtbTest() {
           toast.error(`Ошибка OAuth: ${data.vtb_auth?.error || 'Unknown'}`);
         }
       } else if (testId === 'create_payment') {
-        // Create a test booking first, then try to create payment
-        // For now, we'll test with a mock booking ID
-        const testBookingId = crypto.randomUUID();
-        
+        if (!openApiBookingId.trim()) {
+          throw new Error('Укажите реальный bookingId (UUID) для теста платежа');
+        }
+
         const { data, error } = await supabase.functions.invoke('vtb-create-payment', {
           body: {
             mode: useProdMode ? 'prod' : 'sandbox',
-            bookingId: testBookingId,
+            bookingId: openApiBookingId.trim(),
             amount: parseInt(openApiAmount),
             description: openApiDescription,
             customerEmail: 'test@example.com',
             customerPhone: '+79991234567',
+            ...(useProdMode && prodOAuthUrl.trim() ? { authUrlOverride: prodOAuthUrl.trim() } : {}),
+            ...(useProdMode && prodApiUrl.trim() ? { apiUrlOverride: prodApiUrl.trim() } : {}),
           },
         });
 
@@ -309,7 +319,7 @@ export default function AdminVtbTest() {
                 </div>
               </CardContent>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="openApiAmount">Сумма (в копейках)</Label>
                     <Input 
@@ -331,7 +341,43 @@ export default function AdminVtbTest() {
                       placeholder="Описание платежа"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="openApiBookingId">Booking ID (UUID)</Label>
+                    <Input 
+                      id="openApiBookingId"
+                      value={openApiBookingId}
+                      onChange={(e) => setOpenApiBookingId(e.target.value)}
+                      placeholder="e.g. 2f9b... (реальный booking.id)"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Нужен существующий booking в базе, иначе платёж не создастся.
+                    </p>
+                  </div>
                 </div>
+
+                {useProdMode && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="prodOAuthUrl">OAuth URL (prod)</Label>
+                      <Input
+                        id="prodOAuthUrl"
+                        value={prodOAuthUrl}
+                        onChange={(e) => setProdOAuthUrl(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Если банк выдал другой боевой URL — вставь сюда.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="prodApiUrl">API URL (prod)</Label>
+                      <Input
+                        id="prodApiUrl"
+                        value={prodApiUrl}
+                        onChange={(e) => setProdApiUrl(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
