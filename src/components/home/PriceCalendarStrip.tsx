@@ -23,9 +23,11 @@ export function PriceCalendarStrip() {
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
 
-  // Generate dates from Dec 20 to Jan 10
-  const startDate = new Date(2025, 11, 20); // Dec 20, 2025
-  const endDate = new Date(2026, 0, 10); // Jan 10, 2026
+  // Generate dates from today + 15 days
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const startDate = today;
+  const endDate = addDays(today, 15);
   
   // Holiday dates (Dec 31, Jan 1, Jan 7)
   const holidayDates = [
