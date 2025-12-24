@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, Navigate } from 'react-router-dom';
+import { Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { useUnreadSupportMessages } from '@/hooks/useUnreadSupportMessages';
@@ -41,9 +41,15 @@ interface PerformerLayoutProps {
 export function PerformerLayout({ children }: PerformerLayoutProps) {
   const { user, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const unreadCount = useUnreadMessages();
   const unreadSupportCount = useUnreadSupportMessages();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -129,7 +135,7 @@ export function PerformerLayout({ children }: PerformerLayoutProps) {
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-          onClick={signOut}
+          onClick={handleSignOut}
         >
           <LogOut className="h-5 w-5" />
           Выйти
