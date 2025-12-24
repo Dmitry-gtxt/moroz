@@ -202,7 +202,7 @@ serve(async (req) => {
         email: customerEmail || booking.customer_email,
         phone: customerPhone || booking.customer_phone?.replace(/\D/g, ''),
       },
-      ttl: 1440, // 24 hours in minutes
+      ttl: 120, // 2 hours in minutes (matches payment_deadline)
     };
 
     console.log('Sending invoice to VTB');
