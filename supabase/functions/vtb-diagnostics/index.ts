@@ -280,10 +280,6 @@ serve(async (req) => {
     const caCerts = russianCAs.length > 0 ? russianCAs : undefined;
     (result as any).russianCaLoaded = russianCAs.length;
     console.log('Russian CA certificates loaded:', russianCAs.length);
-    } else {
-      (result as any).russianCaLoaded = 'not_needed_for_prod';
-      console.log('Production mode - using standard SSL certificates');
-    }
 
     // Check VTB credentials
     const clientId = Deno.env.get('VTB_CLIENT_ID');
