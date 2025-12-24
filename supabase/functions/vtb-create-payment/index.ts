@@ -207,11 +207,16 @@ serve(async (req) => {
 
     console.log('Sending invoice to VTB');
 
+    // Get client_id for X-IBM-Client-Id header (lowercase, without domain)
+    const clientId = Deno.env.get('VTB_CLIENT_ID') || '';
+    const clientIdForHeader = clientId.toLowerCase().split('@')[0]; // Remove domain if present
+
     const fetchOptions: RequestInit & { client?: Deno.HttpClient } = {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
+        'X-IBM-Client-Id': clientIdForHeader,
       },
       body: JSON.stringify(invoicePayload),
     };
