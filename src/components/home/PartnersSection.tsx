@@ -8,11 +8,11 @@ import partnerUchidron from '@/assets/partner-uchidron.png';
 import partnerFoodmonitoring from '@/assets/partner-foodmonitoring.png';
 
 const partners = [
-  { href: "https://kolibri.expert", src: partnerKolibri, alt: "Kolibri Expert" },
-  { href: "http://povuzam.ru", src: partnerPovuzam, alt: "Повузам" },
-  { href: "https://umius.ru", src: partnerUmius, alt: "УМИУС" },
-  { href: "https://xn--d1acgejj.xn--p1ai", src: partnerUchidron, alt: "УчиДрон" },
-  { href: "https://foodmonitoring.ru", src: partnerFoodmonitoring, alt: "Мониторинг школьного питания" },
+  { href: "https://kolibri.expert", src: partnerKolibri, alt: "Kolibri Expert", label: "IT-рекрутинг" },
+  { href: "http://povuzam.ru", src: partnerPovuzam, alt: "Повузам", label: "Экскурсии в вузы" },
+  { href: "https://umius.ru", src: partnerUmius, alt: "УМИУС", label: "Курсы для педагогов" },
+  { href: "https://xn--d1acgejj.xn--p1ai", src: partnerUchidron, alt: "УчиДрон", label: "Обучение дронам" },
+  { href: "https://foodmonitoring.ru", src: partnerFoodmonitoring, alt: "Мониторинг школьного питания", label: "Мониторинг питания" },
 ];
 
 export function PartnersSection() {
@@ -32,6 +32,7 @@ export function PartnersSection() {
   };
 
   useEffect(() => {
+    // Small delay to ensure images are loaded
     const timer = setTimeout(checkScroll, 100);
     window.addEventListener('resize', checkScroll);
     return () => {
@@ -42,7 +43,7 @@ export function PartnersSection() {
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
-      const scrollAmount = isMobile ? 180 : 250;
+      const scrollAmount = isMobile ? 150 : 200;
       scrollRef.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth',
@@ -50,22 +51,26 @@ export function PartnersSection() {
     }
   };
 
+  const logoSize = isMobile ? 'w-28 h-28' : 'w-40 h-40';
+  const gap = isMobile ? 'gap-4' : 'gap-8';
+  const padding = isMobile ? 'px-4' : 'px-8';
+
   return (
-    <section className="py-8 md:py-12 bg-background border-t border-border/30">
-      <div className="container px-0 md:px-4">
-        <h2 className="text-center text-lg md:text-xl font-medium text-muted-foreground mb-6 px-4">
+    <section className="py-10 md:py-14 bg-snow-100">
+      <div className={isMobile ? 'px-0' : 'container'}>
+        <h2 className="text-center text-xl md:text-2xl font-display font-semibold text-winter-900 mb-6 md:mb-8">
           Наши партнёры
         </h2>
         
         <div className="relative">
-          {/* Left arrow */}
+          {/* Left arrow - show only when can scroll */}
           {needsScroll && canScrollLeft && (
             <button
               onClick={() => scroll('left')}
-              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm rounded-full p-2 shadow-md border border-border/50 hover:bg-muted transition-colors"
+              className={`absolute left-1 md:left-2 top-1/2 -translate-y-1/2 z-10 bg-snow-100 rounded-full p-1.5 md:p-2 shadow-lg border border-snow-200 hover:bg-white transition-colors`}
               aria-label="Предыдущий"
             >
-              <ChevronLeft className="w-5 h-5 text-foreground/70" />
+              <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 text-winter-700" />
             </button>
           )}
 
@@ -73,7 +78,7 @@ export function PartnersSection() {
           <div
             ref={scrollRef}
             onScroll={checkScroll}
-            className={`flex items-center gap-8 md:gap-12 overflow-x-auto scroll-smooth px-6 md:px-12 ${!needsScroll ? 'justify-center' : ''}`}
+            className={`flex items-center ${gap} overflow-x-auto scroll-smooth ${padding} ${!needsScroll ? 'justify-center' : ''}`}
             style={{ 
               scrollbarWidth: 'none', 
               msOverflowStyle: 'none',
@@ -81,31 +86,33 @@ export function PartnersSection() {
             }}
           >
             {partners.map((partner, index) => (
-              <a
+              <div
                 key={index}
-                href={partner.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-shrink-0 flex items-center justify-center h-24 md:h-32 lg:h-36 opacity-80 hover:opacity-100 transition-opacity"
+                className="flex-shrink-0 flex flex-col items-center"
               >
-                <img
-                  src={partner.src}
-                  alt={partner.alt}
-                  className="h-full w-auto object-contain"
-                  onLoad={checkScroll}
-                />
-              </a>
+                <div className={`${logoSize} flex items-end justify-center`}>
+                  <img
+                    src={partner.src}
+                    alt={partner.alt}
+                    className="max-w-full max-h-full object-contain"
+                    onLoad={checkScroll}
+                  />
+                </div>
+                <span className="text-xs text-winter-600 text-center whitespace-nowrap">
+                  {partner.label}
+                </span>
+              </div>
             ))}
           </div>
 
-          {/* Right arrow */}
+          {/* Right arrow - show only when can scroll */}
           {needsScroll && canScrollRight && (
             <button
               onClick={() => scroll('right')}
-              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm rounded-full p-2 shadow-md border border-border/50 hover:bg-muted transition-colors"
+              className={`absolute right-1 md:right-2 top-1/2 -translate-y-1/2 z-10 bg-snow-100 rounded-full p-1.5 md:p-2 shadow-lg border border-snow-200 hover:bg-white transition-colors`}
               aria-label="Следующий"
             >
-              <ChevronRight className="w-5 h-5 text-foreground/70" />
+              <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-winter-700" />
             </button>
           )}
         </div>
