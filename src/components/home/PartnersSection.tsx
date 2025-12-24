@@ -51,7 +51,7 @@ export function PartnersSection() {
     }
   };
 
-  const logoSize = isMobile ? 'w-20 h-20' : 'w-28 h-28';
+  const logoSize = isMobile ? 'w-28 h-28' : 'w-40 h-40';
   const gap = isMobile ? 'gap-4' : 'gap-8';
   const padding = isMobile ? 'px-4' : 'px-8';
 
