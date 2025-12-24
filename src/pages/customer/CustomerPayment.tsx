@@ -19,7 +19,10 @@ import type { Database } from '@/integrations/supabase/types';
 interface DiagnosticResult {
   proxyConfigured: boolean;
   proxyHost: string | null;
+  proxyPort: number | null;
   proxyAuthConfigured: boolean;
+  proxyReachable: boolean | null;
+  proxyReachableError: string | null;
   proxyConnectSuccess: boolean | null;
   proxyError: string | null;
   directConnectSuccess: boolean | null;
@@ -304,7 +307,7 @@ export default function CustomerPayment() {
                   <span>Прокси</span>
                   {diagnosticsResult.proxyConfigured ? (
                     <span className="text-muted-foreground">
-                      — {diagnosticsResult.proxyHost}{' '}
+                      — {diagnosticsResult.proxyHost}:{diagnosticsResult.proxyPort}{' '}
                       {diagnosticsResult.proxyAuthConfigured ? '(с авториз.)' : '(без авториз.)'}
                     </span>
                   ) : (
@@ -312,15 +315,34 @@ export default function CustomerPayment() {
                   )}
                 </div>
 
-                {/* Proxy connection */}
+                {/* Proxy reachable (TCP connect) */}
+                {diagnosticsResult.proxyConfigured && (
+                  <div className="flex items-center gap-2 pl-6">
+                    <StatusIcon ok={diagnosticsResult.proxyReachable} />
+                    <span>Прокси доступен (TCP)</span>
+                    {diagnosticsResult.proxyReachable === false && diagnosticsResult.proxyReachableError && (
+                      <span className="text-destructive text-xs truncate max-w-[200px]" title={diagnosticsResult.proxyReachableError}>
+                        — {diagnosticsResult.proxyReachableError.slice(0, 50)}…
+                      </span>
+                    )}
+                    {diagnosticsResult.proxyReachable && (
+                      <span className="text-primary">— OK</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Proxy connection to VTB (CONNECT tunnel) */}
                 {diagnosticsResult.proxyConfigured && (
                   <div className="flex items-center gap-2 pl-6">
                     <StatusIcon ok={diagnosticsResult.proxyConnectSuccess} />
-                    <span>Подключение через прокси</span>
+                    <span>CONNECT-туннель к ВТБ</span>
                     {diagnosticsResult.proxyConnectSuccess === false && diagnosticsResult.proxyError && (
                       <span className="text-destructive text-xs truncate max-w-[200px]" title={diagnosticsResult.proxyError}>
                         — {diagnosticsResult.proxyError.slice(0, 50)}…
                       </span>
+                    )}
+                    {diagnosticsResult.proxyConnectSuccess && (
+                      <span className="text-primary">— OK</span>
                     )}
                   </div>
                 )}
