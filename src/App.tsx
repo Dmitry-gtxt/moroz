@@ -33,6 +33,7 @@ const AdminReviews = lazy(() => import("./pages/admin/AdminReviews"));
 const AdminPartners = lazy(() => import("./pages/admin/AdminPartners"));
 const AdminSmsLogs = lazy(() => import("./pages/admin/AdminSmsLogs"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminVtbTest = lazy(() => import("./pages/admin/AdminVtbTest"));
 const PartnerDashboard = lazy(() => import("./pages/PartnerDashboard"));
 const PartnerRegistration = lazy(() => import("./pages/PartnerRegistration"));
 const PerformerLanding = lazy(() => import("./pages/PerformerLanding"));
@@ -156,6 +157,7 @@ const App = () => (
               <Route path="/admin/messages" element={<AdminMessages />} />
               <Route path="/admin/sms-logs" element={<AdminSmsLogs />} />
               <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/vtb-test" element={<AdminVtbTest />} />
               <Route path="/admin/performer/:id" element={<AdminPerformerView />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
