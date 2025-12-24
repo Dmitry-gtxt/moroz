@@ -51,7 +51,7 @@ export function PartnersSection() {
     }
   };
 
-  const logoSize = isMobile ? 'w-28 h-28' : 'w-40 h-40';
+  const logoSize = isMobile ? 'w-28 max-h-28' : 'w-40 max-h-40';
   const gap = isMobile ? 'gap-4' : 'gap-8';
   const padding = isMobile ? 'px-4' : 'px-8';
 
@@ -96,7 +96,7 @@ export function PartnersSection() {
                   className={`${logoSize} object-contain`}
                   onLoad={checkScroll}
                 />
-                <span className="mt-1 text-xs text-winter-600 text-center whitespace-nowrap">
+                <span className="text-xs text-winter-600 text-center whitespace-nowrap">
                   {partner.label}
                 </span>
               </div>
