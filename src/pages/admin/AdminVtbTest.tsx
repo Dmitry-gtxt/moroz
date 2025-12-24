@@ -39,8 +39,8 @@ export default function AdminVtbTest() {
   const [useProdMode, setUseProdMode] = useState(true);
 
   // Allow overriding endpoints (useful when bank provides non-standard prod hosts)
-  const [prodOAuthUrl, setProdOAuthUrl] = useState('https://epa.api.vtb.ru:443/passport/oauth2/token');
-  const [prodApiUrl, setProdApiUrl] = useState('https://api.vtb.ru:443/openapi/smb/efcp/e-commerce/v1/orders');
+  const [prodOAuthUrl, setProdOAuthUrl] = useState('https://open.api.vtb.ru:443/passport/oauth2/token');
+  const [prodApiUrl, setProdApiUrl] = useState('https://gw.api.vtb.ru/openapi/smb/efcp/e-commerce/v1/orders');
 
   // Sandbox URL
   const SANDBOX_URL = 'https://vtb.rbsuat.com/payment/rest';
