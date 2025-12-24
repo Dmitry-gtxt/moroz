@@ -78,16 +78,44 @@ serve(async (req) => {
       }
     }
 
+    // Get all performer profiles to identify performers
+    const { data: performerProfiles } = await supabaseAdmin
+      .from('performer_profiles')
+      .select('user_id');
+
+    const performerUserIds = new Set<string>();
+    if (performerProfiles) {
+      for (const p of performerProfiles) {
+        if (p.user_id) {
+          performerUserIds.add(p.user_id);
+        }
+      }
+    }
+
     // Format users for response
-    const formattedUsers = users.map(user => ({
-      id: user.id,
-      email: user.email,
-      phone: user.phone || user.user_metadata?.phone || null,
-      full_name: user.user_metadata?.full_name || user.email || user.phone || 'Без имени',
-      created_at: user.created_at,
-      last_sign_in_at: user.last_sign_in_at,
-      roles: rolesMap.get(user.id) || ['customer'],
-    }));
+    const formattedUsers = users.map(user => {
+      const roles = rolesMap.get(user.id) || [];
+      
+      // Add performer role dynamically if user has a performer profile
+      if (performerUserIds.has(user.id) && !roles.includes('performer')) {
+        roles.push('performer');
+      }
+      
+      // Default to customer if no roles
+      if (roles.length === 0) {
+        roles.push('customer');
+      }
+      
+      return {
+        id: user.id,
+        email: user.email,
+        phone: user.phone || user.user_metadata?.phone || null,
+        full_name: user.user_metadata?.full_name || user.email || user.phone || 'Без имени',
+        created_at: user.created_at,
+        last_sign_in_at: user.last_sign_in_at,
+        roles,
+      };
+    });
 
     return new Response(
       JSON.stringify({ success: true, users: formattedUsers }),
