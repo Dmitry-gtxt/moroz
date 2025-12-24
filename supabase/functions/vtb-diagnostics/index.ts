@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 const VTB_AUTH_URL = "https://payment-gateway-api.vtb.ru/oauth/token";
+const VTB_HOST = new URL(VTB_AUTH_URL).hostname;
 
 interface DiagnosticResult {
   proxyConfigured: boolean;
@@ -15,6 +16,9 @@ interface DiagnosticResult {
   proxyError: string | null;
   directConnectSuccess: boolean | null;
   directError: string | null;
+  dnsResolved: boolean | null;
+  dnsAddresses: string[] | null;
+  dnsError: string | null;
   vtbCredentialsConfigured: boolean;
   vtbAuthSuccess: boolean | null;
   vtbAuthError: string | null;
@@ -75,6 +79,9 @@ serve(async (req) => {
     proxyError: null,
     directConnectSuccess: null,
     directError: null,
+    dnsResolved: null,
+    dnsAddresses: null,
+    dnsError: null,
     vtbCredentialsConfigured: false,
     vtbAuthSuccess: null,
     vtbAuthError: null,
@@ -87,6 +94,16 @@ serve(async (req) => {
     const clientId = Deno.env.get('VTB_CLIENT_ID');
     const clientSecret = Deno.env.get('VTB_CLIENT_SECRET');
     result.vtbCredentialsConfigured = !!(clientId && clientSecret);
+
+    // DNS check (does this runtime resolve the VTB domain?)
+    try {
+      const addrs = await Deno.resolveDns(VTB_HOST, 'A');
+      result.dnsAddresses = addrs;
+      result.dnsResolved = addrs.length > 0;
+    } catch (err) {
+      result.dnsResolved = false;
+      result.dnsError = err instanceof Error ? err.message : String(err);
+    }
 
     // Check proxy config
     const proxyInfo = createProxyClient();
@@ -154,6 +171,13 @@ serve(async (req) => {
         result.vtbAuthError = err instanceof Error ? err.message : String(err);
       }
     }
+
+    console.log('vtb-diagnostics', {
+      proxyConfigured: result.proxyConfigured,
+      proxyConnectSuccess: result.proxyConnectSuccess,
+      directConnectSuccess: result.directConnectSuccess,
+      dnsResolved: result.dnsResolved,
+    });
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
