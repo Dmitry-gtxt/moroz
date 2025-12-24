@@ -15,10 +15,8 @@ const VTB_API_URL_SANDBOX = "https://test3.api.vtb.ru:8443/openapi/smb/efcp/e-co
 const VTB_AUTH_URL_PROD = "https://epa.api.vtb.ru:443/passport/oauth2/token";
 const VTB_API_URL_PROD = "https://api.vtb.ru:443/openapi/smb/efcp/e-commerce/v1/orders";
 
-// Use sandbox by default, can be switched via env var
-const USE_SANDBOX = Deno.env.get('VTB_USE_SANDBOX') !== 'false';
-const VTB_AUTH_URL = USE_SANDBOX ? VTB_AUTH_URL_SANDBOX : VTB_AUTH_URL_PROD;
-const VTB_API_URL = USE_SANDBOX ? VTB_API_URL_SANDBOX : VTB_API_URL_PROD;
+// Use sandbox by default, can be switched via env var or per-request override
+const DEFAULT_USE_SANDBOX = Deno.env.get('VTB_USE_SANDBOX') !== 'false';
 
 interface CreatePaymentRequest {
   bookingId: string;
@@ -26,6 +24,8 @@ interface CreatePaymentRequest {
   description: string;
   customerEmail?: string;
   customerPhone?: string;
+  // optional: override environment for testing
+  mode?: 'sandbox' | 'prod';
 }
 
 // Create HTTP client with proxy support
@@ -80,7 +80,7 @@ function createProxyClient(): Deno.HttpClient | undefined {
 
 // Получение access_token через Менеджер доступа VTB
 // Формат запроса: x-www-form-urlencoded с grant_type, client_id, client_secret в теле
-async function getVtbAccessToken(client?: Deno.HttpClient): Promise<string> {
+async function getVtbAccessToken(authUrl: string, client?: Deno.HttpClient): Promise<string> {
   const clientId = Deno.env.get('VTB_CLIENT_ID');
   const clientSecret = Deno.env.get('VTB_CLIENT_SECRET');
 
@@ -95,7 +95,7 @@ async function getVtbAccessToken(client?: Deno.HttpClient): Promise<string> {
     client_secret: clientSecret,
   });
 
-  console.log('Requesting VTB access token from:', VTB_AUTH_URL);
+  console.log('Requesting VTB access token from:', authUrl);
 
   const fetchOptions: RequestInit & { client?: Deno.HttpClient } = {
     method: 'POST',
@@ -111,7 +111,7 @@ async function getVtbAccessToken(client?: Deno.HttpClient): Promise<string> {
   let proxyError: unknown;
 
   try {
-    response = await fetch(VTB_AUTH_URL, fetchOptions);
+    response = await fetch(authUrl, fetchOptions);
   } catch (err) {
     if (!client) throw err;
 
@@ -123,7 +123,7 @@ async function getVtbAccessToken(client?: Deno.HttpClient): Promise<string> {
 
     try {
       const { client: _client, ...optsNoClient } = fetchOptions as any;
-      response = await fetch(VTB_AUTH_URL, optsNoClient);
+      response = await fetch(authUrl, optsNoClient);
     } catch (directErr) {
       const pe = proxyError instanceof Error ? proxyError.message : String(proxyError);
       const de = directErr instanceof Error ? directErr.message : String(directErr);
@@ -158,11 +158,15 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { bookingId, amount, description, customerEmail, customerPhone }: CreatePaymentRequest = await req.json();
+    const { bookingId, amount, description, customerEmail, customerPhone, mode }: CreatePaymentRequest = await req.json();
 
     // Сумма должна быть в рублях с копейками (value: 10.56)
     const amountKopecks = Math.round(amount);
     const amountRub = amountKopecks / 100;
+
+    const useSandbox = mode ? mode !== 'prod' : DEFAULT_USE_SANDBOX;
+    const VTB_AUTH_URL = useSandbox ? VTB_AUTH_URL_SANDBOX : VTB_AUTH_URL_PROD;
+    const VTB_API_URL = useSandbox ? VTB_API_URL_SANDBOX : VTB_API_URL_PROD;
 
     console.log(
       'Creating VTB payment for booking:',
@@ -172,7 +176,7 @@ serve(async (req) => {
       'RUB',
       `(${amountKopecks} kopecks)`,
       'mode:',
-      USE_SANDBOX ? 'SANDBOX' : 'PRODUCTION'
+      useSandbox ? 'SANDBOX' : 'PRODUCTION'
     );
 
     // Проверяем бронирование
@@ -191,7 +195,7 @@ serve(async (req) => {
     }
 
     // Получаем access_token
-    const accessToken = await getVtbAccessToken(proxyClient);
+    const accessToken = await getVtbAccessToken(VTB_AUTH_URL, proxyClient);
     console.log('Got VTB access token');
 
     // Получаем настройки мерчанта

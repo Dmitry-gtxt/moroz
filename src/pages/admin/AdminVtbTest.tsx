@@ -155,11 +155,11 @@ export default function AdminVtbTest() {
     const startTime = Date.now();
 
     try {
-      if (testId === 'auth') {
-        // Test authentication only
-        const { data, error } = await supabase.functions.invoke('vtb-diagnostics', {
-          body: {},
-        });
+        if (testId === 'auth') {
+          // Test authentication only
+          const { data, error } = await supabase.functions.invoke('vtb-diagnostics', {
+            body: { mode: 'sandbox' },
+          });
 
         if (error) throw new Error(error.message);
 
@@ -185,6 +185,7 @@ export default function AdminVtbTest() {
         
         const { data, error } = await supabase.functions.invoke('vtb-create-payment', {
           body: {
+            mode: 'sandbox',
             bookingId: testBookingId,
             amount: parseInt(openApiAmount),
             description: openApiDescription,
@@ -255,7 +256,7 @@ export default function AdminVtbTest() {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="openapi" className="flex items-center gap-2">
               <Zap className="h-4 w-4" />
-              Open API (Production)
+              Open API (Sandbox)
             </TabsTrigger>
             <TabsTrigger value="sandbox" className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
@@ -273,7 +274,7 @@ export default function AdminVtbTest() {
                 </CardTitle>
                 <CardDescription>
                   Используются ваши VTB_CLIENT_ID и VTB_CLIENT_SECRET из секретов проекта.
-                  OAuth2 авторизация через epa.api.vtb.ru
+                  OAuth2 авторизация через epa-ift-sbp.vtb.ru (sandbox)
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -321,7 +322,7 @@ export default function AdminVtbTest() {
                         Получение access_token через VTB Passport
                       </p>
                       <code className="text-xs bg-muted px-2 py-0.5 rounded mt-1 inline-block">
-                        POST epa.api.vtb.ru/passport/oauth2/token
+                        POST epa-ift-sbp.vtb.ru/passport/oauth2/token
                       </code>
                     </div>
                     <div className="flex items-center gap-2">
