@@ -6,9 +6,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// VTB API endpoints (Production) - из документации v1.0.13
-const VTB_AUTH_URL = "https://epa.api.vtb.ru:443/passport/oauth2/token";
-const VTB_API_URL = "https://api.vtb.ru:443/openapi/smb/efcp/e-commerce/v1/orders";
+// VTB API endpoints from official documentation v1.0.13
+// Sandbox (Песочница):
+const VTB_AUTH_URL_SANDBOX = "https://epa-ift-sbp.vtb.ru:443/passport/oauth2/token";
+const VTB_API_URL_SANDBOX = "https://test3.api.vtb.ru:8443/openapi/smb/efcp/e-commerce/v1/orders";
+
+// Production:
+const VTB_AUTH_URL_PROD = "https://epa.api.vtb.ru:443/passport/oauth2/token";
+const VTB_API_URL_PROD = "https://api.vtb.ru:443/openapi/smb/efcp/e-commerce/v1/orders";
+
+// Use sandbox by default, can be switched via env var
+const USE_SANDBOX = Deno.env.get('VTB_USE_SANDBOX') !== 'false';
+const VTB_AUTH_URL = USE_SANDBOX ? VTB_AUTH_URL_SANDBOX : VTB_AUTH_URL_PROD;
+const VTB_API_URL = USE_SANDBOX ? VTB_API_URL_SANDBOX : VTB_API_URL_PROD;
 
 interface CreatePaymentRequest {
   bookingId: string;
@@ -150,17 +160,19 @@ serve(async (req) => {
 
     const { bookingId, amount, description, customerEmail, customerPhone }: CreatePaymentRequest = await req.json();
 
-    // Сумма в копейках
+    // Сумма должна быть в рублях с копейками (value: 10.56)
     const amountKopecks = Math.round(amount);
-    const amountRub = (amountKopecks / 100).toFixed(2);
+    const amountRub = amountKopecks / 100;
 
     console.log(
       'Creating VTB payment for booking:',
       bookingId,
       'amount:',
-      amountRub,
+      amountRub.toFixed(2),
       'RUB',
-      `(${amountKopecks} kopecks)`
+      `(${amountKopecks} kopecks)`,
+      'mode:',
+      USE_SANDBOX ? 'SANDBOX' : 'PRODUCTION'
     );
 
     // Проверяем бронирование
@@ -193,18 +205,20 @@ serve(async (req) => {
     // X-IBM-Client-Id: в нижнем регистре, без домена @ext.vtb.ru
     const clientIdForHeader = clientId.toLowerCase().split('@')[0];
 
-    // Формируем payload заказа согласно документации
+    // Формируем payload заказа согласно документации VTB v1.0.13
+    // POST v1 /orders - параметры: orderId, orderName, amount {value, code}, returnUrl, expire, customer
     const orderPayload = {
-      amount: amountKopecks, // Сумма в копейках
-      currency: "RUB",
-      order_number: bookingId,
-      description: description,
-      language: "ru",
-      return_url: `https://дед-морозы.рф/customer/bookings?payment=success&booking=${bookingId}`,
-      fail_url: `https://дед-морозы.рф/customer/bookings?payment=failed&booking=${bookingId}`,
-      // Данные покупателя
-      email: customerEmail || booking.customer_email || undefined,
-      phone: (customerPhone || booking.customer_phone || '').replace(/\D/g, '') || undefined,
+      orderId: bookingId, // Уникальный идентификатор ордера в системе мерчанта
+      orderName: description || `Заказ ${bookingId}`, // Наименование ордера
+      amount: {
+        value: amountRub, // Сумма в рублях (10.56)
+        code: "RUB"
+      },
+      returnUrl: `https://дед-морозы.рф/customer/bookings?payment=success&booking=${bookingId}`,
+      customer: {
+        email: customerEmail || booking.customer_email || undefined,
+        phone: (customerPhone || booking.customer_phone || '').replace(/\D/g, '') || undefined,
+      }
     };
 
     console.log('Sending order to VTB API:', VTB_API_URL);
@@ -216,6 +230,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
         'X-IBM-Client-Id': clientIdForHeader,
+        ...(merchantSiteId ? { 'Merchant-Authorization': merchantSiteId } : {}),
       },
       body: JSON.stringify(orderPayload),
     };

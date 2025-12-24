@@ -5,16 +5,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// VTB Auth URLs to try
+// VTB Auth URLs according to official documentation
+// Sandbox: https://epa-ift-sbp.vtb.ru:443/passport/oauth2/token
+// Production: https://epa.api.vtb.ru:443/passport/oauth2/token
 const VTB_AUTH_URLS = [
-  "https://epa.api.vtb.ru/passport/oauth2/token",     // Primary (without explicit :443)
-  "https://open.api.vtb.ru/passport/oauth2/token",    // Alternative Open API
-  "https://api.vtb.ru/passport/oauth2/token",         // Simple domain
+  "https://epa-ift-sbp.vtb.ru:443/passport/oauth2/token",  // SANDBOX - official docs
+  "https://epa.api.vtb.ru:443/passport/oauth2/token",      // PRODUCTION
 ];
 
-// Sandbox domain for connectivity test
-const VTB_ALT_URL = "https://vtb.rbsuat.com/payment/rest/register.do";
-const VTB_ALT_HOST = "vtb.rbsuat.com";
+// API endpoints
+const VTB_API_SANDBOX = "https://test3.api.vtb.ru:8443/openapi/smb/efcp/e-commerce/v1/orders";
+const VTB_API_SANDBOX_HOST = "test3.api.vtb.ru";
 
 interface DiagnosticResult {
   proxyConfigured: boolean;
@@ -205,48 +206,48 @@ serve(async (req) => {
       }
     }
 
-    // ============ TEST ALTERNATIVE DOMAIN (platezh.vtb24.ru) ============
-    console.log('Testing alternative VTB domain:', VTB_ALT_HOST);
+    // ============ TEST API SANDBOX DOMAIN ============
+    console.log('Testing VTB API Sandbox domain:', VTB_API_SANDBOX_HOST);
 
-    // DNS for alt domain
+    // DNS for API sandbox domain
     try {
-      const altAddrs = await Deno.resolveDns(VTB_ALT_HOST, 'A');
+      const altAddrs = await Deno.resolveDns(VTB_API_SANDBOX_HOST, 'A');
       result.altDomainDnsAddresses = altAddrs;
       result.altDomainDnsResolved = altAddrs.length > 0;
-      console.log('Alt domain DNS resolved:', altAddrs);
+      console.log('API Sandbox DNS resolved:', altAddrs);
     } catch (err) {
       result.altDomainDnsResolved = false;
       result.altDomainDnsError = err instanceof Error ? err.message : String(err);
-      console.error('Alt domain DNS failed:', result.altDomainDnsError);
+      console.error('API Sandbox DNS failed:', result.altDomainDnsError);
     }
 
-    // Proxy connection to alt domain
+    // Proxy connection to API sandbox
     if (proxyClient) {
       try {
-        console.log('Testing proxy CONNECT to alt domain...');
-        const resp = await fetch(VTB_ALT_URL, {
+        console.log('Testing proxy CONNECT to API Sandbox...');
+        const resp = await fetch(VTB_API_SANDBOX, {
           method: 'GET',
           client: proxyClient,
         } as any);
         result.altDomainProxySuccess = true;
-        console.log('Alt domain proxy CONNECT success, HTTP status:', resp.status);
+        console.log('API Sandbox proxy CONNECT success, HTTP status:', resp.status);
       } catch (err) {
         result.altDomainProxySuccess = false;
         result.altDomainProxyError = err instanceof Error ? err.message : String(err);
-        console.error('Alt domain proxy CONNECT failed:', result.altDomainProxyError);
+        console.error('API Sandbox proxy CONNECT failed:', result.altDomainProxyError);
       }
     }
 
-    // Direct connection to alt domain
+    // Direct connection to API sandbox
     try {
-      console.log('Testing direct connection to alt domain...');
-      const resp = await fetch(VTB_ALT_URL, { method: 'GET' });
+      console.log('Testing direct connection to API Sandbox...');
+      const resp = await fetch(VTB_API_SANDBOX, { method: 'GET' });
       result.altDomainDirectSuccess = true;
-      console.log('Alt domain direct success, HTTP status:', resp.status);
+      console.log('API Sandbox direct success, HTTP status:', resp.status);
     } catch (err) {
       result.altDomainDirectSuccess = false;
       result.altDomainDirectError = err instanceof Error ? err.message : String(err);
-      console.error('Alt domain direct failed:', result.altDomainDirectError);
+      console.error('API Sandbox direct failed:', result.altDomainDirectError);
     }
 
     // Try VTB OAuth with real credentials - try multiple URLs
