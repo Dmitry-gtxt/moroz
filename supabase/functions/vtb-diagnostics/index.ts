@@ -138,6 +138,7 @@ serve(async (req) => {
 
       // Test proxy connection to VTB (CONNECT tunnel)
       try {
+        console.log('Testing proxy CONNECT tunnel to VTB...');
         const resp = await fetch(VTB_AUTH_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -146,23 +147,33 @@ serve(async (req) => {
         } as any);
         // Even 401 means network works
         result.proxyConnectSuccess = true;
+        console.log('Proxy CONNECT success, HTTP status:', resp.status);
       } catch (err) {
         result.proxyConnectSuccess = false;
-        result.proxyError = err instanceof Error ? err.message : String(err);
+        const errorMsg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+        result.proxyError = errorMsg;
+        console.error('Proxy CONNECT failed:', errorMsg);
+        if (err instanceof Error && err.stack) {
+          console.error('Stack:', err.stack);
+        }
       }
     }
 
     // Test direct connection (without proxy)
     try {
+      console.log('Testing direct connection to VTB (no proxy)...');
       const resp = await fetch(VTB_AUTH_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'grant_type=client_credentials',
       });
       result.directConnectSuccess = true;
+      console.log('Direct connection success, HTTP status:', resp.status);
     } catch (err) {
       result.directConnectSuccess = false;
-      result.directError = err instanceof Error ? err.message : String(err);
+      const errorMsg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      result.directError = errorMsg;
+      console.error('Direct connection failed:', errorMsg);
     }
 
     // If credentials configured and at least one connection works, try real auth
