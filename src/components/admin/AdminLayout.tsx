@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
-import { Users, FileCheck, ShoppingCart, LayoutDashboard, LogOut, Star, History, CreditCard, Shield, MessageCircle, ClipboardCheck, Handshake, Menu, MessageSquareText, UserRound } from 'lucide-react';
+import { Users, FileCheck, ShoppingCart, LayoutDashboard, LogOut, Star, History, CreditCard, Shield, MessageCircle, ClipboardCheck, Handshake, Menu, MessageSquareText, UserRound, FlaskConical } from 'lucide-react';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -79,7 +79,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     };
   }, []);
 
-  const navItems = [
+  const navItems: Array<{ to: string; icon: any; label: string; badge?: number; isBottom?: boolean }> = [
     { to: '/admin', icon: LayoutDashboard, label: 'Обзор' },
     { to: '/admin/users', icon: UserRound, label: 'Все пользователи' },
     { to: '/admin/performers', icon: Users, label: 'Исполнители' },
@@ -93,6 +93,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { to: '/admin/messages', icon: MessageCircle, label: 'Сообщения', badge: unreadMessagesCount },
     { to: '/admin/sms-logs', icon: MessageSquareText, label: 'СМС-лог' },
     { to: '/admin/audit', icon: Shield, label: 'Аудит-лог' },
+    { to: '/admin/vtb-test', icon: FlaskConical, label: 'VTB Тест', isBottom: true },
   ];
 
   if (loading) {
@@ -107,60 +108,84 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     return <Navigate to="/" replace />;
   }
 
-  const NavContent = () => (
-    <>
-      <div className="p-6 border-b border-border">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="text-2xl">🎅</span>
-          <span className="font-display font-bold text-lg text-foreground">
-            Дед-Морозы<span className="text-accent">.РФ</span>
-          </span>
-        </Link>
-        <p className="text-xs text-muted-foreground mt-1">Админ-панель</p>
-      </div>
+  const NavContent = () => {
+    const mainNavItems = navItems.filter(item => !item.isBottom);
+    const bottomNavItems = navItems.filter(item => item.isBottom);
 
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.to;
-          const hasBadge = item.badge && item.badge > 0;
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={() => setMobileMenuOpen(false)}
-              className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors relative',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : hasBadge
-                  ? 'text-red-500 hover:bg-red-50 hover:text-red-600 font-medium'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
-            >
-              <item.icon className="h-5 w-5" />
-              <span className="font-medium">{item.label}</span>
-              {hasBadge && (
-                <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
+    return (
+      <>
+        <div className="p-6 border-b border-border">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="text-2xl">🎅</span>
+            <span className="font-display font-bold text-lg text-foreground">
+              Дед-Морозы<span className="text-accent">.РФ</span>
+            </span>
+          </Link>
+          <p className="text-xs text-muted-foreground mt-1">Админ-панель</p>
+        </div>
 
-      <div className="p-4 border-t border-border">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-          onClick={handleSignOut}
-        >
-          <LogOut className="h-5 w-5" />
-          Выйти
-        </Button>
-      </div>
-    </>
-  );
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {mainNavItems.map((item) => {
+            const isActive = location.pathname === item.to;
+            const hasBadge = item.badge && item.badge > 0;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors relative',
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : hasBadge
+                    ? 'text-red-500 hover:bg-red-50 hover:text-red-600 font-medium'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="font-medium">{item.label}</span>
+                {hasBadge && (
+                  <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-border space-y-1">
+          {bottomNavItems.map((item) => {
+            const isActive = location.pathname === item.to;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
+            onClick={handleSignOut}
+          >
+            <LogOut className="h-5 w-5" />
+            Выйти
+          </Button>
+        </div>
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen flex bg-muted/30">
