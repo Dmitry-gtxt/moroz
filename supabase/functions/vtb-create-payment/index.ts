@@ -145,6 +145,9 @@ async function getVtbAccessToken(authUrl: string, client?: Deno.HttpClient): Pro
   const clientId = Deno.env.get('VTB_CLIENT_ID');
   const clientSecret = Deno.env.get('VTB_CLIENT_SECRET');
 
+  console.log('VTB credentials check - clientId:', clientId ? `${clientId.substring(0, 10)}...` : 'NOT SET', 
+              'clientSecret length:', clientSecret ? clientSecret.length : 0);
+
   if (!clientId || !clientSecret) {
     throw new Error('VTB credentials not configured');
   }
@@ -157,6 +160,7 @@ async function getVtbAccessToken(authUrl: string, client?: Deno.HttpClient): Pro
   });
 
   console.log('Requesting VTB access token from:', authUrl);
+  console.log('Request body preview:', `grant_type=client_credentials&client_id=${clientId.substring(0, 15)}...`);
 
   const fetchOptions: RequestInit & { client?: Deno.HttpClient } = {
     method: 'POST',
