@@ -15,8 +15,8 @@ const VTB_API_URL_SANDBOX = "https://test3.api.vtb.ru:8443/openapi/smb/efcp/e-co
 const VTB_AUTH_URL_PROD = "https://open.api.vtb.ru:443/passport/oauth2/token";
 const VTB_API_URL_PROD = "https://gw.api.vtb.ru/openapi/smb/efcp/e-commerce/v1/orders";
 
-// Use sandbox by default for testing
-const DEFAULT_USE_SANDBOX = Deno.env.get('VTB_USE_SANDBOX') !== 'false';
+// Use production by default (боевые доступы)
+const DEFAULT_USE_SANDBOX = Deno.env.get('VTB_USE_SANDBOX') === 'true';
 
 // Russian Trusted Root CA certificates (НУЦ Минцифры) - required for VTB production SSL
 // These are the official certificates from https://www.gosuslugi.ru/crt
