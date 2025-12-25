@@ -133,54 +133,10 @@ interface CreatePaymentRequest {
   apiUrlOverride?: string;
 }
 
-// Create HTTP client with proxy support
+// Proxy support disabled - using direct connection
 function createProxyClient(): Deno.HttpClient | undefined {
-  const rawProxyUrl = (Deno.env.get('PROXY_URL') || '').trim();
-  const proxyUserEnv = (Deno.env.get('PROXY_USER') || '').trim();
-  const proxyPassEnv = (Deno.env.get('PROXY_PASS') || '').trim();
-
-  if (!rawProxyUrl) return undefined;
-
-  let proxyUrlString = rawProxyUrl;
-  if (!/^https?:\/\//i.test(proxyUrlString)) {
-    proxyUrlString = `http://${proxyUrlString}`;
-  }
-
-  let proxyUrl: URL;
-  try {
-    proxyUrl = new URL(proxyUrlString);
-  } catch {
-    throw new Error('Некорректный PROXY_URL. Используйте формат http://IP:PORT');
-  }
-
-  const embeddedUser = proxyUrl.username;
-  const embeddedPass = proxyUrl.password;
-  proxyUrl.username = '';
-  proxyUrl.password = '';
-
-  const host = proxyUrl.hostname;
-  const isIpv4 = /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host);
-  const isDomain = host.includes('.');
-  if (!isIpv4 && !isDomain) {
-    throw new Error('PROXY_URL должен быть вида http://IP:PORT (без логина/пароля)');
-  }
-
-  const username = proxyUserEnv || embeddedUser;
-  const password = proxyPassEnv || embeddedPass;
-
-  const proxyUrlWithCreds = new URL(proxyUrl.toString());
-  if (username && password) {
-    proxyUrlWithCreds.username = username;
-    proxyUrlWithCreds.password = password;
-  }
-
-  console.log('Using proxy host:', proxyUrl.host, 'auth:', username ? 'yes' : 'no');
-
-  return Deno.createHttpClient({
-    proxy: {
-      url: proxyUrlWithCreds.toString(),
-    },
-  });
+  console.log('Proxy disabled - using direct connection');
+  return undefined;
 }
 
 // Получение access_token через Менеджер доступа VTB
@@ -318,9 +274,9 @@ serve(async (req) => {
       );
     }
 
-    // Choose client: prefer Russian CA client for production, proxy for sandbox
-    const vtbClient = useSandbox ? proxyClient : (russianCaClient || proxyClient);
-    console.log('Using VTB client type:', useSandbox ? 'proxy/sandbox' : 'russianCA/production');
+    // Always use direct connection with Russian CA certificates
+    const vtbClient = russianCaClient;
+    console.log('Using direct connection with Russian CA client:', vtbClient ? 'yes' : 'no (fallback to system)');
 
     // Получаем access_token
     const accessToken = await getVtbAccessToken(VTB_AUTH_URL, vtbClient);
