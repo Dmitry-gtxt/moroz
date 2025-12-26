@@ -417,11 +417,11 @@ serve(async (req) => {
     }
 
     // Возвращаем URL для оплаты
-    // Согласно документации, ответ содержит form_url для редиректа
-    const paymentUrl = orderData.form_url || orderData.payment_url || orderData.redirect_url;
-    const orderId = orderData.order_id || orderData.id;
+    // VTB API возвращает структуру: { type: "ORDER", object: { payUrl: "...", orderId: "...", orderCode: "..." } }
+    const paymentUrl = orderData.object?.payUrl || orderData.payUrl || orderData.form_url || orderData.payment_url || orderData.redirect_url;
+    const orderId = orderData.object?.orderCode || orderData.object?.orderId || orderData.order_id || orderData.id;
 
-    console.log('VTB order created successfully, payment URL:', paymentUrl);
+    console.log('VTB order created successfully, payment URL:', paymentUrl, 'orderId:', orderId);
 
     return new Response(
       JSON.stringify({
