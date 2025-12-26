@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.vtb-diagnostics]
 verify_jwt = false
+
+[functions.vtb-check-credentials]
+verify_jwt = false
