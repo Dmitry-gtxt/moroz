@@ -381,42 +381,104 @@ serve(async (req) => {
 
       for (const testUrl of authUrls) {
         lastTriedUrl = testUrl;
-        try {
-          console.log('Trying OAuth at:', testUrl);
-          const fetchOpts: any = {
-            method: 'POST',
+
+        // Strategy A (per merchant шлюз доке): client_id/client_secret в body
+        const bodyA = new URLSearchParams({
+          grant_type: 'client_credentials',
+          client_id: clientId!,
+          client_secret: clientSecret!,
+        }).toString();
+
+        // Strategy B (часто для OAuth): Basic auth + только grant_type в body
+        const basic = btoa(`${clientId!}:${clientSecret!}`);
+        const bodyB = new URLSearchParams({
+          grant_type: 'client_credentials',
+        }).toString();
+
+        const strategies: Array<{
+          name: string;
+          headers: Record<string, string>;
+          body: string;
+        }> = [
+          {
+            name: 'body_credentials',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: bodyA,
+          },
+          {
+            name: 'basic_auth',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
+              Authorization: `Basic ${basic}`,
             },
-            body: body.toString(),
-          };
+            body: bodyB,
+          },
+        ];
 
-          // IMPORTANT: when not using proxy, still use directClient with Russian CA
-          if (useProxy) fetchOpts.client = proxyClient;
-          else if (directClient) fetchOpts.client = directClient;
+        let lastRespText: string | null = null;
+        let lastStatus: number | null = null;
 
-          const resp = await fetch(testUrl, fetchOpts);
-          const respText = await resp.text();
-          console.log('VTB OAuth response from', testUrl, 'status:', resp.status, 'body:', respText.slice(0, 300));
+        for (const strat of strategies) {
+          try {
+            console.log('Trying OAuth at:', testUrl, 'strategy:', strat.name);
 
-          if (resp.ok) {
-            result.vtbAuthSuccess = true;
-            try {
-              const data = JSON.parse(respText);
-              result.vtbAuthError = `Success from ${testUrl}! expires_in: ${data.expires_in}`;
-            } catch {
-              result.vtbAuthError = `Success from ${testUrl} (non-JSON response)`;
+            const fetchOpts: any = {
+              method: 'POST',
+              headers: strat.headers,
+              body: strat.body,
+            };
+
+            // IMPORTANT: when not using proxy, still use directClient with Russian CA
+            if (useProxy) fetchOpts.client = proxyClient;
+            else if (directClient) fetchOpts.client = directClient;
+
+            const resp = await fetch(testUrl, fetchOpts);
+            const respText = await resp.text();
+            lastRespText = respText;
+            lastStatus = resp.status;
+
+            console.log(
+              'VTB OAuth response from',
+              testUrl,
+              'strategy:',
+              strat.name,
+              'status:',
+              resp.status,
+              'body:',
+              respText.slice(0, 300),
+            );
+
+            if (resp.ok) {
+              result.vtbAuthSuccess = true;
+              try {
+                const data = JSON.parse(respText);
+                result.vtbAuthError = `Success (${strat.name}) from ${testUrl}! expires_in: ${data.expires_in}`;
+                (result as any).vtbAuthStrategy = strat.name;
+              } catch {
+                result.vtbAuthError = `Success (${strat.name}) from ${testUrl} (non-JSON response)`;
+                (result as any).vtbAuthStrategy = strat.name;
+              }
+              break;
             }
-            break;
-          } else {
+
+            // Если первая стратегия дала Unauthorized client — пробуем вторую
             result.vtbAuthSuccess = false;
-            result.vtbAuthError = `${testUrl}: HTTP ${resp.status}: ${respText.slice(0, 200)}`;
+            result.vtbAuthError = `${testUrl} (${strat.name}): HTTP ${resp.status}: ${respText.slice(0, 200)}`;
+          } catch (err) {
+            result.vtbAuthSuccess = false;
+            result.vtbAuthError = `${testUrl}: ${err instanceof Error ? err.message : String(err)}`;
+            console.error('VTB OAuth error at', testUrl, 'strategy:', strat.name, ':', result.vtbAuthError);
           }
-        } catch (err) {
-          result.vtbAuthSuccess = false;
-          result.vtbAuthError = `${testUrl}: ${err instanceof Error ? err.message : String(err)}`;
-          console.error('VTB OAuth error at', testUrl, ':', result.vtbAuthError);
+
+          if (result.vtbAuthSuccess) break;
         }
+
+        if (result.vtbAuthSuccess) break;
+
+        (result as any).vtbAuthLast = {
+          status: lastStatus,
+          bodyPreview: (lastRespText || '').slice(0, 300),
+        };
       }
 
       // Backward/forward compatible shape for UI
