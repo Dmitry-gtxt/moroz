@@ -8,32 +8,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
-  Calendar, Clock, MapPin, Loader2, CreditCard, 
-  Phone, MessageSquare, Headphones, User, Send, Activity,
-  CheckCircle2, XCircle, AlertCircle
+  Calendar, Clock, Loader2, CreditCard, 
+  Phone, Headphones, Send
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale/ru';
 import type { Database } from '@/integrations/supabase/types';
 
-interface DiagnosticResult {
-  proxyConfigured: boolean;
-  proxyHost: string | null;
-  proxyPort: number | null;
-  proxyAuthConfigured: boolean;
-  proxyReachable: boolean | null;
-  proxyReachableError: string | null;
-  proxyConnectSuccess: boolean | null;
-  proxyError: string | null;
-  directConnectSuccess: boolean | null;
-  directError: string | null;
-  dnsResolved: boolean | null;
-  dnsAddresses: string[] | null;
-  dnsError: string | null;
-  vtbCredentialsConfigured: boolean;
-  vtbAuthSuccess: boolean | null;
-  vtbAuthError: string | null;
-}
 
 type Booking = Database['public']['Tables']['bookings']['Row'];
 type PerformerProfile = Database['public']['Tables']['performer_profiles']['Row'];
@@ -50,8 +31,6 @@ export default function CustomerPayment() {
   const [booking, setBooking] = useState<BookingWithPerformer | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentLoading, setPaymentLoading] = useState(false);
-  const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
-  const [diagnosticsResult, setDiagnosticsResult] = useState<DiagnosticResult | null>(null);
 
   useEffect(() => {
     async function fetchPendingPayment() {
@@ -134,29 +113,6 @@ export default function CustomerPayment() {
     }
   };
 
-  const runDiagnostics = async () => {
-    setDiagnosticsLoading(true);
-    setDiagnosticsResult(null);
-    try {
-      const { data, error } = await supabase.functions.invoke('vtb-diagnostics');
-      if (error) throw error;
-      setDiagnosticsResult(data as DiagnosticResult);
-    } catch (error: any) {
-      console.error('Diagnostics error:', error);
-      toast.error('Ошибка диагностики: ' + (error.message || 'Неизвестная ошибка'));
-    } finally {
-      setDiagnosticsLoading(false);
-    }
-  };
-
-  const StatusIcon = ({ ok }: { ok: boolean | null }) => {
-    if (ok === null) return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
-    return ok ? (
-      <CheckCircle2 className="h-4 w-4 text-primary" />
-    ) : (
-      <XCircle className="h-4 w-4 text-destructive" />
-    );
-  };
 
   if (loading) {
     return (
@@ -273,161 +229,6 @@ export default function CustomerPayment() {
           )}
         </Button>
 
-        {/* VTB Diagnostics */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Диагностика подключения к ВТБ
-              </CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={runDiagnostics}
-                disabled={diagnosticsLoading}
-              >
-                {diagnosticsLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Проверить'
-                )}
-              </Button>
-            </div>
-          </CardHeader>
-          {diagnosticsResult && (
-            <CardContent className="space-y-3 text-sm">
-              <div className="grid gap-2">
-                {/* VTB Credentials */}
-                <div className="flex items-center gap-2">
-                  <StatusIcon ok={diagnosticsResult.vtbCredentialsConfigured} />
-                  <span>Учётные данные ВТБ</span>
-                  {diagnosticsResult.vtbCredentialsConfigured ? (
-                    <span className="text-muted-foreground">— настроены</span>
-                  ) : (
-                    <span className="text-destructive">— не настроены</span>
-                  )}
-                </div>
-
-                {/* Proxy config */}
-                <div className="flex items-center gap-2">
-                  <StatusIcon ok={diagnosticsResult.proxyConfigured} />
-                  <span>Прокси</span>
-                  {diagnosticsResult.proxyConfigured ? (
-                    <span className="text-muted-foreground">
-                      — {diagnosticsResult.proxyHost}:{diagnosticsResult.proxyPort}{' '}
-                      {diagnosticsResult.proxyAuthConfigured ? '(с авториз.)' : '(без авториз.)'}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">— не настроен</span>
-                  )}
-                </div>
-
-                {/* Proxy reachable (TCP connect) */}
-                {diagnosticsResult.proxyConfigured && (
-                  <div className="flex items-center gap-2 pl-6">
-                    <StatusIcon ok={diagnosticsResult.proxyReachable} />
-                    <span>Прокси доступен (TCP)</span>
-                    {diagnosticsResult.proxyReachable === false && diagnosticsResult.proxyReachableError && (
-                      <span className="text-destructive text-xs truncate max-w-[200px]" title={diagnosticsResult.proxyReachableError}>
-                        — {diagnosticsResult.proxyReachableError.slice(0, 50)}…
-                      </span>
-                    )}
-                    {diagnosticsResult.proxyReachable && (
-                      <span className="text-primary">— OK</span>
-                    )}
-                  </div>
-                )}
-
-                {/* Proxy connection to VTB (CONNECT tunnel) */}
-                {diagnosticsResult.proxyConfigured && (
-                  <div className="flex items-center gap-2 pl-6">
-                    <StatusIcon ok={diagnosticsResult.proxyConnectSuccess} />
-                    <span>CONNECT-туннель к ВТБ</span>
-                    {diagnosticsResult.proxyConnectSuccess === false && diagnosticsResult.proxyError && (
-                      <span className="text-destructive text-xs truncate max-w-[200px]" title={diagnosticsResult.proxyError}>
-                        — {diagnosticsResult.proxyError.slice(0, 50)}…
-                      </span>
-                    )}
-                    {diagnosticsResult.proxyConnectSuccess && (
-                      <span className="text-primary">— OK</span>
-                    )}
-                  </div>
-                )}
-
-                {/* DNS */}
-                <div className="flex items-center gap-2">
-                  <StatusIcon ok={diagnosticsResult.dnsResolved} />
-                  <span>DNS домена ВТБ</span>
-                  {diagnosticsResult.dnsResolved ? (
-                    <span className="text-muted-foreground">
-                      — {diagnosticsResult.dnsAddresses?.slice(0, 3).join(', ') || 'OK'}
-                      {diagnosticsResult.dnsAddresses && diagnosticsResult.dnsAddresses.length > 3 ? '…' : ''}
-                    </span>
-                  ) : diagnosticsResult.dnsResolved === false && diagnosticsResult.dnsError ? (
-                    <span
-                      className="text-destructive text-xs truncate max-w-[200px]"
-                      title={diagnosticsResult.dnsError}
-                    >
-                      — {diagnosticsResult.dnsError.slice(0, 50)}…
-                    </span>
-                  ) : null}
-                </div>
-
-                {/* Direct connection */}
-                <div className="flex items-center gap-2">
-                  <StatusIcon ok={diagnosticsResult.directConnectSuccess} />
-                  <span>Прямое подключение (без прокси)</span>
-                  {diagnosticsResult.directConnectSuccess === false && diagnosticsResult.directError && (
-                    <span className="text-destructive text-xs truncate max-w-[200px]" title={diagnosticsResult.directError}>
-                      — {diagnosticsResult.directError.slice(0, 50)}…
-                    </span>
-                  )}
-                </div>
-
-                {/* VTB Auth */}
-                {diagnosticsResult.vtbCredentialsConfigured &&
-                  (diagnosticsResult.proxyConnectSuccess || diagnosticsResult.directConnectSuccess) && (
-                    <div className="flex items-center gap-2">
-                      <StatusIcon ok={diagnosticsResult.vtbAuthSuccess} />
-                      <span>Авторизация в ВТБ API</span>
-                      {diagnosticsResult.vtbAuthSuccess === false && diagnosticsResult.vtbAuthError && (
-                        <span className="text-destructive text-xs truncate max-w-[200px]" title={diagnosticsResult.vtbAuthError}>
-                          — {diagnosticsResult.vtbAuthError.slice(0, 50)}…
-                        </span>
-                      )}
-                      {diagnosticsResult.vtbAuthSuccess && (
-                        <span className="text-primary">— OK</span>
-                      )}
-                    </div>
-                  )}
-              </div>
-
-              {/* Summary */}
-              <details className="pt-2 border-t border-border">
-                <summary className="cursor-pointer select-none text-muted-foreground">
-                  Показать детали
-                </summary>
-                <pre className="mt-2 max-h-56 overflow-auto rounded-md bg-muted/50 p-3 whitespace-pre-wrap break-words">
-                  {JSON.stringify(diagnosticsResult, null, 2)}
-                </pre>
-              </details>
-
-              <div className="pt-2 border-t border-border text-muted-foreground text-xs">
-                {diagnosticsResult.vtbAuthSuccess ? (
-                  <span className="text-primary font-medium">Всё готово к оплате!</span>
-                ) : !diagnosticsResult.proxyConnectSuccess && !diagnosticsResult.directConnectSuccess ? (
-                  <span>
-                    Сервер не может достучаться до ВТБ ни через прокси, ни напрямую.{' '}
-                    Проверьте настройки прокси (PROXY_URL, PROXY_USER, PROXY_PASS).
-                  </span>
-                ) : (
-                  <span>Проверьте ошибки выше и исправьте настройки.</span>
-                )}
-              </div>
-            </CardContent>
-          )}
-        </Card>
 
         {/* Support Section */}
         <Card>
