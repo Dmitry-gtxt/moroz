@@ -153,60 +153,84 @@ async function getVtbAccessToken(authUrl: string, client?: Deno.HttpClient): Pro
   }
 
   // Формируем тело запроса согласно документации
-  const body = new URLSearchParams({
+  const bodyWithCreds = new URLSearchParams({
     grant_type: 'client_credentials',
     client_id: clientId,
     client_secret: clientSecret,
   });
 
+  // Альтернативный (часто требуемый) формат: Basic auth + только grant_type в body
+  const basic = btoa(`${clientId}:${clientSecret}`);
+  const bodyBasic = new URLSearchParams({
+    grant_type: 'client_credentials',
+  });
+
   console.log('Requesting VTB access token from:', authUrl);
   console.log('Request body preview:', `grant_type=client_credentials&client_id=${clientId.substring(0, 15)}...`);
 
-  const fetchOptions: RequestInit & { client?: Deno.HttpClient } = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+  const strategies: Array<{ name: string; headers: Record<string, string>; body: string }> = [
+    {
+      name: 'body_credentials',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: bodyWithCreds.toString(),
     },
-    body: body.toString(),
-  };
+    {
+      name: 'basic_auth',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${basic}`,
+      },
+      body: bodyBasic.toString(),
+    },
+  ];
 
-  if (client) fetchOptions.client = client;
+  let lastErrorText: string | null = null;
 
-  let response: Response;
-  let proxyError: unknown;
+  for (const strat of strategies) {
+    const fetchOptions: RequestInit & { client?: Deno.HttpClient } = {
+      method: 'POST',
+      headers: strat.headers,
+      body: strat.body,
+    };
 
-  try {
-    response = await fetch(authUrl, fetchOptions);
-  } catch (err) {
-    if (!client) throw err;
+    if (client) fetchOptions.client = client;
 
-    proxyError = err;
-    console.warn(
-      'VTB auth via proxy failed, retrying without proxy:',
-      err instanceof Error ? err.message : err,
-    );
+    let response: Response;
 
     try {
-      const { client: _client, ...optsNoClient } = fetchOptions as any;
-      response = await fetch(authUrl, optsNoClient);
-    } catch (directErr) {
-      const pe = proxyError instanceof Error ? proxyError.message : String(proxyError);
-      const de = directErr instanceof Error ? directErr.message : String(directErr);
-      throw new Error(`VTB auth failed. Proxy error: ${pe}. Direct error: ${de}`);
+      response = await fetch(authUrl, fetchOptions);
+    } catch (err) {
+      if (!client) throw err;
+
+      console.warn(
+        `VTB auth (${strat.name}) via custom client failed, retrying without custom client:`,
+        err instanceof Error ? err.message : err,
+      );
+
+      try {
+        const { client: _client, ...optsNoClient } = fetchOptions as any;
+        response = await fetch(authUrl, optsNoClient);
+      } catch (directErr) {
+        const de = directErr instanceof Error ? directErr.message : String(directErr);
+        throw new Error(`VTB auth failed (${strat.name}). Direct error: ${de}`);
+      }
     }
+
+    console.log(`VTB auth response status (${strat.name}):`, response.status);
+
+    if (!response.ok) {
+      lastErrorText = await response.text();
+      console.error('VTB auth error:', response.status, lastErrorText);
+      continue;
+    }
+
+    const data = await response.json();
+    console.log('VTB access token received, expires_in:', data.expires_in, 'strategy:', strat.name);
+    return data.access_token;
   }
 
-  console.log('VTB auth response status:', response.status);
+  throw new Error(`Failed to get VTB access token (all strategies). Last error: ${lastErrorText ?? 'unknown'}`);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('VTB auth error:', response.status, errorText);
-    throw new Error(`Failed to get VTB access token: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
-  console.log('VTB access token received, expires_in:', data.expires_in);
-  return data.access_token;
 }
 
 serve(async (req) => {
